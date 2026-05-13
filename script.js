@@ -1,56 +1,61 @@
-// Configuration des modules
-const MODULES = [
-    { id: 'visite', label: 'Visite', icon: 'fa-home', color: 'blue' },
-    { id: 'etat', label: 'État des Lieux', icon: 'fa-camera', color: 'orange' },
-    { id: 'loyer', label: 'Collecter Loyer', icon: 'fa-money-bill-wave', color: 'green' },
-    { id: 'biens', label: 'Mes Biens', icon: 'fa-building', color: 'red' }
-];
-
-// Gestionnaire d'état de l'application
-const SamaStore = {
-    revenue: {
+/**
+ * SAMA GESTION - Moteur Principal V1
+ */
+const app = {
+    // État de l'application
+    state: {
         totalTarget: 15000000,
-        collected: JSON.parse(localStorage.getItem('collected')) || 0
+        collected: parseFloat(localStorage.getItem('sama_collected')) || 0,
+        currency: 'CFA'
     },
 
-    init() {
-        this.renderGrid();
-        this.updateUI();
+    // Initialisation
+    init: function() {
+        console.log("Sama Gestion Initialisée...");
+        this.updateDisplay();
     },
 
-    // Génération dynamique de la grille
-    renderGrid() {
-        const grid = document.getElementById('actionGrid');
-        grid.innerHTML = MODULES.map(m => `
-            <div class="action-item" onclick="SamaStore.handleAction('${m.id}')">
-                <i class="fas ${m.icon}"></i>
-                <div><strong>${m.label}</strong></div>
-            </div>
-        `).join('');
+    // Mise à jour de l'interface
+    updateDisplay: function() {
+        const revenueEl = document.getElementById('revenueValue');
+        const progressEl = document.getElementById('progressBar');
+        
+        // Formatage du montant
+        revenueEl.innerText = `${this.state.collected.toLocaleString()} ${this.state.currency}`;
+        
+        // Calcul de la jauge
+        const percent = (this.state.collected / this.state.totalTarget) * 100;
+        progressEl.style.width = `${Math.min(percent, 100)}%`;
     },
 
-    // Logique de paiement
-    handleAction(action) {
-        if (action === 'loyer') {
-            const amount = 500000; // Simulation d'un encaissement
-            this.revenue.collected += amount;
-            localStorage.setItem('collected', this.revenue.collected);
-            this.updateUI();
-            this.notifyWhatsApp(amount);
+    // Gestionnaire d'actions
+    trigger: function(actionId) {
+        switch(actionId) {
+            case 'pay':
+                this.addPayment(500000); // Exemple d'encaissement d'un loyer
+                break;
+            case 'visite':
+                alert("Ouverture du module caméra pour la visite...");
+                break;
+            default:
+                console.log("Action non configurée : " + actionId);
         }
     },
 
-    updateUI() {
-        const percent = (this.revenue.collected / this.revenue.totalTarget) * 100;
-        document.getElementById('totalDisplay').innerText = `${this.revenue.collected.toLocaleString()} CFA`;
-        document.getElementById('gaugeFill').style.width = `${Math.min(percent, 100)}%`;
+    // Logique de paiement & Synchro Locale
+    addPayment: function(amount) {
+        this.state.collected += amount;
+        localStorage.setItem('sama_collected', this.state.collected);
+        this.updateDisplay();
+        this.sendWhatsAppNotification(amount);
     },
 
-    notifyWhatsApp(amount) {
-        const msg = encodeURIComponent(`Sama Gestion : Paiement de ${amount} CFA validé !`);
+    // Intégration WhatsApp
+    sendWhatsAppNotification: function(amount) {
+        const msg = encodeURIComponent(`Sama Gestion : Nouveau paiement de ${amount} CFA encaissé avec succès ! ✅`);
         window.open(`https://wa.me/221XXXXXXXXX?text=${msg}`, '_blank');
     }
 };
 
-// Lancement au chargement
-document.addEventListener('DOMContentLoaded', () => SamaStore.init());
+// Lancement au démarrage
+document.addEventListener('DOMContentLoaded', () => app.init());
