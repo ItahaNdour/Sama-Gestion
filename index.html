@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sama Gestion v1 - Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="main-header">
+            <div class="user-profile">
+                <div class="avatar">AC</div>
+                <span>Aminata C.</span>
+            </div>
+            <div class="sync-status" id="syncStatus">
+                <i class="fas fa-cloud-check"></i> Mode Offline
+            </div>
+        </header>
+
+        <!-- Jauge de revenus dynamique -->
+        <section class="stats-container">
+            <div class="gauge-card">
+                <div class="gauge-info">
+                    <span>Loyers Encaissés</span>
+                    <h2 id="totalDisplay">0 CFA</h2>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="gaugeFill"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grille d'actions injectée par JS -->
+        <nav class="action-grid" id="actionGrid"></nav>
+
+        <!-- Liste des biens récents -->
+        <section class="recent-activity">
+            <h3>Activités Récentes</h3>
+            <div id="activityList"></div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

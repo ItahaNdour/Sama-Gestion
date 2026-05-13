@@ -1,0 +1,64 @@
+:root {
+    --primary: #4169E1;   /* Bleu Royal */
+    --success: #50C878;   /* Vert Émeraude */
+    --warning: #FFA500;   /* Orange */
+    --danger: #FF4B4B;    /* Rouge */
+    --bg: #F8F9FA;
+    --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+
+.app-shell { max-width: 480px; margin: 0 auto; }
+
+/* Header Style */
+.main-header {
+    background: var(--primary);
+    color: white;
+    padding: 30px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 0 0 30px 30px;
+}
+
+/* Gauge Style */
+.stats-container { padding: 20px; margin-top: -30px; }
+.gauge-card {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+}
+.progress-bar {
+    background: #EEE;
+    height: 12px;
+    border-radius: 6px;
+    margin-top: 15px;
+    overflow: hidden;
+}
+.progress-fill {
+    background: var(--success);
+    height: 100%;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+}
+
+/* Grid Layout */
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 0 20px;
+}
+
+.action-item {
+    background: white;
+    padding: 25px 15px;
+    border-radius: 18px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    cursor: pointer;
+}
+
+.action-item i { font-size: 28px; margin-bottom: 10px; color: var(--primary); }
