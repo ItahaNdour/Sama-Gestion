@@ -1,136 +1,46 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion v2.0</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="app-shell">
-        <header class="main-header" onclick="showView('profil')">
-            <div class="user-info">
-                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
-                <div class="user-details">
-                    <span class="user-name" id="displayAdminName">Gestionnaire Immo</span>
-                    <span class="status-label">Paramètres Admin <i class="fas fa-cog"></i></span>
-                </div>
-            </div>
-        </header>
-
-        <div id="view-dashboard">
-            <section class="revenue-card-area">
-                <div class="glass-card">
-                    <span class="card-title">Encaissements Totaux</span>
-                    <h2 id="totalDisplay">0 CFA</h2>
-                </div>
-            </section>
-            
-            <nav class="action-grid">
-                <div class="action-item" onclick="showView('etat')">
-                    <div class="icon-box orange-bg"><i class="fas fa-file-signature"></i></div>
-                    <span>État des Lieux</span>
-                </div>
-                <div class="action-item" onclick="showView('collecter')">
-                    <div class="icon-box green-bg"><i class="fas fa-cash-register"></i></div>
-                    <span>Collecter</span>
-                </div>
-                <div class="action-item" onclick="showView('biens')">
-                    <div class="icon-box navy-bg"><i class="fas fa-city"></i></div>
-                    <span>Mes Biens</span>
-                </div>
-                <div class="action-item" onclick="showView('visites')">
-                    <div class="icon-box blue-bg"><i class="fas fa-calendar-alt"></i></div>
-                    <span>Planning Visites</span>
-                </div>
-            </nav>
-
-            <section class="section-container">
-                <h4><i class="fas fa-history"></i> Historique des Paiements</h4>
-                <div id="dashboardHistory" class="history-list"></div>
-            </section>
-        </div>
-
-        <div id="view-etat" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Nouvel État des Lieux</h3>
-            </div>
-            <div class="form-group">
-                <label>Choisir le bien</label>
-                <select id="etatBienSelect"></select>
-            </div>
-            <div class="photo-grid">
-                <div class="photo-slot" onclick="openCamera('Salon')"><i class="fas fa-camera"></i><br>Salon</div>
-                <div class="photo-slot" onclick="openCamera('Chambre')"><i class="fas fa-camera"></i><br>Chambre</div>
-                <div class="photo-slot" onclick="openCamera('Cuisine')"><i class="fas fa-camera"></i><br>Cuisine</div>
-                <div class="photo-slot" onclick="openCamera('Douche')"><i class="fas fa-camera"></i><br>Douche</div>
-            </div>
-            <div class="form-group">
-                <label>Signature Locataire</label>
-                <canvas id="signature-pad"></canvas>
-            </div>
-            <button class="primary-btn" onclick="saveEtatLieux()">Enregistrer & Envoyer</button>
-        </div>
-
-        <div id="view-visites" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Planning de Visites</h3>
-            </div>
-            <div class="form-group">
-                <input type="text" id="visiteClient" placeholder="Nom du prospect">
-                <input type="datetime-local" id="visiteDate">
-                <select id="visiteBienSelect"></select>
-                <button class="primary-btn" onclick="addVisite()">Ajouter le RDV</button>
-            </div>
-            <div id="visitesList" class="history-list"></div>
-        </div>
-
-        <div id="view-biens" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Parc Immobilier</h3>
-            </div>
-            <div class="search-bar-container">
-                <input type="text" id="searchInput" placeholder="Rechercher (Nom, Quartier...)" oninput="filterBiens()">
-            </div>
-            <div id="biensList"></div>
-            <button class="floating-btn" onclick="showView('ajouter')">+</button>
-        </div>
-
-        <div id="view-ajouter" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('biens')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Ajouter un Bien</h3>
-            </div>
-            <div class="form-group">
-                <input type="text" id="addNom" placeholder="Nom (ex: Villa Almadies)">
-                <input type="text" id="addLocataire" placeholder="Nom du locataire">
-                <input type="text" id="addAdresse" placeholder="Adresse / Quartier">
-                <input type="number" id="addLoyer" placeholder="Loyer Mensuel (CFA)">
-                <button class="primary-btn" onclick="saveNewBien()">Enregistrer</button>
-            </div>
-        </div>
-
-        <div id="view-collecter" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Encaisser Loyer</h3>
-            </div>
-            <div class="form-group">
-                <label>Mode de Paiement</label>
-                <select id="payMethod">
-                    <option>Wave</option>
-                    <option>Orange Money</option>
-                    <option>Espèces</option>
-                    <option>Virement</option>
-                </select>
-            </div>
-            <div id="collecteList"></div>
-        </div>
+<div id="view-etat" class="module-view" style="display: none;">
+    <div class="module-header">
+        <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+        <h3>Constat d'État des Lieux</h3>
     </div>
-    <script src="script.js"></script>
-</body>
-</html>
+
+    <!-- Choix du bien -->
+    <div class="form-group">
+        <label>Logement & Locataire</label>
+        <select id="etatBienSelect"></select>
+    </div>
+
+    <!-- Zones d'inspection -->
+    <div class="inspection-grid">
+        <div class="inspection-item">
+            <span>Salon</span>
+            <select id="status-salon">
+                <option value="Bon">Bon état</option>
+                <option value="Moyen">Moyen</option>
+                <option value="Mauvais">Mauvais</option>
+            </select>
+        </div>
+        <div class="inspection-item">
+            <span>Cuisine</span>
+            <select id="status-cuisine">
+                <option value="Bon">Bon état</option>
+                <option value="Moyen">Moyen</option>
+                <option value="Mauvais">Mauvais</option>
+            </select>
+        </div>
+        <!-- Ajoutez d'autres zones ici (Chambre, SDB, etc.) -->
+    </div>
+
+    <div class="form-group">
+        <label>Observations (murs, clim, clés...)</label>
+        <textarea id="etatObservations" placeholder="Détaillez les anomalies..."></textarea>
+    </div>
+
+    <div class="signature-section">
+        <label>Signature Locataire</label>
+        <canvas id="sig-canvas"></canvas>
+        <button class="small-btn" onclick="clearSig()">Effacer</button>
+    </div>
+
+    <button class="primary-btn" onclick="preparerWhatsApp()">Générer le rapport WhatsApp</button>
+</div>
