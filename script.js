@@ -1,118 +1,67 @@
-let mesBiens = JSON.parse(localStorage.getItem('sama_biens')) || [];
-let historique = JSON.parse(localStorage.getItem('sama_history')) || [];
-let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
-let collectedTotal = parseFloat(localStorage.getItem('sama_collected')) || 0;
+let ctx;
+let drawing = false;
 
-function showView(viewId) {
-    document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
-    document.getElementById('view-' + viewId).style.display = 'block';
+// Initialise le Canvas pour la signature
+function initSignatureModule() {
+    const canvas = document.getElementById('sig-canvas');
+    ctx = canvas.getContext('2d');
     
-    if(viewId === 'biens') renderBiens(mesBiens);
-    if(viewId === 'collecter') renderCollecte();
-    if(viewId === 'visites') renderVisites();
-    if(viewId === 'dashboard') updateDashboard();
-    
-    // Remplir les sélecteurs de biens
-    if(['etat', 'visites'].includes(viewId)) {
-        const selects = ['etatBienSelect', 'visiteBienSelect'];
-        selects.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = mesBiens.map(b => `<option>${b.nom}</option>`).join('');
-        });
-    }
-}
+    // Ajuste la taille au conteneur
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 150;
 
-function updateDashboard() {
-    document.getElementById('totalDisplay').innerText = collectedTotal.toLocaleString() + " CFA";
-    const histContainer = document.getElementById('dashboardHistory');
-    histContainer.innerHTML = historique.slice(0, 5).map(h => `
-        <div class="card success">
-            <strong>${h.bien}</strong> (${h.locataire})<br>
-            <small>${h.date} • ${h.montant.toLocaleString()} CFA • ${h.methode}</small>
-        </div>
-    `).join('');
-}
+    // Événements tactiles et souris
+    const startDrawing = () => drawing = true;
+    const stopDrawing = () => { drawing = false; ctx.beginPath(); };
+    const draw = (e) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-// --- GESTION DES BIENS ---
-function saveNewBien() {
-    const bien = {
-        nom: document.getElementById('addNom').value,
-        locataire: document.getElementById('addLocataire').value,
-        adresse: document.getElementById('addAdresse').value,
-        loyer: parseFloat(document.getElementById('addLoyer').value)
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
     };
-    if(!bien.nom || !bien.loyer) return alert("Nom et Loyer requis !");
-    mesBiens.push(bien);
-    localStorage.setItem('sama_biens', JSON.stringify(mesBiens));
-    showView('biens');
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    window.addEventListener('mouseup', stopDrawing);
+    window.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchmove', (e) => { draw(e); e.preventDefault(); });
 }
 
-function renderBiens(liste) {
-    document.getElementById('biensList').innerHTML = liste.map((b, i) => `
-        <div class="card">
-            <h4>${b.nom}</h4>
-            <p><i class="fas fa-user"></i> ${b.locataire || 'Pas de locataire'}</p>
-            <p><i class="fas fa-map-marker-alt"></i> ${b.adresse}</p>
-            <strong>${b.loyer.toLocaleString()} CFA</strong>
-            <button onclick="deleteBien(${i})" style="float:right; color:red; border:none; background:none"><i class="fas fa-trash"></i></button>
-        </div>
-    `).join('<br>');
+function clearSig() {
+    const canvas = document.getElementById('sig-canvas');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function filterBiens() {
-    const val = document.getElementById('searchInput').value.toLowerCase();
-    const filtered = mesBiens.filter(b => b.nom.toLowerCase().includes(val) || b.adresse.toLowerCase().includes(val));
-    renderBiens(filtered);
+// Fonction pour envoyer sur WhatsApp
+function preparerWhatsApp() {
+    const bienNom = document.getElementById('etatBienSelect').value;
+    const salon = document.getElementById('status-salon').value;
+    const cuisine = document.getElementById('status-cuisine').value;
+    const obs = document.getElementById('etatObservations').value;
+    const date = new Date().toLocaleDateString('fr-FR');
+
+    // Construction du message formaté (WhatsApp utilise * pour le gras)
+    const message = `🏠 *ÉTAT DES LIEUX - ${bienNom}*
+📅 Date : ${date}
+
+📍 *DÉTAILS DES ZONES* :
+- Salon : ${salon}
+- Cuisine : ${cuisine}
+
+📝 *OBSERVATIONS* :
+${obs || "Aucune observation particulière."}
+
+✅ _Document signé numériquement par le locataire sur l'application Sama Gestion._`;
+
+    // Encodage du texte pour l'URL
+    const encodedMsg = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
 }
-
-// --- COLLECTE ---
-function renderCollecte() {
-    document.getElementById('collecteList').innerHTML = mesBiens.map((b, i) => `
-        <div class="card">
-            <strong>${b.nom}</strong> - ${b.locataire}<br>
-            <button class="primary-btn" style="margin-top:10px" onclick="encaisser(${i})">Encaisser ${b.loyer.toLocaleString()} CFA</button>
-        </div>
-    `).join('<br>');
-}
-
-function encaisser(index) {
-    const b = mesBiens[index];
-    const methode = document.getElementById('payMethod').value;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-FR') + " " + now.getHours() + ":" + now.getMinutes();
-
-    const paiement = { bien: b.nom, locataire: b.locataire, montant: b.loyer, methode: methode, date: dateStr };
-    historique.unshift(paiement);
-    collectedTotal += b.loyer;
-
-    localStorage.setItem('sama_history', JSON.stringify(historique));
-    localStorage.setItem('sama_collected', collectedTotal);
-    showView('dashboard');
-}
-
-// --- VISITES ---
-function addVisite() {
-    const v = {
-        client: document.getElementById('visiteClient').value,
-        date: document.getElementById('visiteDate').value,
-        bien: document.getElementById('visiteBienSelect').value
-    };
-    visites.push(v);
-    localStorage.setItem('sama_visites', JSON.stringify(visites));
-    renderVisites();
-}
-
-function renderVisites() {
-    document.getElementById('visitesList').innerHTML = visites.map(v => `
-        <div class="card" style="border-left-color:var(--primary)">
-            <strong>${v.client}</strong> pour <strong>${v.bien}</strong><br>
-            <small>RDV le : ${new Date(v.date).toLocaleString('fr-FR')}</small>
-        </div>
-    `).join('');
-}
-
-// --- ÉTAT DES LIEUX ---
-function openCamera(zone) { alert("Ouverture Caméra pour : " + zone); }
-function saveEtatLieux() { alert("Rapport enregistré et envoyé !"); showView('dashboard'); }
-
-window.onload = updateDashboard;
