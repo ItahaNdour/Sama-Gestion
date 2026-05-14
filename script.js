@@ -1,39 +1,52 @@
-// On récupère les données sauvegardées
 let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
-const target = 10000000; // Objectif de 10 millions
+const target = 10000000;
 
-/**
- * Met à jour les éléments visuels de la page
- */
 function updateUI() {
     const display = document.getElementById('totalDisplay');
     const bar = document.getElementById('gaugeFill');
-    
     if (display && bar) {
-        // Affiche le montant formaté (ex: 500,000 CFA)
         display.innerText = collected.toLocaleString() + " CFA";
-        
-        // Calcul du pourcentage pour la jauge
         const percent = (collected / target) * 100;
         bar.style.width = Math.min(percent, 100) + "%";
     }
 }
 
-/**
- * Gère les clics sur les boutons du menu
- */
+// NAVIGATION
 function handleAction(id) {
     if (id === 'loyer') {
-        collected += 500000; // Simule l'ajout d'un loyer
+        collected += 500000;
         localStorage.setItem('sama_collected', collected);
         updateUI();
-        alert("Paiement de 500 000 CFA enregistré ! ✅");
+        alert("Paiement reçu : +500.000 CFA ! ✅");
     } else {
-        alert("Module " + id + " : Ouverture bientôt disponible.");
+        // Masquer le dashboard, afficher le module
+        document.getElementById('view-dashboard').style.display = 'none';
+        document.getElementById('view-' + id).style.display = 'block';
     }
 }
 
-// Initialise l'affichage dès que la page est chargée
-window.onload = function() {
-    updateUI();
-};
+function showDashboard() {
+    document.getElementById('view-dashboard').style.display = 'block';
+    document.querySelectorAll('.module-view').forEach(view => {
+        view.style.display = 'none';
+    });
+}
+
+// LOGIQUE ÉTAT DES LIEUX
+function simulateCamera(zone) {
+    // On simule une capture réussie en changeant l'apparence du bouton
+    const slots = document.querySelectorAll('.photo-slot');
+    slots.forEach(slot => {
+        if(slot.innerText.includes(zone)) {
+            slot.classList.add('active');
+            slot.innerHTML = `<i class="fas fa-check-circle"></i><span>${zone} OK</span>`;
+        }
+    });
+}
+
+function sendWhatsAppValidation() {
+    const msg = encodeURIComponent("Sama Gestion : L'état des lieux a été complété avec succès. 📸");
+    window.open(`https://wa.me/221XXXXXXXXX?text=${msg}`, '_blank');
+}
+
+window.onload = updateUI;
