@@ -1,95 +1,117 @@
+// --- INITIALISATION ---
 let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
 let mesBiens = JSON.parse(localStorage.getItem('sama_biens')) || [];
+let adminName = localStorage.getItem('sama_admin') || "Gestionnaire Immo";
 let zonesInspectees = [];
 
-// --- GESTION DES VUES ---
+// --- NAVIGATION ---
 function showView(viewId) {
     document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + viewId).style.display = 'block';
     
     if (viewId === 'biens') renderBiens();
     if (viewId === 'collecter') renderCollecte();
-    if (viewId === 'dashboard') updateDashboard();
-    if (viewId === 'etat') initSignaturePad();
+    if (viewId === 'dashboard') updateUI();
+    if (viewId === 'etat') initSignature();
 }
 
-// --- MODULE BIENS (AJOUT + SUPPRESSION) ---
+function updateUI() {
+    document.getElementById('totalDisplay').innerText = collected.toLocaleString() + " CFA";
+    document.getElementById('displayAdminName').innerText = adminName;
+    const percent = (collected / 10000000) * 100;
+    document.getElementById('gaugeFill').style.width = Math.min(percent, 100) + "%";
+}
+
+// --- ADMIN ---
+function updateAdminName() {
+    const val = document.getElementById('adminNameInput').value;
+    if(val) {
+        adminName = val;
+        localStorage.setItem('sama_admin', val);
+        updateUI();
+        showView('dashboard');
+    }
+}
+
+// --- MES BIENS ---
 function renderBiens() {
     const container = document.getElementById('biensList');
-    container.innerHTML = mesBiens.length === 0 ? "<p>Aucun bien enregistré.</p>" : mesBiens.map((b, index) => `
+    container.innerHTML = mesBiens.length === 0 ? "<p>Aucun bien.</p>" : mesBiens.map((b, i) => `
         <div class="bien-card">
             <div>
                 <h4>${b.nom}</h4>
-                <p>${b.loyer.toLocaleString()} CFA</p>
+                <p style="font-size:0.8rem; color:gray"><i class="fas fa-map-marker-alt"></i> ${b.adresse}</p>
+                <p><strong>${b.loyer.toLocaleString()} CFA</strong></p>
             </div>
-            <button class="delete-btn" onclick="deleteBien(${index})"><i class="fas fa-trash-alt"></i></button>
+            <button onclick="deleteBien(${i})" style="color:red; border:none; background:none; font-size:1.2rem"><i class="fas fa-trash"></i></button>
         </div>
     `).join('');
 }
 
 function saveNewBien() {
     const nom = document.getElementById('addNom').value;
+    const adresse = document.getElementById('addAdresse').value;
     const loyer = document.getElementById('addLoyer').value;
-    if(!nom || !loyer) return alert("Remplissez tout !");
-    
-    mesBiens.push({ nom, loyer: parseFloat(loyer) });
+
+    if(!nom || !adresse || !loyer) return alert("Veuillez remplir tous les champs (Nom, Adresse et Loyer)");
+
+    mesBiens.push({ nom, adresse, loyer: parseFloat(loyer) });
     localStorage.setItem('sama_biens', JSON.stringify(mesBiens));
     showView('biens');
 }
 
 function deleteBien(index) {
-    if(confirm("Supprimer ce bien ?")) {
+    if(confirm("Supprimer ce bien définitivement ?")) {
         mesBiens.splice(index, 1);
         localStorage.setItem('sama_biens', JSON.stringify(mesBiens));
         renderBiens();
     }
 }
 
-// --- MODULE ÉTAT DES LIEUX (SIGNATURE) ---
-let canvas, ctx, drawing = false;
+// --- ÉTAT DES LIEUX & SIGNATURE ---
+let canvas, ctx, isDrawing = false;
 
-function initSignaturePad() {
+function initSignature() {
     canvas = document.getElementById('signature-pad');
     ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
+
+    const start = (e) => { isDrawing = true; draw(e); };
+    const end = () => { isDrawing = false; ctx.beginPath(); };
     
-    canvas.addEventListener('mousedown', () => drawing = true);
-    canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
-    canvas.addEventListener('mousemove', draw);
-    
-    // Support Tactile
-    canvas.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); });
-    canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); });
-    canvas.addEventListener('touchmove', (e) => {
+    canvas.onmousedown = start; canvas.onmouseup = end;
+    canvas.onmousemove = (e) => { if(isDrawing) draw(e); };
+
+    // Tactile
+    canvas.ontouchstart = (e) => { isDrawing = true; e.preventDefault(); };
+    canvas.ontouchend = end;
+    canvas.ontouchmove = (e) => {
         const touch = e.touches[0];
         const rect = canvas.getBoundingClientRect();
         draw({ clientX: touch.clientX, clientY: touch.clientY });
-    });
+    };
 }
 
 function draw(e) {
-    if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "black";
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke();
+    ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
 }
 
-function clearSignature() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
+function clearSignature() { ctx.clearRect(0,0,canvas.width,canvas.height); }
 
 function toggleZone(zone) {
-    const el = document.getElementById('slot-' + zone.toLowerCase());
+    const el = document.getElementById('slot-' + zone.toLowerCase().replace(" ", ""));
     el.classList.toggle('active');
-    if(zonesInspectees.includes(zone)) zonesInspectees = zonesInspectees.filter(z => z!==zone);
+    if(zonesInspectees.includes(zone)) zonesInspectees = zonesInspectees.filter(z => z !== zone);
     else zonesInspectees.push(zone);
 }
 
 function sendWhatsAppReport() {
-    const msg = `🏠 *ETAT DES LIEUX SIGNÉ*\nZones: ${zonesInspectees.join(', ') || 'N/A'}\n_Signature effectuée sur mobile_`;
+    const notes = document.getElementById('etatNotes').value;
+    const msg = `🏠 *ÉTAT DES LIEUX - ${adminName}*\nZones inspectées: ${zonesInspectees.join(', ') || 'Aucune'}\nObservations: ${notes || 'RAS'}\n_Signature locataire effectuée_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
@@ -99,7 +121,7 @@ function renderCollecte() {
     container.innerHTML = mesBiens.map(b => `
         <div class="bien-card">
             <h4>${b.nom}</h4>
-            <button class="primary-btn" style="width:auto" onclick="encaisser(${b.loyer})">Encaisser</button>
+            <button class="primary-btn" style="width:auto; padding:10px" onclick="encaisser(${b.loyer})">Encaisser</button>
         </div>
     `).join('');
 }
@@ -107,14 +129,8 @@ function renderCollecte() {
 function encaisser(m) {
     collected += m;
     localStorage.setItem('sama_collected', collected);
-    updateDashboard();
+    updateUI();
     showView('dashboard');
 }
 
-function updateDashboard() {
-    document.getElementById('totalDisplay').innerText = collected.toLocaleString() + " CFA";
-    const percent = (collected / 10000000) * 100;
-    document.getElementById('gaugeFill').style.width = Math.min(percent, 100) + "%";
-}
-
-window.onload = updateDashboard;
+window.onload = updateUI;
