@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion v1.2</title>
+    <title>Sama Gestion - Correction Recherche</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,7 +19,7 @@
             </div>
         </header>
 
-        <!-- VUE 1 : DASHBOARD -->
+        <!-- VUE DASHBOARD -->
         <div id="view-dashboard">
             <section class="revenue-card-area">
                 <div class="glass-card">
@@ -48,7 +48,7 @@
             </nav>
         </div>
 
-        <!-- VUE 2 : ÉTAT DES LIEUX -->
+        <!-- VUE ÉTAT DES LIEUX -->
         <div id="view-etat" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
@@ -63,16 +63,15 @@
             <button class="validate-btn" onclick="sendWhatsAppValidation()">Valider via WhatsApp</button>
         </div>
 
-        <!-- VUE 3 : MES BIENS -->
+        <!-- VUE MES BIENS (AVEC RECHERCHE CORRIGÉE) -->
         <div id="view-biens" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
                 <h3>Mon Parc Immobilier</h3>
             </div>
-            <!-- BARRE DE RECHERCHE -->
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Rechercher un bien..." onkeyup="filterBiens()">
+                <input type="text" id="searchInput" placeholder="Rechercher un bien..." oninput="filterBiens()">
             </div>
             <div id="biens-list" class="biens-container"></div>
         </div>
