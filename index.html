@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion v1.1 - Mes Biens</title>
+    <title>Sama Gestion v1.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
-        <!-- HEADER COMMUN -->
         <header class="main-header">
             <div class="user-info">
                 <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
@@ -26,12 +25,9 @@
                 <div class="glass-card">
                     <span class="card-title">Loyers Encaissés Ce mois</span>
                     <h2 id="totalDisplay">0 CFA</h2>
-                    <div class="progress-track">
-                        <div class="progress-bar" id="gaugeFill"></div>
-                    </div>
+                    <div class="progress-track"><div class="progress-bar" id="gaugeFill"></div></div>
                 </div>
             </section>
-
             <nav class="action-grid">
                 <div class="action-item" onclick="handleAction('visite')">
                     <div class="icon-box blue-bg"><i class="fas fa-calendar-check"></i></div>
@@ -59,18 +55,10 @@
                 <h3>Nouvel État des Lieux</h3>
             </div>
             <div class="photo-grid">
-                <div class="photo-slot" onclick="simulateCamera('Entrée', this)">
-                    <i class="fas fa-door-open"></i><span>Entrée</span>
-                </div>
-                <div class="photo-slot" onclick="simulateCamera('Salon', this)">
-                    <i class="fas fa-couch"></i><span>Salon</span>
-                </div>
-                <div class="photo-slot" onclick="simulateCamera('Chambre', this)">
-                    <i class="fas fa-bed"></i><span>Chambre</span>
-                </div>
-                <div class="photo-slot" onclick="simulateCamera('SDB', this)">
-                    <i class="fas fa-bath"></i><span>SDB</span>
-                </div>
+                <div class="photo-slot" onclick="simulateCamera('Entrée', this)"><i class="fas fa-door-open"></i><span>Entrée</span></div>
+                <div class="photo-slot" onclick="simulateCamera('Salon', this)"><i class="fas fa-couch"></i><span>Salon</span></div>
+                <div class="photo-slot" onclick="simulateCamera('Chambre', this)"><i class="fas fa-bed"></i><span>Chambre</span></div>
+                <div class="photo-slot" onclick="simulateCamera('SDB', this)"><i class="fas fa-bath"></i><span>SDB</span></div>
             </div>
             <button class="validate-btn" onclick="sendWhatsAppValidation()">Valider via WhatsApp</button>
         </div>
@@ -81,9 +69,12 @@
                 <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
                 <h3>Mon Parc Immobilier</h3>
             </div>
-            <div id="biens-list" class="biens-container">
-                <!-- Le contenu sera généré par script.js -->
+            <!-- BARRE DE RECHERCHE -->
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Rechercher un bien..." onkeyup="filterBiens()">
             </div>
+            <div id="biens-list" class="biens-container"></div>
         </div>
     </div>
     <script src="script.js"></script>
