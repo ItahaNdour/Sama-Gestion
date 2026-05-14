@@ -1,64 +1,92 @@
-// Navigation simple
+// --- DONNÉES ---
+const PIECES_MAISON = ["Salon", "Cuisine", "Chambre 1", "Chambre 2", "Chambre 3", "Douche Visiteur", "Salle de Bain", "Balcon"];
+let mesBiens = JSON.parse(localStorage.getItem('sama_biens')) || [
+    {nom: "Villa Almadies", locataire: "M. Faye"},
+    {nom: "Appartement Plateau", locataire: "Mme Diop"}
+];
+let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
+
+// --- NAVIGATION ---
 function showView(viewId) {
-    document.querySelectorAll('.module-view').forEach(v => v.style.display = 'none');
+    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + viewId).style.display = 'block';
-    
+
+    if(viewId === 'planning') {
+        const sel = document.getElementById('p-bien');
+        sel.innerHTML = mesBiens.map(b => `<option>${b.nom}</option>`).join('');
+        renderVisites();
+    }
     if(viewId === 'etat') {
-        setTimeout(initSignature, 200); // On attend que le canvas soit visible
+        const sel = document.getElementById('e-bien');
+        sel.innerHTML = mesBiens.map(b => `<option>${b.nom}</option>`).join('');
+        genererZones();
+        setTimeout(initSignature, 200);
     }
 }
 
-// Logique Signature
-let canvas, ctx, drawing = false;
+// --- MODULE PLANNING ---
+function sauverVisite() {
+    const v = {
+        nom: document.getElementById('p-name').value,
+        phone: document.getElementById('p-phone').value,
+        bien: document.getElementById('p-bien').value,
+        date: document.getElementById('p-date').value
+    };
+    if(!v.nom || !v.date) return alert("Nom et Date requis");
+    visites.push(v);
+    localStorage.setItem('sama_visites', JSON.stringify(visites));
+    renderVisites();
+}
 
+function renderVisites() {
+    const list = document.getElementById('visites-list');
+    list.innerHTML = visites.map(v => `
+        <div class="form-card">
+            <strong>${v.nom}</strong> - ${v.bien}<br>
+            <small>${new Date(v.date).toLocaleString('fr-FR')}</small>
+        </div>
+    `).join('');
+}
+
+// --- MODULE ÉTAT DES LIEUX ---
+function genererZones() {
+    const container = document.getElementById('zones-inspection');
+    container.innerHTML = PIECES_MAISON.map(p => `
+        <div class="form-card" style="display:flex; justify-content:space-between; align-items:center">
+            <span>${p}</span>
+            <select style="width:auto; margin:0" id="st-${p}">
+                <option>Bon</option><option>Moyen</option><option>Mauvais</option>
+            </select>
+        </div>
+    `).join('');
+}
+
+function envoyerRapportWA() {
+    const bien = document.getElementById('e-bien').value;
+    let detail = "";
+    PIECES_MAISON.forEach(p => {
+        detail += `- ${p}: ${document.getElementById('st-'+p).value}\n`;
+    });
+    const msg = `🏠 *ÉTAT DES LIEUX PRO*\n📍 Bien: ${bien}\n\n*DÉTAILS*:\n${detail}\n📝 Obs: ${document.getElementById('e-obs').value}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+}
+
+// --- SIGNATURE ---
+let canvas, ctx, drawing = false;
 function initSignature() {
     canvas = document.getElementById('sig-canvas');
-    if(!canvas) return;
     ctx = canvas.getContext('2d');
-    
-    // Ajuste la taille réelle du dessin
     canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
-    const getPos = (e) => {
+    canvas.height = 150;
+    canvas.onmousedown = () => drawing = true;
+    window.onmouseup = () => { drawing = false; ctx.beginPath(); };
+    canvas.onmousemove = (e) => {
+        if(!drawing) return;
         const rect = canvas.getBoundingClientRect();
-        return {
-            x: (e.clientX || e.touches[0].clientX) - rect.left,
-            y: (e.clientY || e.touches[0].clientY) - rect.top
-        };
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
     };
-
-    const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
-    const move = (e) => { if(!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
-    const stop = () => { drawing = false; };
-
-    canvas.onmousedown = start; canvas.onmousemove = move; window.onmouseup = stop;
-    canvas.ontouchstart = (e) => { start(e); e.preventDefault(); };
-    canvas.ontouchmove = (e) => { move(e); e.preventDefault(); };
-    canvas.ontouchend = stop;
 }
+function clearSignature() { ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-function clearSig() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// Logique WhatsApp
-function envoyerWhatsApp() {
-    const bien = document.getElementById('etatBienSelect').value;
-    const salon = document.getElementById('status-salon').value;
-    const cuisine = document.getElementById('status-cuisine').value;
-    const obs = document.getElementById('etatObservations').value || "RAS";
-    const date = new Date().toLocaleDateString('fr-FR');
-
-    const texte = `🏠 *ÉTAT DES LIEUX - SAMA GESTION*\n\n` +
-                  `📍 Bien : ${bien}\n` +
-                  `📅 Date : ${date}\n\n` +
-                  `✅ *Constat* :\n` +
-                  `- Salon : ${salon}\n` +
-                  `- Cuisine : ${cuisine}\n\n` +
-                  `📝 *Observations* :\n${obs}\n\n` +
-                  `_Signé numériquement par le locataire._`;
-
-    const url = `https://wa.me/?text=${encodeURIComponent(texte)}`;
-    window.open(url, '_blank');
-}
+window.onload = () => showView('dashboard');
