@@ -11,42 +11,42 @@ function updateUI() {
     }
 }
 
-// NAVIGATION
+// NAVIGATION CORRIGÉE
 function handleAction(id) {
-    if (id === 'loyer') {
-        collected += 500000;
-        localStorage.setItem('sama_collected', collected);
-        updateUI();
-        alert("Paiement reçu : +500.000 CFA ! ✅");
-    } else {
-        // Masquer le dashboard, afficher le module
-        document.getElementById('view-dashboard').style.display = 'none';
-        document.getElementById('view-' + id).style.display = 'block';
+    switch(id) {
+        case 'loyer':
+            collected += 500000;
+            localStorage.setItem('sama_collected', collected);
+            updateUI();
+            alert("Paiement enregistré ! ✅");
+            break;
+        
+        case 'etat':
+            document.getElementById('view-dashboard').style.display = 'none';
+            document.getElementById('view-etat').style.display = 'block';
+            break;
+
+        case 'visite':
+            alert("Module Visite : En cours de branchement...");
+            break;
+
+        case 'biens':
+            alert("Module Mes Biens : Bientôt disponible !");
+            break;
     }
 }
 
 function showDashboard() {
     document.getElementById('view-dashboard').style.display = 'block';
-    document.querySelectorAll('.module-view').forEach(view => {
-        view.style.display = 'none';
-    });
+    document.getElementById('view-etat').style.display = 'none';
 }
 
-// LOGIQUE ÉTAT DES LIEUX
 function simulateCamera(zone) {
-    // On simule une capture réussie en changeant l'apparence du bouton
-    const slots = document.querySelectorAll('.photo-slot');
-    slots.forEach(slot => {
-        if(slot.innerText.includes(zone)) {
-            slot.classList.add('active');
-            slot.innerHTML = `<i class="fas fa-check-circle"></i><span>${zone} OK</span>`;
-        }
-    });
+    alert("Photo enregistrée pour : " + zone);
 }
 
 function sendWhatsAppValidation() {
-    const msg = encodeURIComponent("Sama Gestion : L'état des lieux a été complété avec succès. 📸");
-    window.open(`https://wa.me/221XXXXXXXXX?text=${msg}`, '_blank');
+    window.open("https://wa.me/?text=EtatDesLieuxTerminé", "_blank");
 }
 
 window.onload = updateUI;
