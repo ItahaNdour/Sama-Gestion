@@ -10,16 +10,18 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #d1d8e0; display: flex; justify-content: center; min-height: 100vh; }
-.app-shell { width: 100%; max-width: 450px; background: var(--bg); box-shadow: 0 0 30px rgba(0,0,0,0.1); overflow-x: hidden; position: relative; }
+.app-shell { width: 100%; max-width: 450px; background: var(--bg); box-shadow: 0 0 30px rgba(0,0,0,0.1); overflow-x: hidden; min-height: 100vh; }
 
+/* HEADER */
 .main-header { background: var(--primary); padding: 30px 20px 60px; border-radius: 0 0 30px 30px; color: white; }
 .user-info { display: flex; align-items: center; gap: 12px; }
 .avatar { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 12px; }
 
+/* DASHBOARD */
 .revenue-card-area { padding: 0 20px; margin-top: -40px; margin-bottom: 25px; }
 .glass-card { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
 .progress-track { background: #eee; height: 8px; border-radius: 4px; margin-top: 15px; }
-.progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
+.progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.8s ease; }
 
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
 .action-item { background: var(--white); padding: 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; }
@@ -29,11 +31,12 @@ body { font-family: 'Segoe UI', sans-serif; background: #d1d8e0; display: flex; 
 .green-bg { background: #eafaf1; color: var(--success); }
 .navy-bg { background: #f0f3ff; color: #2c3e50; }
 
+/* MODULES */
 .module-view { padding: 20px; animation: fadeIn 0.3s ease-out; }
 .module-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .back-btn { border: none; background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 10px; cursor: pointer; }
 
-/* RECHERCHE */
+/* BARRE DE RECHERCHE */
 .search-container {
     background: white; padding: 12px 15px; border-radius: 15px;
     display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
@@ -42,9 +45,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #d1d8e0; display: flex; 
 .search-container input { border: none; outline: none; width: 100%; font-size: 14px; color: var(--text); }
 .search-container i { color: var(--gray); }
 
-/* LISTE BIENS */
+/* BIENS */
 .biens-container { display: flex; flex-direction: column; gap: 15px; }
-.bien-card { background: white; border-radius: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.3s; }
+.bien-card { background: white; border-radius: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 .bien-info h4 { color: var(--text); margin-bottom: 4px; }
 .bien-info p { font-size: 12px; color: var(--gray); }
 .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
