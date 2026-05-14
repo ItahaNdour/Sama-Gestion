@@ -10,28 +10,20 @@
 body { 
     font-family: 'Segoe UI', sans-serif; 
     background: #d1d8e0; 
-    display: flex; 
-    justify-content: center; 
-    min-height: 100vh;
+    display: flex; justify-content: center; min-height: 100vh;
 }
 
-.app-shell { 
-    width: 100%; max-width: 450px; 
-    background: var(--bg); 
-    box-shadow: 0 0 30px rgba(0,0,0,0.1); 
-}
+.app-shell { width: 100%; max-width: 450px; background: var(--bg); box-shadow: 0 0 30px rgba(0,0,0,0.1); }
 
 .main-header {
-    background: var(--primary);
-    padding: 30px 20px 60px;
-    border-radius: 0 0 30px 30px;
-    color: white;
+    background: var(--primary); padding: 30px 20px 60px;
+    border-radius: 0 0 30px 30px; color: white;
 }
 
 .revenue-card-area { padding: 0 20px; margin-top: -40px; margin-bottom: 25px; }
 .glass-card { 
-    background: var(--white); padding: 25px; 
-    border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
+    background: var(--white); padding: 25px; border-radius: 20px; 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
 }
 
 .progress-track { background: #eee; height: 8px; border-radius: 4px; margin-top: 15px; }
@@ -61,12 +53,7 @@ body {
     align-items: center; justify-content: center; gap: 8px; color: #95a5a6; cursor: pointer;
 }
 
-/* CLASSE ACTIVE (QUAND ON CLIQUE) */
-.photo-slot.active { 
-    border: 2px solid var(--success); 
-    background: #eafaf1; 
-    color: var(--success); 
-}
+.photo-slot.active { border: 2px solid var(--success); background: #eafaf1; color: var(--success); }
 
 .validate-btn {
     width: 100%; margin-top: 25px; background: var(--success); 
