@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion - Version Complète</title>
+    <title>Sama Gestion v1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
-        <!-- HEADER -->
         <header class="main-header">
             <div class="user-info">
-                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
                 <div class="user-details">
                     <span class="user-name">Gestionnaire Immo</span>
                     <span class="status-label"><i class="fa-solid fa-wifi"></i> Mode Offline</span>
@@ -20,7 +19,7 @@
             </div>
         </header>
 
-        <!-- VUE DASHBOARD -->
+        <!-- Vue Accueil -->
         <div id="view-dashboard">
             <section class="revenue-card-area">
                 <div class="glass-card">
@@ -31,7 +30,6 @@
                     </div>
                 </div>
             </section>
-
             <nav class="action-grid">
                 <div class="action-item" onclick="handleAction('visite')">
                     <div class="icon-box blue-bg"><i class="fas fa-calendar-check"></i></div>
@@ -52,7 +50,7 @@
             </nav>
         </div>
 
-        <!-- VUE ÉTAT DES LIEUX -->
+        <!-- Vue État des Lieux -->
         <div id="view-etat" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
