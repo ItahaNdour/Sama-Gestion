@@ -4,55 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sama Gestion - V1 Pro</title>
-    <!-- Lien vers les icônes (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Lien vers votre CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-shell">
+        <!-- HEADER -->
         <header class="main-header">
             <div class="user-info">
-                <div class="avatar">AC</div>
+                <div class="avatar"><i class="fa-solid fa-user-gear"></i></div>
                 <div class="user-details">
-                    <span class="user-name">Aminata C.</span>
+                    <span class="user-name">Gestionnaire Immo</span>
                     <span class="status-label"><i class="fa-solid fa-wifi"></i> Mode Offline</span>
                 </div>
             </div>
         </header>
 
-        <section class="revenue-card-area">
-            <div class="glass-card">
-                <span class="card-title">Loyers Encaissés Ce mois</span>
-                <h2 id="totalDisplay">0 CFA</h2>
-                <div class="progress-track">
-                    <div class="progress-bar" id="gaugeFill"></div>
+        <!-- VUE : TABLEAU DE BORD (DASHBOARD) -->
+        <div id="view-dashboard">
+            <section class="revenue-card-area">
+                <div class="glass-card">
+                    <span class="card-title">Loyers Encaissés Ce mois</span>
+                    <h2 id="totalDisplay">0 CFA</h2>
+                    <div class="progress-track">
+                        <div class="progress-bar" id="gaugeFill"></div>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <nav class="action-grid">
-            <button class="action-item" onclick="handleAction('visite')">
-                <div class="icon-box blue-bg"><i class="fas fa-home"></i></div>
-                <span>Visite</span>
-            </button>
-            <button class="action-item" onclick="handleAction('etat')">
-                <div class="icon-box orange-bg"><i class="fas fa-camera"></i></div>
-                <span>État des Lieux</span>
-            </button>
-            <button class="action-item" onclick="handleAction('loyer')">
-                <div class="icon-box green-bg"><i class="fas fa-wallet"></i></div>
-                <span>Collecter</span>
-            </button>
-            <button class="action-item" onclick="handleAction('biens')">
-                <div class="icon-box navy-bg"><i class="fas fa-building"></i></div>
-                <span>Mes Biens</span>
-            </button>
-        </nav>
+            <nav class="action-grid">
+                <button class="action-item" onclick="handleAction('visite')">
+                    <div class="icon-box blue-bg"><i class="fas fa-calendar-check"></i></div>
+                    <span>Visite</span>
+                </button>
+                <button class="action-item" onclick="handleAction('etat')">
+                    <div class="icon-box orange-bg"><i class="fas fa-camera-retro"></i></div>
+                    <span>État des Lieux</span>
+                </button>
+                <button class="action-item" onclick="handleAction('loyer')">
+                    <div class="icon-box green-bg"><i class="fas fa-wallet"></i></div>
+                    <span>Collecter</span>
+                </button>
+                <button class="action-item" onclick="handleAction('biens')">
+                    <div class="icon-box navy-bg"><i class="fas fa-building-user"></i></div>
+                    <span>Mes Biens</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- VUE : ÉTAT DES LIEUX -->
+        <div id="view-etat" class="module-view" style="display: none;">
+            <div class="module-header">
+                <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h3>Nouvel État des Lieux</h3>
+            </div>
+            <div class="form-container">
+                <p class="instruction">Prenez des photos pour chaque zone :</p>
+                <div class="photo-grid">
+                    <div class="photo-slot" onclick="simulateCamera('Entrée')"><i class="fas fa-door-open"></i><span>Entrée</span></div>
+                    <div class="photo-slot" onclick="simulateCamera('Salon')"><i class="fas fa-couch"></i><span>Salon</span></div>
+                    <div class="photo-slot" onclick="simulateCamera('Chambre')"><i class="fas fa-bed"></i><span>Chambre</span></div>
+                    <div class="photo-slot" onclick="simulateCamera('SDB')"><i class="fas fa-bath"></i><span>SDB</span></div>
+                </div>
+                <button class="validate-btn" onclick="sendWhatsAppValidation()">Valider via WhatsApp</button>
+            </div>
+        </div>
+
+        <!-- VUE : VISITE -->
+        <div id="view-visite" class="module-view" style="display: none;">
+            <div class="module-header">
+                <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h3>Calendrier des Visites</h3>
+            </div>
+            <div class="content-placeholder">
+                <i class="fas fa-calendar-day"></i>
+                <p>Aucune visite prévue aujourd'hui.</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Lien vers votre JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
