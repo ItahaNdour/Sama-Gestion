@@ -3,68 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sama Gestion - État des Lieux</title>
+    <title>Sama Gestion v2.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
-        <div id="view-dashboard" class="module-view">
-            <header class="main-header">
-                <h1>Sama Gestion</h1>
-            </header>
-            <div class="action-grid">
-                <div class="action-item" onclick="showView('etat')">
-                    <i class="fas fa-file-signature"></i>
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Sama Gestion <span>Pro</span></h1>
+                <div class="user-badge" onclick="showView('admin')">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+        </header>
+
+        <main id="view-dashboard" class="view">
+            <div class="stats-card">
+                <span class="label">Collecte du mois</span>
+                <h2 id="dash-total">0 CFA</h2>
+                <div class="progress-bar"><div id="progress-fill"></div></div>
+            </div>
+
+            <div class="menu-grid">
+                <button class="menu-item" onclick="showView('planning')">
+                    <div class="icon orange"><i class="fas fa-calendar-alt"></i></div>
+                    <span>Planning</span>
+                </button>
+                <button class="menu-item" onclick="showView('etat')">
+                    <div class="icon blue"><i class="fas fa-clipboard-check"></i></div>
                     <span>État des Lieux</span>
+                </button>
+                <button class="menu-item" onclick="showView('biens')">
+                    <div class="icon navy"><i class="fas fa-building"></i></div>
+                    <span>Mes Biens</span>
                 </div>
-                </div>
-        </div>
-
-        <div id="view-etat" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Nouveau Constat</h3>
-            </div>
-
-            <div class="form-group">
-                <label>Bien & Locataire</label>
-                <select id="etatBienSelect">
-                    <option value="Villa A - M. Diop">Villa A - M. Diop</option>
-                    <option value="Appart 4 - Mme Fall">Appart 4 - Mme Fall</option>
-                </select>
-            </div>
-
-            <div class="inspection-grid">
-                <div class="inspection-item">
-                    <span>Salon</span>
-                    <select id="status-salon">
-                        <option>Bon</option><option>Moyen</option><option>Mauvais</option>
-                    </select>
-                </div>
-                <div class="inspection-item">
-                    <span>Cuisine</span>
-                    <select id="status-cuisine">
-                        <option>Bon</option><option>Moyen</option><option>Mauvais</option>
-                    </select>
+                <button class="menu-item" onclick="showView('collecte')">
+                    <div class="icon green"><i class="fas fa-money-bill-wave"></i></div>
+                    <span>Collecter</span>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>Observations</label>
-                <textarea id="etatObservations" placeholder="Ex: Clim OK, peinture neuve..."></textarea>
+            <div class="recent-activity">
+                <h3>Activités récentes</h3>
+                <div id="activity-list"></div>
             </div>
+        </main>
 
-            <div class="signature-area">
-                <label>Signature du Locataire</label>
+        <section id="view-planning" class="view" style="display:none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+                <h2>Planning Visites</h2>
+            </div>
+            <div class="form-card">
+                <input type="text" id="p-name" placeholder="Nom du visiteur">
+                <input type="tel" id="p-phone" placeholder="Téléphone">
+                <select id="p-bien"></select>
+                <input type="datetime-local" id="p-date">
+                <button class="btn-primary" onclick="sauverVisite()">Programmer</button>
+            </div>
+            <div id="visites-list" class="list-container"></div>
+        </section>
+
+        <section id="view-etat" class="view" style="display:none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+                <h2>État des Lieux</h2>
+            </div>
+            <div class="form-card">
+                <label>Sélectionner le bien</label>
+                <select id="e-bien" onchange="majLocataire()"></select>
+            </div>
+            <div id="zones-inspection" class="inspection-list"></div>
+            <div class="form-card">
+                <textarea id="e-obs" placeholder="Observations générales (clés, télécommandes...)"></textarea>
                 <canvas id="sig-canvas"></canvas>
-                <button class="clear-btn" onclick="clearSig()">Effacer</button>
+                <button class="btn-clear" onclick="clearSignature()">Effacer signature</button>
             </div>
-
-            <button class="whatsapp-btn" onclick="envoyerWhatsApp()">
+            <button class="btn-whatsapp" onclick="envoyerRapportWA()">
                 <i class="fab fa-whatsapp"></i> Envoyer le Rapport
             </button>
-        </div>
+        </section>
+
+        <section id="view-biens" class="view" style="display:none;">
+             <div class="section-header"><button onclick="showView('dashboard')">←</button><h2>Mes Biens</h2></div>
+             <div id="biens-list"></div>
+        </section>
+        
+        <section id="view-collecte" class="view" style="display:none;">
+             <div class="section-header"><button onclick="showView('dashboard')">←</button><h2>Collecter</h2></div>
+             <div id="collecte-list"></div>
+        </section>
     </div>
     <script src="script.js"></script>
 </body>
