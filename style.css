@@ -1,8 +1,12 @@
+/* --- CONFIGURATION ET VARIABLES --- */
 :root {
     --primary: #4169E1;
     --success: #2ecc71;
+    --danger: #e74c3c;
     --bg: #f5f7fa;
     --white: #ffffff;
+    --text: #2c3e50;
+    --gray: #95a5a6;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -10,19 +14,39 @@
 body { 
     font-family: 'Segoe UI', sans-serif; 
     background: #d1d8e0; 
-    display: flex; justify-content: center; min-height: 100vh;
+    display: flex; 
+    justify-content: center; 
+    min-height: 100vh; 
 }
 
-.app-shell { width: 100%; max-width: 450px; background: var(--bg); box-shadow: 0 0 30px rgba(0,0,0,0.1); }
+/* Coque de l'application (Shell) */
+.app-shell { 
+    width: 100%; 
+    max-width: 450px; 
+    background: var(--bg); 
+    box-shadow: 0 0 30px rgba(0,0,0,0.1); 
+    overflow-x: hidden;
+    position: relative;
+}
 
+/* --- EN-TÊTE --- */
 .main-header {
-    background: var(--primary); padding: 30px 20px 60px;
-    border-radius: 0 0 30px 30px; color: white;
+    background: var(--primary);
+    padding: 30px 20px 60px;
+    border-radius: 0 0 30px 30px;
+    color: white;
 }
 
+.user-info { display: flex; align-items: center; gap: 12px; }
+.avatar { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 12px; }
+.status-label { display: block; font-size: 12px; opacity: 0.8; }
+
+/* --- CARTES ET DASHBOARD --- */
 .revenue-card-area { padding: 0 20px; margin-top: -40px; margin-bottom: 25px; }
 .glass-card { 
-    background: var(--white); padding: 25px; border-radius: 20px; 
+    background: var(--white); 
+    padding: 25px; 
+    border-radius: 20px; 
     box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
 }
 
@@ -31,31 +55,63 @@ body {
 
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
 .action-item {
-    background: var(--white); padding: 20px; border-radius: 20px;
-    display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
+    background: var(--white); 
+    padding: 20px; 
+    border-radius: 20px;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 10px; 
+    cursor: pointer;
 }
 
-.icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 .blue-bg { background: #e8f0fe; color: var(--primary); }
 .orange-bg { background: #fff4e5; color: #f39c12; }
 .green-bg { background: #eafaf1; color: var(--success); }
 .navy-bg { background: #f0f3ff; color: #2c3e50; }
 
-/* MODULE ÉTAT DES LIEUX */
-.module-view { padding: 20px; }
-.module-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-.back-btn { border: none; background: var(--primary); color: white; padding: 10px; border-radius: 10px; cursor: pointer; }
+/* --- MODULES (Vues secondaires) --- */
+.module-view { padding: 20px; animation: fadeIn 0.3s ease-out; }
+.module-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+.back-btn { border: none; background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 10px; cursor: pointer; }
 
+/* État des lieux */
 .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .photo-slot {
-    background: white; border: 2px dashed #dcdde1; border-radius: 20px;
-    height: 110px; display: flex; flex-direction: column; 
-    align-items: center; justify-content: center; gap: 8px; color: #95a5a6; cursor: pointer;
+    background: white; 
+    border: 2px dashed #dcdde1; 
+    border-radius: 20px;
+    height: 110px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px;
+    color: var(--gray); 
+    cursor: pointer;
 }
-
 .photo-slot.active { border: 2px solid var(--success); background: #eafaf1; color: var(--success); }
+.validate-btn { width: 100%; margin-top: 25px; background: var(--success); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; }
 
-.validate-btn {
-    width: 100%; margin-top: 25px; background: var(--success); 
-    color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer;
+/* Mes Biens */
+.biens-container { display: flex; flex-direction: column; gap: 15px; }
+.bien-card { 
+    background: white; 
+    border-radius: 15px; 
+    padding: 15px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+}
+.bien-info h4 { color: var(--text); margin-bottom: 4px; }
+.bien-info p { font-size: 12px; color: var(--gray); }
+.status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+.status-libre { background: #eafaf1; color: var(--success); }
+.status-occupe { background: #fdedec; color: var(--danger); }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
