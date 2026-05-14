@@ -1,89 +1,100 @@
-/* --- DONNÉES --- */
+// --- DATA INITIALISATION ---
 let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
-const target = 10000000;
-
-const mesBiens = [
-    { id: 1, nom: "Villa Horizon", adresse: "Almadies, Dakar", loyer: 850000, statut: "Occupé" },
-    { id: 2, nom: "Appartement Plateau", adresse: "Centre Ville", loyer: 450000, statut: "Libre" },
-    { id: 3, nom: "Studio Ngor", adresse: "Ngor Virage", loyer: 250000, statut: "Occupé" },
-    { id: 4, nom: "Résidence Keur Gorgui", adresse: "Sacré-Cœur", loyer: 600000, statut: "Libre" }
+let mesBiens = JSON.parse(localStorage.getItem('sama_biens')) || [
+    { id: Date.now(), nom: "Villa Horizon", adresse: "Almadies", loyer: 850000, statut: "Occupé" }
 ];
+const target = 10000000;
+let zonesInspectees = [];
 
-/* --- DASHBOARD --- */
-function updateUI() {
-    const display = document.getElementById('totalDisplay');
-    const bar = document.getElementById('gaugeFill');
-    if (display && bar) {
-        display.innerText = collected.toLocaleString() + " CFA";
-        const percent = (collected / target) * 100;
-        bar.style.width = Math.min(percent, 100) + "%";
-    }
-}
-
-function handleAction(id) {
-    if (id === 'loyer') {
-        collected += 500000;
-        localStorage.setItem('sama_collected', collected);
-        updateUI();
-    } else {
-        const targetView = document.getElementById('view-' + id);
-        if (targetView) {
-            document.getElementById('view-dashboard').style.display = 'none';
-            targetView.style.display = 'block';
-            if (id === 'biens') {
-                // Réinitialise le champ de recherche quand on ouvre la vue
-                document.getElementById('searchInput').value = "";
-                displayBiens(mesBiens);
-            }
-        }
-    }
-}
-
-/* --- LOGIQUE DES BIENS --- */
-function displayBiens(listeALister) {
-    const container = document.getElementById('biens-list');
-    if (!container) return;
+// --- NAVIGATION ---
+function showView(viewId) {
+    // Cache toutes les vues
+    document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
+    // Affiche la cible
+    document.getElementById('view-' + viewId).style.display = 'block';
     
-    container.innerHTML = "";
-    listeALister.forEach(bien => {
-        const statusClass = bien.statut === "Libre" ? "status-libre" : "status-occupe";
-        container.innerHTML += `
-            <div class="bien-card">
-                <div class="bien-info">
-                    <h4>${bien.nom}</h4>
-                    <p><i class="fa-solid fa-location-dot"></i> ${bien.adresse}</p>
-                    <p><strong>${bien.loyer.toLocaleString()} CFA</strong> / mois</p>
-                </div>
-                <div class="status-badge ${statusClass}">${bien.statut}</div>
+    // Initialisation selon la vue
+    if (viewId === 'biens') renderBiens(mesBiens);
+    if (viewId === 'collecter') renderCollecte();
+    if (viewId === 'dashboard') updateDashboard();
+}
+
+// --- LOGIQUE DASHBOARD ---
+function updateDashboard() {
+    document.getElementById('totalDisplay').innerText = collected.toLocaleString() + " CFA";
+    const percent = (collected / target) * 100;
+    document.getElementById('gaugeFill').style.width = Math.min(percent, 100) + "%";
+}
+
+// --- LOGIQUE ÉTAT DES LIEUX ---
+function toggleZone(zone) {
+    const slot = document.getElementById('slot-' + zone.toLowerCase());
+    if (zonesInspectees.includes(zone)) {
+        zonesInspectees = zonesInspectees.filter(z => z !== zone);
+        slot.classList.remove('active');
+    } else {
+        zonesInspectees.push(zone);
+        slot.classList.add('active');
+    }
+}
+
+function sendWhatsAppReport() {
+    const notes = document.getElementById('etatNotes').value;
+    const msg = `🏠 *ETAT DES LIEUX*\nZones: ${zonesInspectees.join(', ') || 'N/A'}\nNotes: ${notes || 'RAS'}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+}
+
+// --- LOGIQUE MES BIENS (AJOUT ET LISTE) ---
+function renderBiens(liste) {
+    const container = document.getElementById('biensList');
+    container.innerHTML = liste.map(b => `
+        <div class="bien-card">
+            <div>
+                <h4>${b.nom}</h4>
+                <p style="font-size:12px; color:gray">${b.adresse} - ${b.loyer.toLocaleString()} CFA</p>
             </div>
-        `;
-    });
+            <div class="status-badge ${b.statut === 'Libre' ? 'status-libre' : 'status-occupe'}">${b.statut}</div>
+        </div>
+    `).join('');
+}
+
+function saveNewBien() {
+    const b = {
+        id: Date.now(),
+        nom: document.getElementById('addNom').value,
+        adresse: document.getElementById('addAdresse').value,
+        loyer: parseFloat(document.getElementById('addLoyer').value),
+        statut: "Libre"
+    };
+    if (!b.nom || !b.loyer) return alert("Veuillez remplir le nom et le loyer");
+    mesBiens.push(b);
+    localStorage.setItem('sama_biens', JSON.stringify(mesBiens));
+    showView('biens');
 }
 
 function filterBiens() {
-    const input = document.getElementById('searchInput');
-    const filterText = input.value.toLowerCase();
-    
-    // Filtrage basé sur le nom ou l'adresse
-    const resultats = mesBiens.filter(bien => {
-        return bien.nom.toLowerCase().includes(filterText) || 
-               bien.adresse.toLowerCase().includes(filterText);
-    });
-    
-    displayBiens(resultats);
+    const val = document.getElementById('searchInput').value.toLowerCase();
+    const filtrage = mesBiens.filter(b => b.nom.toLowerCase().includes(val));
+    renderBiens(filtrage);
 }
 
-/* --- NAVIGATION & ETAT --- */
-function showDashboard() {
-    document.getElementById('view-dashboard').style.display = 'block';
-    document.getElementById('view-etat').style.display = 'none';
-    document.getElementById('view-biens').style.display = 'none';
+// --- LOGIQUE COLLECTE ---
+function renderCollecte() {
+    const container = document.getElementById('collecteList');
+    container.innerHTML = mesBiens.map(b => `
+        <div class="bien-card">
+            <h4>${b.nom}</h4>
+            <button class="primary-btn" style="width:auto; padding:8px 15px" onclick="encaisser(${b.id}, ${b.loyer})">Encaisser</button>
+        </div>
+    `).join('');
 }
 
-function simulateCamera(zone, element) { element.classList.toggle('active'); }
-
-function sendWhatsAppValidation() {
-    window.open(`https://wa.me/?text=${encodeURIComponent("Sama Gestion : État des lieux validé !")}`, "_blank");
+function encaisser(id, montant) {
+    collected += montant;
+    localStorage.setItem('sama_collected', collected);
+    alert("Encaissement réussi !");
+    showView('dashboard');
 }
 
-window.onload = updateUI;
+// Init
+window.onload = updateDashboard;
