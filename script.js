@@ -1,3 +1,4 @@
+// Initialisation des données
 let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
 const target = 10000000;
 
@@ -11,28 +12,16 @@ function updateUI() {
     }
 }
 
-// NAVIGATION CORRIGÉE
 function handleAction(id) {
-    switch(id) {
-        case 'loyer':
-            collected += 500000;
-            localStorage.setItem('sama_collected', collected);
-            updateUI();
-            alert("Paiement enregistré ! ✅");
-            break;
-        
-        case 'etat':
-            document.getElementById('view-dashboard').style.display = 'none';
-            document.getElementById('view-etat').style.display = 'block';
-            break;
-
-        case 'visite':
-            alert("Module Visite : En cours de branchement...");
-            break;
-
-        case 'biens':
-            alert("Module Mes Biens : Bientôt disponible !");
-            break;
+    if (id === 'loyer') {
+        collected += 500000;
+        localStorage.setItem('sama_collected', collected);
+        updateUI();
+    } else if (id === 'etat') {
+        document.getElementById('view-dashboard').style.display = 'none';
+        document.getElementById('view-etat').style.display = 'block';
+    } else {
+        alert("Module " + id + " bientôt disponible !");
     }
 }
 
@@ -41,12 +30,17 @@ function showDashboard() {
     document.getElementById('view-etat').style.display = 'none';
 }
 
-function simulateCamera(zone) {
-    alert("Photo enregistrée pour : " + zone);
+// FONCTION PHOTO MISE À JOUR
+function simulateCamera(zone, element) {
+    // Bascule la couleur verte au clic
+    element.classList.toggle('active');
+    console.log("Action sur la zone : " + zone);
 }
 
 function sendWhatsAppValidation() {
-    window.open("https://wa.me/?text=EtatDesLieuxTerminé", "_blank");
+    const message = "État des lieux effectué avec succès.";
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }
 
+// Lancement au démarrage
 window.onload = updateUI;
