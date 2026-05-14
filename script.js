@@ -1,67 +1,64 @@
-let ctx;
-let drawing = false;
+// Navigation simple
+function showView(viewId) {
+    document.querySelectorAll('.module-view').forEach(v => v.style.display = 'none');
+    document.getElementById('view-' + viewId).style.display = 'block';
+    
+    if(viewId === 'etat') {
+        setTimeout(initSignature, 200); // On attend que le canvas soit visible
+    }
+}
 
-// Initialise le Canvas pour la signature
-function initSignatureModule() {
-    const canvas = document.getElementById('sig-canvas');
+// Logique Signature
+let canvas, ctx, drawing = false;
+
+function initSignature() {
+    canvas = document.getElementById('sig-canvas');
+    if(!canvas) return;
     ctx = canvas.getContext('2d');
     
-    // Ajuste la taille au conteneur
+    // Ajuste la taille réelle du dessin
     canvas.width = canvas.offsetWidth;
-    canvas.height = 150;
+    canvas.height = canvas.offsetHeight;
 
-    // Événements tactiles et souris
-    const startDrawing = () => drawing = true;
-    const stopDrawing = () => { drawing = false; ctx.beginPath(); };
-    const draw = (e) => {
-        if (!drawing) return;
+    const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
+        return {
+            x: (e.clientX || e.touches[0].clientX) - rect.left,
+            y: (e.clientY || e.touches[0].clientY) - rect.top
+        };
     };
 
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('touchstart', startDrawing);
-    window.addEventListener('mouseup', stopDrawing);
-    window.addEventListener('touchend', stopDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchmove', (e) => { draw(e); e.preventDefault(); });
+    const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
+    const move = (e) => { if(!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    const stop = () => { drawing = false; };
+
+    canvas.onmousedown = start; canvas.onmousemove = move; window.onmouseup = stop;
+    canvas.ontouchstart = (e) => { start(e); e.preventDefault(); };
+    canvas.ontouchmove = (e) => { move(e); e.preventDefault(); };
+    canvas.ontouchend = stop;
 }
 
 function clearSig() {
-    const canvas = document.getElementById('sig-canvas');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// Fonction pour envoyer sur WhatsApp
-function preparerWhatsApp() {
-    const bienNom = document.getElementById('etatBienSelect').value;
+// Logique WhatsApp
+function envoyerWhatsApp() {
+    const bien = document.getElementById('etatBienSelect').value;
     const salon = document.getElementById('status-salon').value;
     const cuisine = document.getElementById('status-cuisine').value;
-    const obs = document.getElementById('etatObservations').value;
+    const obs = document.getElementById('etatObservations').value || "RAS";
     const date = new Date().toLocaleDateString('fr-FR');
 
-    // Construction du message formaté (WhatsApp utilise * pour le gras)
-    const message = `🏠 *ÉTAT DES LIEUX - ${bienNom}*
-📅 Date : ${date}
+    const texte = `🏠 *ÉTAT DES LIEUX - SAMA GESTION*\n\n` +
+                  `📍 Bien : ${bien}\n` +
+                  `📅 Date : ${date}\n\n` +
+                  `✅ *Constat* :\n` +
+                  `- Salon : ${salon}\n` +
+                  `- Cuisine : ${cuisine}\n\n` +
+                  `📝 *Observations* :\n${obs}\n\n` +
+                  `_Signé numériquement par le locataire._`;
 
-📍 *DÉTAILS DES ZONES* :
-- Salon : ${salon}
-- Cuisine : ${cuisine}
-
-📝 *OBSERVATIONS* :
-${obs || "Aucune observation particulière."}
-
-✅ _Document signé numériquement par le locataire sur l'application Sama Gestion._`;
-
-    // Encodage du texte pour l'URL
-    const encodedMsg = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
+    const url = `https://wa.me/?text=${encodeURIComponent(texte)}`;
+    window.open(url, '_blank');
 }
