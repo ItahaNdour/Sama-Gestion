@@ -1,4 +1,3 @@
-/* --- CONFIGURATION ET VARIABLES --- */
 :root {
     --primary: #4169E1;
     --success: #2ecc71;
@@ -10,108 +9,52 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #d1d8e0; display: flex; justify-content: center; min-height: 100vh; }
+.app-shell { width: 100%; max-width: 450px; background: var(--bg); box-shadow: 0 0 30px rgba(0,0,0,0.1); overflow-x: hidden; position: relative; }
 
-body { 
-    font-family: 'Segoe UI', sans-serif; 
-    background: #d1d8e0; 
-    display: flex; 
-    justify-content: center; 
-    min-height: 100vh; 
-}
-
-/* Coque de l'application (Shell) */
-.app-shell { 
-    width: 100%; 
-    max-width: 450px; 
-    background: var(--bg); 
-    box-shadow: 0 0 30px rgba(0,0,0,0.1); 
-    overflow-x: hidden;
-    position: relative;
-}
-
-/* --- EN-TÊTE --- */
-.main-header {
-    background: var(--primary);
-    padding: 30px 20px 60px;
-    border-radius: 0 0 30px 30px;
-    color: white;
-}
-
+.main-header { background: var(--primary); padding: 30px 20px 60px; border-radius: 0 0 30px 30px; color: white; }
 .user-info { display: flex; align-items: center; gap: 12px; }
 .avatar { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 12px; }
-.status-label { display: block; font-size: 12px; opacity: 0.8; }
 
-/* --- CARTES ET DASHBOARD --- */
 .revenue-card-area { padding: 0 20px; margin-top: -40px; margin-bottom: 25px; }
-.glass-card { 
-    background: var(--white); 
-    padding: 25px; 
-    border-radius: 20px; 
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
-}
-
+.glass-card { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
 .progress-track { background: #eee; height: 8px; border-radius: 4px; margin-top: 15px; }
 .progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.5s ease; }
 
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
-.action-item {
-    background: var(--white); 
-    padding: 20px; 
-    border-radius: 20px;
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 10px; 
-    cursor: pointer;
-}
-
-.icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.action-item { background: var(--white); padding: 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; }
+.icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 .blue-bg { background: #e8f0fe; color: var(--primary); }
 .orange-bg { background: #fff4e5; color: #f39c12; }
 .green-bg { background: #eafaf1; color: var(--success); }
 .navy-bg { background: #f0f3ff; color: #2c3e50; }
 
-/* --- MODULES (Vues secondaires) --- */
 .module-view { padding: 20px; animation: fadeIn 0.3s ease-out; }
-.module-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+.module-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .back-btn { border: none; background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 10px; cursor: pointer; }
 
-/* État des lieux */
-.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.photo-slot {
-    background: white; 
-    border: 2px dashed #dcdde1; 
-    border-radius: 20px;
-    height: 110px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 8px;
-    color: var(--gray); 
-    cursor: pointer;
+/* RECHERCHE */
+.search-container {
+    background: white; padding: 12px 15px; border-radius: 15px;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
-.photo-slot.active { border: 2px solid var(--success); background: #eafaf1; color: var(--success); }
-.validate-btn { width: 100%; margin-top: 25px; background: var(--success); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; }
+.search-container input { border: none; outline: none; width: 100%; font-size: 14px; color: var(--text); }
+.search-container i { color: var(--gray); }
 
-/* Mes Biens */
+/* LISTE BIENS */
 .biens-container { display: flex; flex-direction: column; gap: 15px; }
-.bien-card { 
-    background: white; 
-    border-radius: 15px; 
-    padding: 15px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-}
+.bien-card { background: white; border-radius: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.3s; }
 .bien-info h4 { color: var(--text); margin-bottom: 4px; }
 .bien-info p { font-size: 12px; color: var(--gray); }
 .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 .status-libre { background: #eafaf1; color: var(--success); }
 .status-occupe { background: #fdedec; color: var(--danger); }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* ETAT DES LIEUX */
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.photo-slot { background: white; border: 2px dashed #dcdde1; border-radius: 20px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--gray); }
+.photo-slot.active { border: 2px solid var(--success); background: #eafaf1; color: var(--success); }
+.validate-btn { width: 100%; margin-top: 25px; background: var(--success); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
