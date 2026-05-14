@@ -1,19 +1,16 @@
-// --- DATA STORAGE ---
+// --- INITIALISATION ---
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
 
-// --- NAVIGATION ---
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    const target = document.getElementById('view-' + viewId);
-    if(target) target.style.display = 'block';
+    document.getElementById('view-' + viewId).style.display = 'block';
 
     if(viewId === 'biens') renderBiens();
     if(viewId === 'planning') {
         populateBienSelect();
         renderVisites();
     }
-    if(viewId === 'etat') renderEtatPieces();
 }
 
 // --- MODULE BIENS ---
@@ -22,39 +19,23 @@ function saveBien() {
     const loc = document.getElementById('new-bien-locataire').value;
     const loy = document.getElementById('new-bien-loyer').value;
 
-    if(!nom || !loy) return alert("Remplissez le nom et le loyer");
-
+    if(!nom || !loy) return alert("Nom et Loyer requis");
     biens.push({ id: Date.now(), nom, locataire: loc, loyer: parseInt(loy) });
     localStorage.setItem('sama_biens', JSON.stringify(biens));
-    
-    // Clear inputs
-    document.getElementById('new-bien-nom').value = "";
-    document.getElementById('new-bien-locataire').value = "";
-    document.getElementById('new-bien-loyer').value = "";
-    
     showView('biens');
 }
 
 function renderBiens() {
     const container = document.getElementById('biens-list');
-    if(biens.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">Aucun bien enregistré.</div>`;
-        return;
-    }
-    container.innerHTML = biens.map(b => `
-        <div class="revenue-card" style="margin-bottom:12px;">
-            <strong>${b.nom}</strong><br>
-            <small>Locataire : ${b.locataire || 'N/A'}</small><br>
-            <span style="color:var(--blue); font-weight:bold;">${b.loyer.toLocaleString()} CFA</span>
-        </div>
-    `).join('');
+    container.innerHTML = biens.length === 0 ? '<p style="text-align:center;padding:20px;">Aucun bien enregistré.</p>' :
+        biens.map(b => `<div class="revenue-card" style="margin-bottom:12px;"><strong>${b.nom}</strong><br><small>Locataire: ${b.locataire || 'N/A'}</small><br><span style="color:var(--blue);font-weight:bold;">${b.loyer.toLocaleString()} CFA</span></div>`).join('');
 }
 
 // --- MODULE PLANNING PRO ---
 function populateBienSelect() {
     const sel = document.getElementById('p-bien-select');
     if(biens.length === 0) {
-        sel.innerHTML = `<option value="">Ajoutez d'abord un bien</option>`;
+        sel.innerHTML = '<option value="">Ajoutez un bien d\'abord</option>';
         return;
     }
     sel.innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
@@ -66,68 +47,60 @@ function sauverVisitePro() {
     const bien = document.getElementById('p-bien-select').value;
     const date = document.getElementById('p-date').value;
 
-    if(!nom || !date) return alert("Nom et Date obligatoires !");
+    if(!nom || !date || !tel) return alert("Remplissez tous les champs !");
 
-    const newVisite = { id: Date.now(), nom, tel, bien, date };
-    visites.push(newVisite);
+    const v = { id: Date.now(), nom, tel, bien, date };
+    visites.push(v);
     localStorage.setItem('sama_visites', JSON.stringify(visites));
-
-    // Clear and Refresh
-    document.getElementById('p-name').value = "";
-    document.getElementById('p-phone').value = "";
+    
+    // Après sauvegarde, on propose d'envoyer la confirmation
+    if(confirm("Visite enregistrée ! Envoyer la confirmation par WhatsApp au client ?")) {
+        envoyerConfirmationWA(v);
+    }
+    
     renderVisites();
 }
 
 function renderVisites() {
     const container = document.getElementById('visites-list');
     if(visites.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">Aucune visite prévue.</p>`;
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Aucune visite prévue.</p>';
         return;
     }
-    container.innerHTML = visites.map(v => `
+    container.innerHTML = visites.map(v => {
+        const dateFmt = new Date(v.date).toLocaleString('fr-FR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+        return `
         <div class="visite-item">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <strong>${v.nom}</strong>
-                <small style="color:var(--blue)">${new Date(v.date).toLocaleDateString('fr-FR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</small>
+            <div class="v-header"><strong>${v.nom}</strong> <small style="color:var(--blue)">${dateFmt}</small></div>
+            <div class="v-info">Bien : ${v.bien}</div>
+            <div class="v-actions">
+                <a href="tel:${v.tel}" class="v-btn v-call"><i class="fas fa-phone"></i> Appeler</a>
+                <button onclick="envoyerRappelWA('${v.id}')" class="v-btn v-wa"><i class="fab fa-whatsapp"></i> Rappel</button>
+                <button onclick="supprimerVisite('${v.id}')" class="v-btn v-del"><i class="fas fa-trash"></i></button>
             </div>
-            <div style="font-size:0.85rem; color:#666;">Bien : ${v.bien}</div>
-            <div class="visite-actions">
-                <a href="tel:${v.tel}" class="action-link link-call"><i class="fas fa-phone"></i> Appeler</a>
-                <a href="https://wa.me/${v.tel}" class="action-link link-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-                <button onclick="supprimerVisite(${v.id})" style="border:none; background:none; color:#ff4d4d; padding:10px;"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>
-    `).reverse().join('');
+        </div>`;
+    }).reverse().join('');
+}
+
+function envoyerConfirmationWA(v) {
+    const dateFmt = new Date(v.date).toLocaleString('fr-FR', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
+    const texte = `Bonjour ${v.nom}, c'est Sama Gestion. Je vous confirme votre visite pour le bien *${v.bien}* le *${dateFmt}*. À bientôt !`;
+    window.open(`https://wa.me/${v.tel}?text=${encodeURIComponent(texte)}`, '_blank');
+}
+
+function envoyerRappelWA(id) {
+    const v = visites.find(visite => visite.id == id);
+    const dateFmt = new Date(v.date).toLocaleString('fr-FR', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
+    const texte = `Petit rappel pour notre visite d'aujourd'hui (${v.bien}) prévue à ${dateFmt}. Merci !`;
+    window.open(`https://wa.me/${v.tel}?text=${encodeURIComponent(texte)}`, '_blank');
 }
 
 function supprimerVisite(id) {
-    if(confirm("Supprimer ce RDV ?")) {
-        visites = visites.filter(v => v.id !== id);
+    if(confirm("Supprimer ce rendez-vous ?")) {
+        visites = visites.filter(v => v.id != id);
         localStorage.setItem('sama_visites', JSON.stringify(visites));
         renderVisites();
     }
-}
-
-// --- ÉTAT DES LIEUX ---
-function renderEtatPieces() {
-    const pieces = ["Salon", "Cuisine", "Chambre 1", "Chambre 2", "Salle de Bain"];
-    const container = document.getElementById('pieces-container');
-    container.innerHTML = pieces.map(p => `
-        <div class="form-card" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>${p}</span>
-            <select style="width:auto; margin:0;" id="st-${p}">
-                <option>Bon</option><option>Moyen</option><option>Mauvais</option>
-            </select>
-        </div>
-    `).join('');
-}
-
-function sendWA() {
-    let msg = "🏠 *ÉTAT DES LIEUX*\n\n";
-    ["Salon", "Cuisine", "Chambre 1", "Chambre 2", "Salle de Bain"].forEach(p => {
-        msg += `📍 ${p} : ${document.getElementById('st-'+p).value}\n`;
-    });
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
 }
 
 window.onload = () => showView('dashboard');
