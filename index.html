@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion - Fix</title>
-    <!-- On charge les icônes en premier -->
+    <title>Sama Gestion - Version Complète</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- On charge le style ensuite -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
+        <!-- HEADER -->
         <header class="main-header">
             <div class="user-info">
-                <div class="avatar"><i class="fa-solid fa-user-gear"></i></div>
+                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
                 <div class="user-details">
                     <span class="user-name">Gestionnaire Immo</span>
                     <span class="status-label"><i class="fa-solid fa-wifi"></i> Mode Offline</span>
@@ -59,15 +58,21 @@
                 <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
                 <h3>Nouvel État des Lieux</h3>
             </div>
-            <div class="form-container">
-                <div class="photo-grid">
-                    <div class="photo-slot" onclick="simulateCamera('Entrée')"><i class="fas fa-door-open"></i><span>Entrée</span></div>
-                    <div class="photo-slot" onclick="simulateCamera('Salon')"><i class="fas fa-couch"></i><span>Salon</span></div>
-                    <div class="photo-slot" onclick="simulateCamera('Chambre')"><i class="fas fa-bed"></i><span>Chambre</span></div>
-                    <div class="photo-slot" onclick="simulateCamera('SDB')"><i class="fas fa-bath"></i><span>SDB</span></div>
+            <div class="photo-grid">
+                <div class="photo-slot" onclick="simulateCamera('Entrée', this)">
+                    <i class="fas fa-door-open"></i><span>Entrée</span>
                 </div>
-                <button class="validate-btn" onclick="sendWhatsAppValidation()">Valider via WhatsApp</button>
+                <div class="photo-slot" onclick="simulateCamera('Salon', this)">
+                    <i class="fas fa-couch"></i><span>Salon</span>
+                </div>
+                <div class="photo-slot" onclick="simulateCamera('Chambre', this)">
+                    <i class="fas fa-bed"></i><span>Chambre</span>
+                </div>
+                <div class="photo-slot" onclick="simulateCamera('SDB', this)">
+                    <i class="fas fa-bath"></i><span>SDB</span>
+                </div>
             </div>
+            <button class="validate-btn" onclick="sendWhatsAppValidation()">Valider via WhatsApp</button>
         </div>
     </div>
     <script src="script.js"></script>
