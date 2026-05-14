@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion Pro v1.4</title>
+    <title>Sama Gestion PRO - Final</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
+        <!-- HEADER -->
         <header class="main-header">
             <div class="user-info">
                 <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
                 <div class="user-details">
                     <span class="user-name">Gestionnaire Immo</span>
-                    <span class="status-label"><i class="fa-solid fa-wifi"></i> Mode Local</span>
+                    <span class="status-label">Mode Expert</span>
                 </div>
             </div>
         </header>
 
-        <!-- VUE 1 : DASHBOARD -->
+        <!-- DASHBOARD -->
         <div id="view-dashboard">
             <section class="revenue-card-area">
                 <div class="glass-card">
-                    <span class="card-title">Loyers Encaissés</span>
+                    <span class="card-title">Collecte Totale</span>
                     <h2 id="totalDisplay">0 CFA</h2>
                     <div class="progress-track"><div class="progress-bar" id="gaugeFill"></div></div>
                 </div>
@@ -43,65 +44,56 @@
                 </div>
                 <div class="action-item" onclick="showView('ajouter')">
                     <div class="icon-box blue-bg"><i class="fas fa-plus-circle"></i></div>
-                    <span>Nouveau Bien</span>
+                    <span>Ajouter</span>
                 </div>
             </nav>
         </div>
 
-        <!-- VUE 2 : ÉTAT DES LIEUX COMPLET -->
+        <!-- MODULE ÉTAT DES LIEUX + SIGNATURE -->
         <div id="view-etat" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Rapport d'Inspection</h3>
+                <h3>Inspection & Signature</h3>
             </div>
             <div class="photo-grid">
-                <div class="photo-slot" id="slot-entree" onclick="toggleZone('Entrée')"><i class="fas fa-door-open"></i><span>Entrée</span></div>
-                <div class="photo-slot" id="slot-salon" onclick="toggleZone('Salon')"><i class="fas fa-couch"></i><span>Salon</span></div>
-                <div class="photo-slot" id="slot-chambre" onclick="toggleZone('Chambre')"><i class="fas fa-bed"></i><span>Chambre</span></div>
-                <div class="photo-slot" id="slot-sdb" onclick="toggleZone('SDB')"><i class="fas fa-bath"></i><span>SDB</span></div>
+                <div class="photo-slot" id="slot-entree" onclick="toggleZone('Entrée')">Entrée</div>
+                <div class="photo-slot" id="slot-salon" onclick="toggleZone('Salon')">Salon</div>
             </div>
             <div class="form-group">
-                <label>Observations (Dégâts, travaux...)</label>
-                <textarea id="etatNotes" placeholder="Décrivez l'état ici..."></textarea>
+                <label>Signature du locataire :</label>
+                <canvas id="signature-pad"></canvas>
+                <button class="small-btn" onclick="clearSignature()">Effacer signature</button>
             </div>
-            <button class="primary-btn" onclick="sendWhatsAppReport()">Envoyer le Rapport</button>
+            <button class="primary-btn" onclick="sendWhatsAppReport()">Signer et Envoyer</button>
         </div>
 
-        <!-- VUE 3 : LISTE DES BIENS -->
+        <!-- MODULE MES BIENS + SUPPRESSION -->
         <div id="view-biens" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
                 <h3>Mon Parc Immobilier</h3>
             </div>
-            <div class="search-container">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Rechercher..." oninput="filterBiens()">
-            </div>
             <div id="biensList" class="biens-container"></div>
         </div>
 
-        <!-- VUE 4 : AJOUTER UN BIEN -->
+        <!-- VUE AJOUTER -->
         <div id="view-ajouter" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Nouveau Bâtiment</h3>
+                <h3>Nouveau Bien</h3>
             </div>
             <div class="form-group">
-                <label>Nom du bien</label>
-                <input type="text" id="addNom" placeholder="ex: Villa Sunshine">
-                <label>Adresse</label>
-                <input type="text" id="addAdresse" placeholder="ex: Almadies">
-                <label>Loyer Mensuel (CFA)</label>
-                <input type="number" id="addLoyer" placeholder="500000">
+                <input type="text" id="addNom" placeholder="Nom du bien">
+                <input type="number" id="addLoyer" placeholder="Loyer (CFA)">
             </div>
-            <button class="primary-btn" onclick="saveNewBien()">Enregistrer le bien</button>
+            <button class="primary-btn" onclick="saveNewBien()">Enregistrer</button>
         </div>
 
-        <!-- VUE 5 : COLLECTER -->
+        <!-- VUE COLLECTER -->
         <div id="view-collecter" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Encaisser Loyer</h3>
+                <h3>Collecter</h3>
             </div>
             <div id="collecteList" class="biens-container"></div>
         </div>
