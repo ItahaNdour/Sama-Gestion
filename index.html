@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sama Gestion Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -11,13 +11,12 @@
     <div class="app-shell">
         <header class="main-header">
             <div class="header-top">
-                <span><i class="fas fa-user"></i> Gestionnaire Immo</span>
-                <span><i class="fas fa-wifi"></i> Mode Offline</span>
+                <span><i class="fas fa-user-circle"></i> Gestionnaire Immo</span>
             </div>
             <div class="revenue-card">
                 <p>Loyers Encaissés Ce mois</p>
                 <h2 id="total-display">0 CFA</h2>
-                <div class="progress-container"><div class="progress-bar"></div></div>
+                <div class="progress-container"><div class="progress-bar" id="main-progress"></div></div>
             </div>
         </header>
 
@@ -42,6 +41,35 @@
             </div>
         </main>
 
+        <section id="view-planning" class="view" style="display:none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+                <h3>Planning Visites</h3>
+            </div>
+            
+            <div class="form-card">
+                <div class="input-group">
+                    <label>Nom du visiteur</label>
+                    <input type="text" id="p-name" placeholder="Ex: M. Diop">
+                </div>
+                <div class="input-group">
+                    <label>Téléphone</label>
+                    <input type="tel" id="p-phone" placeholder="77 000 00 00">
+                </div>
+                <div class="input-group">
+                    <label>Bien à visiter</label>
+                    <select id="p-bien-select"></select>
+                </div>
+                <div class="input-group">
+                    <label>Date et Heure</label>
+                    <input type="datetime-local" id="p-date" class="full-date-input">
+                </div>
+                <button class="btn-save" onclick="sauverVisitePro()">Programmer la visite</button>
+            </div>
+
+            <div class="list-container" id="visites-list"></div>
+        </section>
+
         <section id="view-biens" class="view" style="display:none;">
             <div class="section-header">
                 <button onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
@@ -57,25 +85,11 @@
                 <h3>Nouveau Bien</h3>
             </div>
             <div class="form-card">
-                <input type="text" id="new-bien-nom" placeholder="Nom (ex: Villa 4)">
+                <input type="text" id="new-bien-nom" placeholder="Nom du bien">
                 <input type="text" id="new-bien-locataire" placeholder="Nom du Locataire">
                 <input type="number" id="new-bien-loyer" placeholder="Loyer (CFA)">
-                <button class="btn-save" onclick="saveBien()">Enregistrer le bien</button>
+                <button class="btn-save" onclick="saveBien()">Enregistrer</button>
             </div>
-        </section>
-
-        <section id="view-planning" class="view" style="display:none;">
-            <div class="section-header">
-                <button onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Planning Visites</h3>
-            </div>
-            <div class="form-card">
-                <input type="text" id="v-nom" placeholder="Nom du visiteur">
-                <select id="v-bien-select"></select>
-                <input type="datetime-local" id="v-date">
-                <button class="btn-save" onclick="saveVisite()">Programmer</button>
-            </div>
-            <div id="visites-list"></div>
         </section>
 
         <section id="view-etat" class="view" style="display:none;">
@@ -88,6 +102,14 @@
                 <canvas id="sig-canvas"></canvas>
                 <button class="btn-wa" onclick="sendWA()"><i class="fab fa-whatsapp"></i> Envoyer Rapport</button>
             </div>
+        </section>
+
+        <section id="view-collecte" class="view" style="display:none;">
+            <div class="section-header">
+                <button onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+                <h3>Encaisser Loyer</h3>
+            </div>
+            <div id="collecte-list"></div>
         </section>
     </div>
     <script src="script.js"></script>
