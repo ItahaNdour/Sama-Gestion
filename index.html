@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion v1.6 - Stable</title>
+    <title>Sama Gestion v1.7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
-        <!-- HEADER ADMIN -->
+        <!-- HEADER -->
         <header class="main-header" onclick="showView('profil')">
             <div class="user-info">
                 <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
@@ -29,6 +29,7 @@
                     <div class="progress-track"><div class="progress-bar" id="gaugeFill"></div></div>
                 </div>
             </section>
+            
             <nav class="action-grid">
                 <div class="action-item" onclick="showView('etat')">
                     <div class="icon-box orange-bg"><i class="fas fa-clipboard-list"></i></div>
@@ -47,23 +48,44 @@
                     <span>Nouveau Bien</span>
                 </div>
             </nav>
+
+            <section style="padding: 20px;">
+                <h4>Dernières Activités</h4>
+                <div id="dashboardHistory" class="history-container"></div>
+            </section>
         </div>
 
-        <!-- MODULE MES BIENS (RETOUR DU FILTRE) -->
+        <!-- MODULE MES BIENS (FILTRE AGRANDI) -->
         <div id="view-biens" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Parc Immobilier</h3>
+                <h3>Mon Parc</h3>
             </div>
-            <!-- BARRE DE RECHERCHE RESTAURÉE -->
-            <div class="search-container">
+            <div class="search-bar-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Nom ou quartier (ex: Ouakam)" oninput="filterBiens()">
+                <input type="text" id="searchInput" placeholder="Rechercher un nom ou quartier..." oninput="filterBiens()">
             </div>
             <div id="biensList" class="biens-container"></div>
         </div>
 
-        <!-- MODULE ÉTAT DES LIEUX (ZONES COMPLÈTES) -->
+        <!-- MODULE COLLECTER (DATE & MODE) -->
+        <div id="view-collecter" class="module-view" style="display: none;">
+            <div class="module-header">
+                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h3>Encaisser</h3>
+            </div>
+            <div class="form-group">
+                <label>Mode de règlement</label>
+                <select id="paymentMethod">
+                    <option value="Espèces">Espèces</option>
+                    <option value="Wave">Wave</option>
+                    <option value="Orange Money">Orange Money</option>
+                </select>
+            </div>
+            <div id="collecteList" class="biens-container"></div>
+        </div>
+
+        <!-- MODULE ÉTAT DES LIEUX -->
         <div id="view-etat" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
@@ -73,55 +95,37 @@
                 <div class="photo-slot" id="slot-entree" onclick="toggleZone('Entrée')">Entrée</div>
                 <div class="photo-slot" id="slot-salon" onclick="toggleZone('Salon')">Salon</div>
                 <div class="photo-slot" id="slot-cuisine" onclick="toggleZone('Cuisine')">Cuisine</div>
-                <div class="photo-slot" id="slot-chambre1" onclick="toggleZone('Chambre 1')">Chambre 1</div>
                 <div class="photo-slot" id="slot-toilette" onclick="toggleZone('Toilette')">Toilette</div>
-                <div class="photo-slot" id="slot-terrasse" onclick="toggleZone('Terrasse')">Terrasse</div>
             </div>
-            <div class="form-group">
-                <label>Signature du locataire :</label>
-                <canvas id="signature-pad"></canvas>
-                <button class="small-link" onclick="clearSignature()">Effacer</button>
-            </div>
-            <button class="primary-btn" onclick="sendWhatsAppReport()">Envoyer Rapport</button>
+            <canvas id="signature-pad"></canvas>
+            <button class="primary-btn" onclick="sendWhatsAppReport()">Signer et Envoyer</button>
         </div>
 
-        <!-- MODULE AJOUTER (NOM + ADRESSE + LOYER) -->
+        <!-- MODULE AJOUTER -->
         <div id="view-ajouter" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Ajouter un Bien</h3>
+                <h3>Nouveau Bien</h3>
             </div>
             <div class="form-group">
-                <label>Nom du bâtiment</label>
-                <input type="text" id="addNom" placeholder="ex: Immeuble A">
-                <label>Adresse / Quartier</label>
-                <input type="text" id="addAdresse" placeholder="ex: Sacré-Cœur 3">
-                <label>Loyer Mensuel (CFA)</label>
-                <input type="number" id="addLoyer" placeholder="250000">
+                <input type="text" id="addNom" placeholder="Nom du bien">
+                <input type="text" id="addAdresse" placeholder="Adresse / Quartier">
+                <input type="number" id="addLoyer" placeholder="Loyer (CFA)">
             </div>
             <button class="primary-btn" onclick="saveNewBien()">Enregistrer</button>
         </div>
 
-        <!-- MODULE ADMIN -->
+        <!-- MODULE PROFIL (ADMIN) -->
         <div id="view-profil" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Mon Profil</h3>
+                <h3>Administration</h3>
             </div>
             <div class="form-group">
-                <label>Nom du Gestionnaire</label>
+                <label>Nom de l'utilisateur</label>
                 <input type="text" id="adminNameInput" placeholder="Votre nom">
-                <button class="primary-btn" onclick="updateAdminName()">Mettre à jour</button>
+                <button class="primary-btn" onclick="updateAdminName()">Sauvegarder</button>
             </div>
-        </div>
-
-        <!-- MODULE COLLECTER -->
-        <div id="view-collecter" class="module-view" style="display: none;">
-            <div class="module-header">
-                <button onclick="showView('dashboard')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-                <h3>Encaisser Loyer</h3>
-            </div>
-            <div id="collecteList" class="biens-container"></div>
         </div>
     </div>
     <script src="script.js"></script>
