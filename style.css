@@ -1,94 +1,77 @@
-:root {
-    --primary: #4169E1;
-    --success: #2ecc71;
-    --white: #ffffff;
-    --bg: #f5f7fa;
-    --text: #2c3e50;
+/* ... (gardez votre code précédent et ajoutez ceci à la fin) ... */
+
+.module-view {
+    padding: 20px;
+    animation: fadeIn 0.3s ease-in;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-body { 
-    font-family: 'Segoe UI', sans-serif; 
-    background: #e0e4e8; /* Fond gris pour faire ressortir l'app */
+.module-header {
     display: flex;
-    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
-/* Fixe la largeur pour éviter l'étalement */
-.app-shell { 
-    width: 100%;
-    max-width: 450px; 
-    min-height: 100vh;
-    background: var(--bg);
-    box-shadow: 0 0 50px rgba(0,0,0,0.1);
-}
-
-.main-header {
+.back-btn {
+    border: none;
     background: var(--primary);
-    padding: 30px 20px 60px;
-    border-radius: 0 0 30px 30px;
     color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    cursor: pointer;
 }
 
-.user-info { display: flex; align-items: center; gap: 12px; }
-.avatar { 
-    width: 45px; height: 45px; 
-    background: rgba(255,255,255,0.2); 
-    border-radius: 12px; 
-    display: flex; align-items: center; justify-content: center; 
-    font-weight: bold; 
+.instruction { color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
+
+.photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
 }
 
-.user-details { display: flex; flex-direction: column; }
-.status-label { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-
-.revenue-card-area { padding: 0 20px; margin-top: -40px; margin-bottom: 30px; }
-.glass-card { 
-    background: var(--white); 
-    padding: 25px; 
-    border-radius: 24px; 
-    box-shadow: 0 15px 30px rgba(0,0,0,0.08); 
-}
-
-.card-title { font-size: 13px; color: #7f8c8d; font-weight: 600; }
-h2 { font-size: 28px; margin: 10px 0; font-weight: 800; }
-
-.progress-track { background: #eee; height: 10px; border-radius: 5px; overflow: hidden; }
-.progress-bar { background: var(--success); height: 100%; width: 0%; transition: width 0.8s ease-out; }
-
-.action-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 15px; 
-    padding: 0 20px; 
-}
-
-.action-item {
-    background: var(--white);
-    padding: 25px 15px;
-    border-radius: 20px;
+.photo-slot {
+    background: white;
+    border: 2px dashed #dcdde1;
+    border-radius: 15px;
+    height: 100px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    justify-content: center;
+    gap: 10px;
+    color: #95a5a6;
     cursor: pointer;
+}
+
+.photo-slot.active {
+    border-color: var(--success);
+    color: var(--success);
+    background: #eafaf1;
+}
+
+.validate-btn {
+    width: 100%;
+    margin-top: 30px;
+    background: #25D366; /* Couleur WhatsApp */
+    color: white;
     border: none;
-    transition: 0.2s;
+    padding: 15px;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
 }
 
-.action-item:active { transform: scale(0.96); }
-
-.icon-box { 
-    width: 55px; height: 55px; border-radius: 16px; 
-    display: flex; align-items: center; justify-content: center; 
-    font-size: 24px;
+.content-placeholder {
+    text-align: center;
+    margin-top: 50px;
+    color: #bdc3c7;
 }
 
-.blue-bg { background: #e8f0fe; color: var(--primary); }
-.orange-bg { background: #fff4e5; color: #f39c12; }
-.green-bg { background: #eafaf1; color: var(--success); }
-.navy-bg { background: #f0f3ff; color: #2c3e50; }
-
-.action-item span { font-weight: 700; font-size: 15px; color: var(--text); }
+.content-placeholder i { font-size: 50px; margin-bottom: 15px; }
