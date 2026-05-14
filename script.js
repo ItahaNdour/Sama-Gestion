@@ -1,61 +1,39 @@
+// On récupère les données sauvegardées
+let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
+const target = 10000000; // Objectif de 10 millions
+
 /**
- * SAMA GESTION - Moteur Principal V1
+ * Met à jour les éléments visuels de la page
  */
-const app = {
-    // État de l'application
-    state: {
-        totalTarget: 15000000,
-        collected: parseFloat(localStorage.getItem('sama_collected')) || 0,
-        currency: 'CFA'
-    },
-
-    // Initialisation
-    init: function() {
-        console.log("Sama Gestion Initialisée...");
-        this.updateDisplay();
-    },
-
-    // Mise à jour de l'interface
-    updateDisplay: function() {
-        const revenueEl = document.getElementById('revenueValue');
-        const progressEl = document.getElementById('progressBar');
+function updateUI() {
+    const display = document.getElementById('totalDisplay');
+    const bar = document.getElementById('gaugeFill');
+    
+    if (display && bar) {
+        // Affiche le montant formaté (ex: 500,000 CFA)
+        display.innerText = collected.toLocaleString() + " CFA";
         
-        // Formatage du montant
-        revenueEl.innerText = `${this.state.collected.toLocaleString()} ${this.state.currency}`;
-        
-        // Calcul de la jauge
-        const percent = (this.state.collected / this.state.totalTarget) * 100;
-        progressEl.style.width = `${Math.min(percent, 100)}%`;
-    },
-
-    // Gestionnaire d'actions
-    trigger: function(actionId) {
-        switch(actionId) {
-            case 'pay':
-                this.addPayment(500000); // Exemple d'encaissement d'un loyer
-                break;
-            case 'visite':
-                alert("Ouverture du module caméra pour la visite...");
-                break;
-            default:
-                console.log("Action non configurée : " + actionId);
-        }
-    },
-
-    // Logique de paiement & Synchro Locale
-    addPayment: function(amount) {
-        this.state.collected += amount;
-        localStorage.setItem('sama_collected', this.state.collected);
-        this.updateDisplay();
-        this.sendWhatsAppNotification(amount);
-    },
-
-    // Intégration WhatsApp
-    sendWhatsAppNotification: function(amount) {
-        const msg = encodeURIComponent(`Sama Gestion : Nouveau paiement de ${amount} CFA encaissé avec succès ! ✅`);
-        window.open(`https://wa.me/221XXXXXXXXX?text=${msg}`, '_blank');
+        // Calcul du pourcentage pour la jauge
+        const percent = (collected / target) * 100;
+        bar.style.width = Math.min(percent, 100) + "%";
     }
-};
+}
 
-// Lancement au démarrage
-document.addEventListener('DOMContentLoaded', () => app.init());
+/**
+ * Gère les clics sur les boutons du menu
+ */
+function handleAction(id) {
+    if (id === 'loyer') {
+        collected += 500000; // Simule l'ajout d'un loyer
+        localStorage.setItem('sama_collected', collected);
+        updateUI();
+        alert("Paiement de 500 000 CFA enregistré ! ✅");
+    } else {
+        alert("Module " + id + " : Ouverture bientôt disponible.");
+    }
+}
+
+// Initialise l'affichage dès que la page est chargée
+window.onload = function() {
+    updateUI();
+};
