@@ -1,3 +1,4 @@
+/* --- DONNÉES --- */
 let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
 const target = 10000000;
 
@@ -8,6 +9,7 @@ const mesBiens = [
     { id: 4, nom: "Résidence Keur Gorgui", adresse: "Sacré-Cœur", loyer: 600000, statut: "Libre" }
 ];
 
+/* --- DASHBOARD --- */
 function updateUI() {
     const display = document.getElementById('totalDisplay');
     const bar = document.getElementById('gaugeFill');
@@ -28,17 +30,22 @@ function handleAction(id) {
         if (targetView) {
             document.getElementById('view-dashboard').style.display = 'none';
             targetView.style.display = 'block';
-            if (id === 'biens') displayBiens(mesBiens);
+            if (id === 'biens') {
+                // Réinitialise le champ de recherche quand on ouvre la vue
+                document.getElementById('searchInput').value = "";
+                displayBiens(mesBiens);
+            }
         }
     }
 }
 
-// Affiche la liste (peut prendre une liste filtrée en entrée)
-function displayBiens(liste) {
+/* --- LOGIQUE DES BIENS --- */
+function displayBiens(listeALister) {
     const container = document.getElementById('biens-list');
     if (!container) return;
+    
     container.innerHTML = "";
-    liste.forEach(bien => {
+    listeALister.forEach(bien => {
         const statusClass = bien.statut === "Libre" ? "status-libre" : "status-occupe";
         container.innerHTML += `
             <div class="bien-card">
@@ -53,16 +60,20 @@ function displayBiens(liste) {
     });
 }
 
-// FONCTION DE RECHERCHE
 function filterBiens() {
-    const text = document.getElementById('searchInput').value.toLowerCase();
-    const filtrage = mesBiens.filter(bien => 
-        bien.nom.toLowerCase().includes(text) || 
-        bien.adresse.toLowerCase().includes(text)
-    );
-    displayBiens(filtrage);
+    const input = document.getElementById('searchInput');
+    const filterText = input.value.toLowerCase();
+    
+    // Filtrage basé sur le nom ou l'adresse
+    const resultats = mesBiens.filter(bien => {
+        return bien.nom.toLowerCase().includes(filterText) || 
+               bien.adresse.toLowerCase().includes(filterText);
+    });
+    
+    displayBiens(resultats);
 }
 
+/* --- NAVIGATION & ETAT --- */
 function showDashboard() {
     document.getElementById('view-dashboard').style.display = 'block';
     document.getElementById('view-etat').style.display = 'none';
