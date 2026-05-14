@@ -1,4 +1,3 @@
-// Initialisation des données
 let collected = parseFloat(localStorage.getItem('sama_collected')) || 0;
 const target = 10000000;
 
@@ -20,8 +19,6 @@ function handleAction(id) {
     } else if (id === 'etat') {
         document.getElementById('view-dashboard').style.display = 'none';
         document.getElementById('view-etat').style.display = 'block';
-    } else {
-        alert("Module " + id + " bientôt disponible !");
     }
 }
 
@@ -30,17 +27,13 @@ function showDashboard() {
     document.getElementById('view-etat').style.display = 'none';
 }
 
-// FONCTION PHOTO MISE À JOUR
 function simulateCamera(zone, element) {
-    // Bascule la couleur verte au clic
     element.classList.toggle('active');
-    console.log("Action sur la zone : " + zone);
 }
 
 function sendWhatsAppValidation() {
-    const message = "État des lieux effectué avec succès.";
+    const message = "Sama Gestion : État des lieux validé !";
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 }
 
-// Lancement au démarrage
 window.onload = updateUI;
