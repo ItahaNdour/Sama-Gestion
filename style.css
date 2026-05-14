@@ -1,77 +1,74 @@
-/* ... (gardez votre code précédent et ajoutez ceci à la fin) ... */
-
-.module-view {
-    padding: 20px;
-    animation: fadeIn 0.3s ease-in;
+/* Configuration de base */
+:root {
+    --primary: #4169E1;
+    --success: #2ecc71;
+    --bg: #f5f7fa;
+    --white: #ffffff;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { 
+    font-family: 'Segoe UI', Tahoma, sans-serif; 
+    background: #d1d8e0; /* Couleur de fond pour voir l'application centrée */
+    display: flex; 
+    justify-content: center; 
 }
 
-.module-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 30px;
+/* Le conteneur "Téléphone" */
+.app-shell { 
+    width: 100%; 
+    max-width: 450px; 
+    min-height: 100vh; 
+    background: var(--bg); 
+    box-shadow: 0 0 30px rgba(0,0,0,0.2); 
 }
 
-.back-btn {
-    border: none;
+/* En-tête bleu */
+.main-header {
     background: var(--primary);
+    padding: 30px 20px 60px;
+    border-radius: 0 0 30px 30px;
     color: white;
-    width: 35px;
-    height: 35px;
-    border-radius: 10px;
-    cursor: pointer;
 }
 
-.instruction { color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
-
-.photo-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+/* Carte blanche (Loyer) */
+.revenue-card-area { padding: 0 20px; margin-top: -40px; margin-bottom: 25px; }
+.glass-card { 
+    background: var(--white); 
+    padding: 25px; 
+    border-radius: 20px; 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
 }
 
-.photo-slot {
-    background: white;
-    border: 2px dashed #dcdde1;
-    border-radius: 15px;
-    height: 100px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+/* Grille des 4 boutons */
+.action-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px; 
+    padding: 0 20px; 
+}
+
+.action-item {
+    background: var(--white); 
+    padding: 20px; 
+    border-radius: 20px;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
     gap: 10px;
-    color: #95a5a6;
     cursor: pointer;
-}
-
-.photo-slot.active {
-    border-color: var(--success);
-    color: var(--success);
-    background: #eafaf1;
-}
-
-.validate-btn {
-    width: 100%;
-    margin-top: 30px;
-    background: #25D366; /* Couleur WhatsApp */
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 15px;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.content-placeholder {
     text-align: center;
-    margin-top: 50px;
-    color: #bdc3c7;
 }
 
-.content-placeholder i { font-size: 50px; margin-bottom: 15px; }
+.icon-box { 
+    width: 50px; height: 50px; border-radius: 12px; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 20px; 
+}
+
+/* Couleurs des icônes */
+.blue-bg { background: #e8f0fe; color: var(--primary); }
+.orange-bg { background: #fff4e5; color: #f39c12; }
+.green-bg { background: #eafaf1; color: var(--success); }
+.navy-bg { background: #f0f3ff; color: #2c3e50; }
