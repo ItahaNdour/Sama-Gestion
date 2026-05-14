@@ -9,7 +9,7 @@ function showView(viewId) {
     document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + viewId).style.display = 'block';
     
-    if (viewId === 'biens') renderBiens();
+    if (viewId === 'biens') renderBiens(mesBiens); // On affiche tout au début
     if (viewId === 'collecter') renderCollecte();
     if (viewId === 'dashboard') updateUI();
     if (viewId === 'etat') initSignature();
@@ -22,53 +22,63 @@ function updateUI() {
     document.getElementById('gaugeFill').style.width = Math.min(percent, 100) + "%";
 }
 
-// --- ADMIN ---
-function updateAdminName() {
-    const val = document.getElementById('adminNameInput').value;
-    if(val) {
-        adminName = val;
-        localStorage.setItem('sama_admin', val);
-        updateUI();
-        showView('dashboard');
-    }
+// --- FILTRE ET RECHERCHE (RESTAURÉ) ---
+function filterBiens() {
+    const searchVal = document.getElementById('searchInput').value.toLowerCase();
+    const resultats = mesBiens.filter(bien => 
+        bien.nom.toLowerCase().includes(searchVal) || 
+        bien.adresse.toLowerCase().includes(searchVal)
+    );
+    renderBiens(resultats);
 }
 
-// --- MES BIENS ---
-function renderBiens() {
-    const container = document.getElementById('biensList');
-    container.innerHTML = mesBiens.length === 0 ? "<p>Aucun bien.</p>" : mesBiens.map((b, i) => `
-        <div class="bien-card">
-            <div>
-                <h4>${b.nom}</h4>
-                <p style="font-size:0.8rem; color:gray"><i class="fas fa-map-marker-alt"></i> ${b.adresse}</p>
-                <p><strong>${b.loyer.toLocaleString()} CFA</strong></p>
-            </div>
-            <button onclick="deleteBien(${i})" style="color:red; border:none; background:none; font-size:1.2rem"><i class="fas fa-trash"></i></button>
-        </div>
-    `).join('');
-}
-
+// --- GESTION DES BIENS ---
 function saveNewBien() {
     const nom = document.getElementById('addNom').value;
     const adresse = document.getElementById('addAdresse').value;
     const loyer = document.getElementById('addLoyer').value;
 
-    if(!nom || !adresse || !loyer) return alert("Veuillez remplir tous les champs (Nom, Adresse et Loyer)");
+    if(!nom || !adresse || !loyer) return alert("Remplissez tout !");
 
     mesBiens.push({ nom, adresse, loyer: parseFloat(loyer) });
     localStorage.setItem('sama_biens', JSON.stringify(mesBiens));
     showView('biens');
 }
 
+function renderBiens(liste) {
+    const container = document.getElementById('biensList');
+    container.innerHTML = liste.length === 0 ? "<p>Aucun bien trouvé.</p>" : liste.map((b, i) => `
+        <div class="bien-card">
+            <div>
+                <h4>${b.nom}</h4>
+                <p style="font-size:0.85rem; color:gray"><i class="fas fa-map-marker-alt"></i> ${b.adresse}</p>
+                <p><strong>${b.loyer.toLocaleString()} CFA</strong></p>
+            </div>
+            <button onclick="deleteBien(${i})" style="color:var(--danger); border:none; background:none; font-size:1.2rem"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('');
+}
+
 function deleteBien(index) {
-    if(confirm("Supprimer ce bien définitivement ?")) {
+    if(confirm("Supprimer ce bien ?")) {
         mesBiens.splice(index, 1);
         localStorage.setItem('sama_biens', JSON.stringify(mesBiens));
-        renderBiens();
+        renderBiens(mesBiens);
     }
 }
 
-// --- ÉTAT DES LIEUX & SIGNATURE ---
+// --- ADMIN ---
+function updateAdminName() {
+    const val = document.getElementById('adminNameInput').value;
+    if(val) {
+        adminName = val;
+        localStorage.setItem('sama_admin', adminName);
+        updateUI();
+        showView('dashboard');
+    }
+}
+
+// --- SIGNATURE & ÉTAT DES LIEUX ---
 let canvas, ctx, isDrawing = false;
 
 function initSignature() {
@@ -83,7 +93,6 @@ function initSignature() {
     canvas.onmousedown = start; canvas.onmouseup = end;
     canvas.onmousemove = (e) => { if(isDrawing) draw(e); };
 
-    // Tactile
     canvas.ontouchstart = (e) => { isDrawing = true; e.preventDefault(); };
     canvas.ontouchend = end;
     canvas.ontouchmove = (e) => {
@@ -95,23 +104,23 @@ function initSignature() {
 
 function draw(e) {
     const rect = canvas.getBoundingClientRect();
-    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "black";
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineWidth = 2; ctx.lineCap = "round";
+    ctx.lineTo((e.clientX || e.touches[0].clientX) - rect.left, (e.clientY || e.touches[0].clientY) - rect.top);
+    ctx.stroke(); ctx.beginPath();
+    ctx.moveTo((e.clientX || e.touches[0].clientX) - rect.left, (e.clientY || e.touches[0].clientY) - rect.top);
 }
 
 function clearSignature() { ctx.clearRect(0,0,canvas.width,canvas.height); }
 
 function toggleZone(zone) {
-    const el = document.getElementById('slot-' + zone.toLowerCase().replace(" ", ""));
-    el.classList.toggle('active');
+    const id = 'slot-' + zone.toLowerCase().replace(" ", "");
+    document.getElementById(id).classList.toggle('active');
     if(zonesInspectees.includes(zone)) zonesInspectees = zonesInspectees.filter(z => z !== zone);
     else zonesInspectees.push(zone);
 }
 
 function sendWhatsAppReport() {
-    const notes = document.getElementById('etatNotes').value;
-    const msg = `🏠 *ÉTAT DES LIEUX - ${adminName}*\nZones inspectées: ${zonesInspectees.join(', ') || 'Aucune'}\nObservations: ${notes || 'RAS'}\n_Signature locataire effectuée_`;
+    const msg = `🏠 *ETAT DES LIEUX - ${adminName}*\nZones: ${zonesInspectees.join(', ')}\n_Signé par le locataire_`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
