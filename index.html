@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion v1.0</title>
+    <title>Sama Gestion v1.1 - Mes Biens</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
+        <!-- HEADER COMMUN -->
         <header class="main-header">
             <div class="user-info">
-                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
                 <div class="user-details">
                     <span class="user-name">Gestionnaire Immo</span>
                     <span class="status-label"><i class="fa-solid fa-wifi"></i> Mode Offline</span>
@@ -19,7 +20,7 @@
             </div>
         </header>
 
-        <!-- Vue Accueil -->
+        <!-- VUE 1 : DASHBOARD -->
         <div id="view-dashboard">
             <section class="revenue-card-area">
                 <div class="glass-card">
@@ -30,6 +31,7 @@
                     </div>
                 </div>
             </section>
+
             <nav class="action-grid">
                 <div class="action-item" onclick="handleAction('visite')">
                     <div class="icon-box blue-bg"><i class="fas fa-calendar-check"></i></div>
@@ -50,7 +52,7 @@
             </nav>
         </div>
 
-        <!-- Vue État des Lieux -->
+        <!-- VUE 2 : ÉTAT DES LIEUX -->
         <div id="view-etat" class="module-view" style="display: none;">
             <div class="module-header">
                 <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
@@ -71,6 +73,17 @@
                 </div>
             </div>
             <button class="validate-btn" onclick="sendWhatsAppValidation()">Valider via WhatsApp</button>
+        </div>
+
+        <!-- VUE 3 : MES BIENS -->
+        <div id="view-biens" class="module-view" style="display: none;">
+            <div class="module-header">
+                <button onclick="showDashboard()" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h3>Mon Parc Immobilier</h3>
+            </div>
+            <div id="biens-list" class="biens-container">
+                <!-- Le contenu sera généré par script.js -->
+            </div>
         </div>
     </div>
     <script src="script.js"></script>
