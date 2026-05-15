@@ -12,7 +12,7 @@
         <header class="main-header">
             <div class="header-top"><span><i class="fas fa-user-circle"></i> Gestionnaire Immo</span></div>
             <div class="revenue-card">
-                <p>Estimation Loyers Mensuels</p>
+                <p>Total Encaissé (Mois en cours)</p>
                 <h2 id="total-display">0 CFA</h2>
                 <div class="progress-container"><div class="progress-bar" id="main-progress"></div></div>
             </div>
@@ -39,21 +39,6 @@
             </div>
         </main>
 
-        <section id="view-planning" class="view" style="display:none;">
-            <div class="section-header">
-                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Visites & Rapports</h3>
-            </div>
-            <div class="form-card">
-                <input type="text" id="p-name" placeholder="Nom du prospect">
-                <input type="tel" id="p-phone" placeholder="Téléphone (ex: 221...)">
-                <select id="p-bien-select"></select>
-                <input type="datetime-local" id="p-date">
-                <button class="btn-save" onclick="sauverVisitePro()">Programmer</button>
-            </div>
-            <div id="visites-list"></div>
-        </section>
-
         <section id="view-biens" class="view" style="display:none;">
             <div class="section-header">
                 <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
@@ -69,40 +54,45 @@
                 <h3>Nouveau Bien</h3>
             </div>
             <div class="form-card">
-                <label class="field-label">Nom du bien</label>
-                <input type="text" id="new-bien-nom" placeholder="Ex: Appart A12">
+                <label class="field-label">Nom & Quartier</label>
+                <input type="text" id="new-bien-nom" placeholder="Ex: Villa Horizon, Mamelles">
                 
-                <label class="field-label">Type</label>
+                <label class="field-label">Type (T1, T2, Villa...)</label>
                 <select id="new-bien-type">
-                    <option value="Appartement">Appartement</option>
-                    <option value="Studio">Studio</option>
+                    <option value="Studio (T1)">Studio (T1)</option>
+                    <option value="Chambre-Salon (T2)">Chambre-Salon (T2)</option>
+                    <option value="2 Ch-Salon (T3)">2 Ch-Salon (T3)</option>
+                    <option value="3 Ch-Salon (T4)">3 Ch-Salon (T4)</option>
                     <option value="Villa">Villa</option>
                     <option value="Bureau">Bureau</option>
                 </select>
 
-                <label class="field-label">Loyer (CFA)</label>
-                <input type="number" id="new-bien-loyer" placeholder="Ex: 150000">
+                <label class="field-label">Loyer mensuel (CFA)</label>
+                <input type="number" id="new-bien-loyer" placeholder="Ex: 250000">
 
-                <label class="field-label">Statut actuel</label>
-                <select id="new-bien-statut">
+                <label class="field-label">Statut</label>
+                <select id="new-bien-statut" onchange="toggleDateEntree()">
                     <option value="Disponible">🟢 Disponible</option>
                     <option value="Occupé">🔴 Occupé</option>
                 </select>
 
-                <button class="btn-save" onclick="saveBienPro()">Créer la fiche</button>
+                <div id="date-entree-group" style="display:none;">
+                    <label class="field-label">Date d'entrée du locataire</label>
+                    <input type="date" id="new-bien-date">
+                </div>
+
+                <button class="btn-save" onclick="saveBienPro()">Enregistrer le bien</button>
             </div>
         </section>
 
+        <section id="view-planning" class="view" style="display:none;">
+            <div class="section-header"><button class="back-btn" onclick="showView('dashboard')">←</button><h3>Visites</h3></div>
+            <div id="visites-list"></div>
+        </section>
+        
         <div id="modal-rapport" class="modal" style="display:none;">
             <div class="modal-content">
-                <h4>Rapport de visite</h4>
-                <p id="rapport-client-name"></p>
-                <div class="status-options">
-                    <button onclick="setClientStatus('chaud')" class="st-btn chaud" id="btn-chaud">🔥 Chaud</button>
-                    <button onclick="setClientStatus('relancer')" class="st-btn relancer" id="btn-relancer">⏳ Relancer</button>
-                    <button onclick="setClientStatus('froid')" class="st-btn froid" id="btn-froid">❄️ Froid</button>
-                </div>
-                <textarea id="rapport-note" placeholder="Commentaire..."></textarea>
+                <h4>Rapport</h4><textarea id="rapport-note"></textarea>
                 <button class="btn-save" onclick="validerRapport()">Valider</button>
             </div>
         </div>
