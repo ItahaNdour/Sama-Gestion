@@ -1,39 +1,38 @@
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
 let currentFilter = 'Disponible';
-let currentVisiteId = null;
 
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.getElementById('view-' + viewId).style.display = 'block';
+    const target = document.getElementById('view-' + viewId);
+    if(target) target.style.display = 'block';
     if(viewId === 'biens') renderBiens();
-    if(viewId === 'planning') { populateSelect(); renderVisites(); }
 }
 
-function filterBiens(statut, event) {
+function filterBiens(statut, e) {
     currentFilter = statut;
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
     renderBiens();
 }
 
 function saveBienPro() {
     const b = {
         id: Date.now(),
+        photo: document.getElementById('new-bien-photo').value || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400",
         nom: document.getElementById('new-bien-nom').value,
-        quartier: document.getElementById('new-bien-quartier').value,
         type: document.getElementById('new-bien-type').value,
-        etage: document.getElementById('new-bien-etage').value,
         loyer: document.getElementById('new-bien-loyer').value,
-        maps: document.getElementById('new-bien-maps').value,
-        proprio: document.getElementById('new-bien-proprio').value,
+        proprio: document.getElementById('new-bien-proprio').value || "Inconnu",
+        commission: document.getElementById('new-bien-com').value || "Non définie",
         statut: 'Disponible',
+        historique: [],
+        locataireActuel: null,
+        jardin: document.getElementById('check-jardin').checked,
         clim: document.getElementById('check-clim').checked,
         parking: document.getElementById('check-parking').checked,
-        jardin: document.getElementById('check-jardin').checked,
         gardien: document.getElementById('check-gardien').checked
     };
-
     if(!b.nom || !b.loyer) return alert("Nom et Loyer obligatoires");
     biens.push(b);
     localStorage.setItem('sama_biens', JSON.stringify(biens));
@@ -43,57 +42,61 @@ function saveBienPro() {
 function renderBiens() {
     const list = document.getElementById('biens-list');
     const filtered = biens.filter(b => b.statut === currentFilter);
-
     list.innerHTML = filtered.map(b => `
         <div class="bien-card">
-            <div style="display:flex; justify-content:space-between">
+            <img src="${b.photo}" class="bien-img">
+            <div style="display:flex; justify-content:space-between; align-items:start">
                 <div>
-                    <strong style="font-size:1.1rem">${b.nom}</strong><br>
-                    <small style="color:#888"><i class="fas fa-map-marker-alt"></i> ${b.quartier}</small>
+                    <strong>${b.nom}</strong><br>
+                    <span class="com-badge">Commission: ${b.commission}</span>
                 </div>
-                <span class="badge ${b.statut === 'Occupé' ? 'occupe' : 'dispo'}">${b.statut}</span>
+                <span style="font-size:0.7rem; font-weight:bold; color:${b.statut==='Occupé'?'red':'green'}">${b.statut}</span>
             </div>
-            
-            <div style="margin:10px 0; font-weight:bold; color:var(--blue); font-size:1.2rem">
-                ${parseInt(b.loyer).toLocaleString()} CFA <span style="font-size:0.7rem; color:#aaa">/mois</span>
-            </div>
-
-            <div class="tag-row">
+            <div style="margin:8px 0; font-size:0.85rem; color:#666">Bailleur: ${b.proprio}</div>
+            <div style="margin-bottom:10px">
                 <span class="tag">${b.type}</span>
-                <span class="tag">Étage: ${b.etage}</span>
-                ${b.clim ? '<span class="tag">❄️ Clim</span>' : ''}
-                ${b.parking ? '<span class="tag">🅿️ Parking</span>' : ''}
-                ${b.jardin ? '<span class="tag">🌳 Jardin</span>' : ''}
-                ${b.gardien ? '<span class="tag">🛡️ Gardien</span>' : ''}
+                ${b.jardin?'<span class="tag">🌳 Jardin</span>':''}
+                ${b.clim?'<span class="tag">❄️ Clim</span>':''}
             </div>
-
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="wa-btn" style="background:var(--navy)" onclick="changerStatut(${b.id})">
+            <div style="display:flex; gap:10px">
+                <button class="wa-btn" style="background:var(--navy); flex:2" onclick="toggleStatutLocataire(${b.id})">
                     ${b.statut === 'Occupé' ? 'Libérer' : 'Louer'}
                 </button>
-                <button class="wa-btn" onclick="partagerWA(${b.id})">
-                    <i class="fab fa-whatsapp"></i> Partager
+                <button class="wa-btn" style="background:#eee; color:#333; flex:1" onclick="voirHistorique(${b.id})">
+                    <i class="fas fa-history"></i>
                 </button>
             </div>
-            <div style="text-align:right; margin-top:8px">
-                <i class="fas fa-trash" style="color:#ff4d4d; cursor:pointer" onclick="deleteBien(${b.id})"></i>
-            </div>
+            <div style="text-align:right; margin-top:8px" onclick="deleteBien(${b.id})"><i class="fas fa-trash" style="color:red; font-size:0.8rem"></i></div>
         </div>
-    `).reverse().join('') || '<p style="text-align:center; color:#999; margin-top:20px;">Aucun bien trouvé.</p>';
+    `).reverse().join('') || '<p style="text-align:center; padding:20px; color:#999">Vide</p>';
 }
 
-function partagerWA(id) {
-    const b = biens.find(x => x.id === id);
-    const options = [b.clim?'Clim':'', b.parking?'Parking':'', b.jardin?'Jardin':'', b.gardien?'Gardien':''].filter(Boolean).join(', ');
-    const texte = `*OFFRE IMMOBILIÈRE*%0A---%0A*Produit:* ${b.type} - ${b.nom}%0A*Quartier:* ${b.quartier}%0A*Loyer:* ${parseInt(b.loyer).toLocaleString()} CFA/mois%0A*Options:* ${options}%0A*Localisation:* ${b.maps || 'Sur demande'}%0A---%0A_Intéressé ? Contactez-moi._`;
-    window.open(`https://wa.me/?text=${texte}`);
-}
-
-function changerStatut(id) {
+function toggleStatutLocataire(id) {
     const idx = biens.findIndex(x => x.id === id);
-    biens[idx].statut = biens[idx].statut === 'Occupé' ? 'Disponible' : 'Occupé';
+    const b = biens[idx];
+    if (b.statut === 'Disponible') {
+        const nom = prompt("Nom du locataire ?");
+        if(nom) {
+            b.statut = 'Occupé';
+            b.locataireActuel = nom;
+            b.dateEntree = new Date().toLocaleDateString();
+        }
+    } else {
+        if(confirm("Libérer ? Le locataire sera archivé.")) {
+            b.historique.push({ nom: b.locataireActuel, date: b.dateEntree });
+            b.statut = 'Disponible';
+            b.locataireActuel = null;
+        }
+    }
     localStorage.setItem('sama_biens', JSON.stringify(biens));
     renderBiens();
+}
+
+function voirHistorique(id) {
+    const b = biens.find(x => x.id === id);
+    const hist = b.historique.map(h => `<p style="font-size:0.8rem; border-bottom:1px solid #eee; padding:5px"><b>${h.nom}</b> (Entrée: ${h.date})</p>`).join('') || "Aucun historique.";
+    document.getElementById('hist-content').innerHTML = hist;
+    document.getElementById('modal-historique').style.display = 'flex';
 }
 
 function deleteBien(id) {
@@ -103,12 +106,5 @@ function deleteBien(id) {
         renderBiens();
     }
 }
-
-// ... (Garder les fonctions de Visites existantes) ...
-function populateSelect() {
-    const sel = document.getElementById('p-bien-select');
-    sel.innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-}
-function renderVisites() { /* identique au précédent */ }
 
 window.onload = () => showView('dashboard');
