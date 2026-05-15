@@ -1,38 +1,30 @@
 :root { --blue: #4A69FF; --green: #2ECC71; --orange: #F39C12; --navy: #2C3E50; --bg: #E9EEF5; }
 body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; }
-.app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; overflow-x: hidden; }
+.app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; }
 
 .main-header { background: var(--blue); padding: 20px 20px 60px; border-radius: 0 0 40px 40px; color: white; }
 .revenue-card { background: white; color: var(--navy); padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
 
+.view { padding: 20px; display: none; }
 .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; margin-top: -35px; }
-.menu-card { background: white; padding: 25px; border-radius: 25px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+.menu-card { background: white; padding: 25px; border-radius: 25px; text-align: center; cursor: pointer; }
 .icon-circle { width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
-.blue { background: #EEF2FF; color: var(--blue); } .navy { background: #F0F3F6; color: var(--navy); }
 
-.tabs-container { display: flex; background: #e0e6ed; padding: 5px; border-radius: 15px; margin-bottom: 20px; }
-.tab-btn { flex: 1; border: none; padding: 10px; border-radius: 12px; font-weight: bold; color: #777; background: transparent; }
+.tabs-container { display: flex; background: #ddd; padding: 5px; border-radius: 15px; margin-bottom: 20px; }
+.tab-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 .tab-btn.active { background: white; color: var(--blue); }
 
-.view { padding: 20px; }
-.form-card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; }
-.field-label { display: block; font-size: 0.7rem; font-weight: bold; color: #999; margin-bottom: 5px; text-transform: uppercase; }
-input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; }
+.bien-card, .visite-item { background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; position: relative; }
+.bien-img { width: 100%; height: 140px; object-fit: cover; border-radius: 15px; margin-bottom: 10px; }
+.tag { font-size: 0.7rem; background: #f0f3f6; padding: 3px 7px; border-radius: 5px; margin-right: 5px; }
 
-.check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 12px; }
-.check-grid label { font-size: 0.85rem; color: var(--navy); display: flex; align-items: center; gap: 5px; }
+.form-card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
+input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; }
+.btn-save, .wa-btn { background: var(--blue); color: white; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; }
 
-.btn-save { background: var(--blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; }
-
-/* Bien Card Design */
-.bien-card { background: white; padding: 18px; border-radius: 22px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-.tag-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.tag { font-size: 0.7rem; background: #f0f3f6; padding: 3px 8px; border-radius: 6px; color: #666; }
-.wa-btn { background: #25D366; color: white; border: none; padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; font-weight: bold; font-size: 0.8rem; }
-.badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 8px; font-weight: bold; }
-.dispo { background: #EAFDF3; color: #27AE60; }
-.occupe { background: #FFF0F0; color: #EB5757; }
-
-.fab-add { position: fixed; bottom: 30px; right: 20px; background: var(--blue); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-.modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; }
-.modal-content { background:white; width:90%; padding:25px; border-radius:25px; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 20px; border-radius: 20px; width: 85%; }
+.status-options { display: flex; gap: 10px; margin-bottom: 15px; }
+.st-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: bold; }
+.chaud { background: #FFE5E5; color: #FF4A4A; }
+.froid { background: #E5F0FF; color: #4A90FF; }
