@@ -1,54 +1,27 @@
-:root {
-    --blue: #4A69FF; --green: #2ECC71; --orange: #F39C12; --navy: #2C3E50;
-    --bg: #E9EEF5; --white: #FFFFFF;
-}
-
+:root { --blue: #4A69FF; --green: #2ECC71; --orange: #F39C12; --navy: #2C3E50; --bg: #E9EEF5; }
 body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; }
-.app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; overflow-x: hidden; }
+.app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; }
 
 .main-header { background: var(--blue); padding: 20px 20px 60px; border-radius: 0 0 40px 40px; color: white; }
-.revenue-card { background: var(--white); color: var(--navy); padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-.revenue-card p { margin: 0; font-size: 0.8rem; color: #777; font-weight: 600; }
-.revenue-card h2 { margin: 5px 0; font-size: 1.8rem; }
-.progress-container { height: 8px; background: #eee; border-radius: 10px; margin-top: 10px; }
-.progress-bar { width: 0%; height: 100%; background: var(--green); border-radius: 10px; transition: 1s ease-in-out; }
+.revenue-card { background: white; color: var(--navy); padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+.revenue-card h2 { margin: 5px 0; font-size: 1.8rem; color: var(--navy); }
 
 .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; margin-top: -35px; }
-.menu-card { background: var(--white); padding: 25px; border-radius: 25px; text-align: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+.menu-card { background: white; padding: 25px; border-radius: 25px; text-align: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
 .icon-circle { width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem; }
-.blue { background: #EEF2FF; color: var(--blue); }
-.orange { background: #FFF4E5; color: var(--orange); }
-.green { background: #EAFDF3; color: var(--green); }
-.navy { background: #F0F3F6; color: var(--navy); }
+.blue { background: #EEF2FF; color: var(--blue); } .navy { background: #F0F3F6; color: var(--navy); }
 
 .view { padding: 20px; }
 .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-.back-btn { background: white; border: none; width: 40px; height: 40px; border-radius: 50%; color: var(--blue); box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+.back-btn { background: white; border: none; width: 40px; height: 40px; border-radius: 50%; color: var(--blue); }
 
 .form-card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; }
-.field-label { display: block; font-size: 0.7rem; font-weight: bold; color: #999; margin-bottom: 5px; text-transform: uppercase; padding-left: 5px; }
+.field-label { display: block; font-size: 0.7rem; font-weight: bold; color: #999; margin-bottom: 5px; text-transform: uppercase; }
 input, select, textarea { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #edf2f7; border-radius: 12px; background: #f8fafc; font-size: 1rem; box-sizing: border-box; }
+.btn-save { background: var(--blue); color: white; border: none; padding: 16px; width: 100%; border-radius: 14px; font-weight: bold; }
 
-.btn-save { background: var(--blue); color: white; border: none; padding: 16px; width: 100%; border-radius: 14px; font-weight: bold; cursor: pointer; }
-
-/* Cartes Biens */
-.bien-card { background: white; padding: 15px; border-radius: 22px; margin-bottom: 15px; border-bottom: 4px solid #eee; }
-.bien-header { display: flex; justify-content: space-between; align-items: flex-start; }
-.badge { padding: 5px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
-.dispo { background: #EAFDF3; color: #27AE60; }
+.bien-card { background: white; padding: 18px; border-radius: 22px; margin-bottom: 15px; border-bottom: 4px solid #ddd; }
+.badge { padding: 4px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
 .occupe { background: #FFF0F0; color: #EB5757; }
-
-/* Visites */
-.visite-item { background: white; padding: 15px; border-radius: 20px; margin-bottom: 12px; border-left: 5px solid #ccc; }
-.visite-item.active { border-left-color: var(--green); }
-.visite-item.done { border-left-color: var(--navy); opacity: 0.7; }
-.v-btn-check { background: var(--green); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; margin-top: 10px; font-weight: bold; }
-
-/* Modal */
-.modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; }
-.modal-content { background:white; width:90%; max-width:400px; padding:25px; border-radius:30px; }
-.status-options { display: flex; gap: 8px; margin: 15px 0; }
-.st-btn { flex:1; border:none; padding:12px; border-radius:12px; font-weight:bold; cursor:pointer; }
-.selected-st { outline: 3px solid var(--blue); }
-
+.dispo { background: #EAFDF3; color: #27AE60; }
 .fab-add { position: fixed; bottom: 30px; right: 20px; background: var(--blue); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
