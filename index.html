@@ -12,28 +12,32 @@
         <header class="main-header">
             <div class="header-top"><span><i class="fas fa-user-circle"></i> Gestionnaire Immo</span></div>
             <div class="revenue-card">
-                <p>Total Encaissé ce mois</p>
+                <p>Loyers Encaissés Ce mois</p>
                 <h2 id="total-display">0 CFA</h2>
-                <div class="progress-container"><div class="progress-bar" id="main-progress"></div></div>
+                <div class="progress-container"><div class="progress-bar" id="main-progress" style="width: 70%;"></div></div>
             </div>
         </header>
 
         <main id="view-dashboard" class="view">
             <div class="menu-grid">
                 <div class="menu-card" onclick="showView('planning')">
-                    <div class="icon-circle blue"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="dot blue-dot"></div>
+                    <div class="icon-circle"><i class="fas fa-calendar-alt" style="color: #4A69FF;"></i></div>
                     <span>Visite</span>
                 </div>
                 <div class="menu-card" onclick="showView('etat')">
-                    <div class="icon-circle orange"><i class="fas fa-camera"></i></div>
+                    <div class="dot orange-dot"></div>
+                    <div class="icon-circle"><i class="fas fa-camera" style="color: #F39C12;"></i></div>
                     <span>État des Lieux</span>
                 </div>
                 <div class="menu-card" onclick="showView('collecte')">
-                    <div class="icon-circle green"><i class="fas fa-wallet"></i></div>
+                    <div class="dot green-dot"></div>
+                    <div class="icon-circle"><i class="fas fa-wallet" style="color: #2ECC71;"></i></div>
                     <span>Collecter</span>
                 </div>
                 <div class="menu-card" onclick="showView('biens')">
-                    <div class="icon-circle navy"><i class="fas fa-city"></i></div>
+                    <div class="dot navy-dot"></div>
+                    <div class="icon-circle"><i class="fas fa-city" style="color: #2C3E50;"></i></div>
                     <span>Mes Biens</span>
                 </div>
             </div>
@@ -45,10 +49,10 @@
                 <h3>Visites & Rapports</h3>
             </div>
             <div class="form-card">
-                <input type="text" id="p-name" placeholder="Nom du prospect">
+                <input type="text" id="p-name" placeholder="Nom prospect">
                 <select id="p-bien-select"></select>
                 <input type="datetime-local" id="p-date">
-                <button class="btn-save" onclick="sauverVisitePro()">Programmer la visite</button>
+                <button class="btn-primary" onclick="sauverVisitePro()">Programmer la visite</button>
             </div>
             <div id="visites-list"></div>
         </section>
@@ -69,50 +73,36 @@
         <section id="view-ajouter-bien" class="view" style="display:none;">
             <div class="section-header">
                 <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
-                <h3>Nouveau Bien Pro</h3>
+                <h3>Nouveau Bien</h3>
             </div>
             <div class="form-card">
-                <label class="field-label">URL de la photo</label>
-                <input type="text" id="new-bien-photo" placeholder="Lien image (https://...)">
-                <label class="field-label">Nom & Quartier</label>
-                <input type="text" id="new-bien-nom" placeholder="Ex: Villa Rose, Almadies">
-                <div style="display:flex; gap:10px;">
-                    <select id="new-bien-type" style="flex:1">
-                        <option value="Studio (T1)">Studio (T1)</option>
-                        <option value="T2">T2</option><option value="T3">T3</option><option value="Villa">Villa</option>
-                    </select>
-                    <input type="number" id="new-bien-loyer" placeholder="Loyer CFA" style="flex:1">
+                <div class="photo-upload-area" onclick="document.getElementById('camera-input').click()">
+                    <i class="fas fa-camera"></i>
+                    <p>Prendre une photo</p>
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="previewImage(this)">
+                    <img id="preview-img" style="display:none; width:100%; border-radius:10px;">
                 </div>
-                <label class="field-label">Bailleur & Commission</label>
-                <input type="text" id="new-bien-proprio" placeholder="Nom du propriétaire">
-                <input type="text" id="new-bien-com" placeholder="Ex: 10% ou 1 mois">
+                
+                <input type="text" id="new-bien-nom" placeholder="Nom du bien">
+                <input type="number" id="new-bien-loyer" placeholder="Loyer CFA">
+                <input type="text" id="new-bien-proprio" placeholder="Bailleur">
                 <div class="check-grid">
                     <label><input type="checkbox" id="check-jardin"> 🌳 Jardin</label>
                     <label><input type="checkbox" id="check-clim"> ❄️ Clim</label>
-                    <label><input type="checkbox" id="check-parking"> 🅿️ Parking</label>
-                    <label><input type="checkbox" id="check-gardien"> 🛡️ Gardien</label>
                 </div>
-                <button class="btn-save" onclick="saveBienPro()">Créer la fiche</button>
+                <button class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
             </div>
         </section>
 
         <div id="modal-rapport" class="modal" style="display:none;">
             <div class="modal-content">
-                <h4>Rapport de visite</h4>
+                <h4>Fin de visite</h4>
                 <div class="status-options">
-                    <button onclick="setClientStatus('chaud')" class="st-btn chaud" id="btn-chaud">🔥 Chaud</button>
-                    <button onclick="setClientStatus('froid')" class="st-btn froid" id="btn-froid">❄️ Froid</button>
+                    <button onclick="setQualif('🔥 Chaud')" class="st-btn chaud">Chaud</button>
+                    <button onclick="setQualif('❄️ Froid')" class="st-btn froid">Froid</button>
                 </div>
-                <textarea id="rapport-note" placeholder="Notes de la visite..."></textarea>
-                <button class="btn-save" onclick="validerRapport()">Valider le rapport</button>
-            </div>
-        </div>
-
-        <div id="modal-historique" class="modal" style="display:none;">
-            <div class="modal-content">
-                <h4>Historique Locataires</h4>
-                <div id="hist-content"></div>
-                <button class="btn-save" onclick="document.getElementById('modal-historique').style.display='none'">Fermer</button>
+                <textarea id="rapport-note" placeholder="Notes..."></textarea>
+                <button class="btn-primary" onclick="validerRapport()">Valider</button>
             </div>
         </div>
     </div>
