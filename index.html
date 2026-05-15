@@ -10,13 +10,11 @@
 <body>
     <div class="app-shell">
         <header class="main-header">
-            <div class="header-top">
-                <span><i class="fas fa-user-circle"></i> Gestionnaire Immo</span>
-            </div>
+            <div class="header-top"><span><i class="fas fa-user-circle"></i> Gestionnaire Immo</span></div>
             <div class="revenue-card">
                 <p>Loyers Encaissés Ce mois</p>
                 <h2 id="total-display">0 CFA</h2>
-                <div class="progress-container"><div class="progress-bar" id="main-progress"></div></div>
+                <div class="progress-container"><div class="progress-bar" style="width:35%"></div></div>
             </div>
         </header>
 
@@ -44,72 +42,47 @@
         <section id="view-planning" class="view" style="display:none;">
             <div class="section-header">
                 <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Planning Visites</h3>
+                <h3>Visites & Rapports</h3>
             </div>
             
             <div class="form-card">
-                <div class="input-group">
-                    <label>Nom du visiteur</label>
-                    <input type="text" id="p-name" placeholder="Ex: M. Diop">
-                </div>
-                <div class="input-group">
-                    <label>Téléphone (sans espace)</label>
-                    <input type="tel" id="p-phone" placeholder="221770000000">
-                </div>
-                <div class="input-group">
-                    <label>Bien à visiter</label>
-                    <select id="p-bien-select"></select>
-                </div>
-                <div class="input-group">
-                    <label>Date et Heure</label>
-                    <input type="datetime-local" id="p-date" class="full-date-input">
-                </div>
-                <button class="btn-save" onclick="sauverVisitePro()">Programmer la visite</button>
+                <input type="text" id="p-name" placeholder="Nom du prospect">
+                <input type="tel" id="p-phone" placeholder="Téléphone (ex: 221...)">
+                <select id="p-bien-select"></select>
+                <input type="datetime-local" id="p-date">
+                <button class="btn-save" onclick="sauverVisitePro()">Programmer</button>
             </div>
 
-            <div class="list-container" id="visites-list"></div>
+            <div id="visites-list"></div>
         </section>
 
-        <section id="view-biens" class="view" style="display:none;">
-            <div class="section-header">
-                <button onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Mon Parc Immobilier</h3>
+        <div id="modal-rapport" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h4>Rapport de visite</h4>
+                <p id="rapport-client-name"></p>
+                <div class="status-options">
+                    <button onclick="setClientStatus('chaud')" class="st-btn chaud">🔥 Chaud</button>
+                    <button onclick="setClientStatus('relancer')" class="st-btn relancer">⏳ À relancer</button>
+                    <button onclick="setClientStatus('froid')" class="st-btn froid">❄️ Froid</button>
+                </div>
+                <textarea id="rapport-note" placeholder="Notes (ex: Prêt à signer lundi)"></textarea>
+                <button class="btn-save" onclick="validerRapport()">Enregistrer Rapport</button>
             </div>
-            <div id="biens-list" class="list-container"></div>
-            <button class="fab-add" onclick="showView('ajouter-bien')"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <section id="view-biens" class="view" style="display:none;">
+            <div class="section-header"><button onclick="showView('dashboard')" class="back-btn">←</button><h3>Mes Biens</h3></div>
+            <div id="biens-list"></div>
+            <button class="fab-add" onclick="showView('ajouter-bien')">+</button>
         </section>
 
         <section id="view-ajouter-bien" class="view" style="display:none;">
-            <div class="section-header">
-                <button onclick="showView('biens')"><i class="fas fa-times"></i></button>
-                <h3>Nouveau Bien</h3>
-            </div>
+            <div class="section-header"><button onclick="showView('biens')" class="back-btn">←</button><h3>Nouveau Bien</h3></div>
             <div class="form-card">
                 <input type="text" id="new-bien-nom" placeholder="Nom du bien">
-                <input type="text" id="new-bien-locataire" placeholder="Locataire actuel (optionnel)">
-                <input type="number" id="new-bien-loyer" placeholder="Loyer (CFA)">
-                <button class="btn-save" onclick="saveBien()">Enregistrer le bien</button>
+                <input type="number" id="new-bien-loyer" placeholder="Loyer">
+                <button class="btn-save" onclick="saveBien()">Enregistrer</button>
             </div>
-        </section>
-
-        <section id="view-etat" class="view" style="display:none;">
-            <div class="section-header">
-                <button onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>État des Lieux</h3>
-            </div>
-            <div id="pieces-container"></div>
-            <div class="form-card">
-                <canvas id="sig-canvas"></canvas>
-                <button class="btn-wa" onclick="sendWA()"><i class="fab fa-whatsapp"></i> Envoyer Rapport</button>
-            </div>
-        </section>
-
-        <section id="view-collecte" class="view" style="display:none;">
-            <div class="section-header">
-                <button onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Encaisser Loyer</h3>
-            </div>
-            <div id="collecte-list"></div>
         </section>
     </div>
     <script src="script.js"></script>
