@@ -1,21 +1,19 @@
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
 let currentFilter = 'Disponible';
+let currentVisiteId = null;
+let currentQualif = '';
 
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     const target = document.getElementById('view-' + viewId);
     if(target) target.style.display = 'block';
+
     if(viewId === 'biens') renderBiens();
+    if(viewId === 'planning') { populateSelect(); renderVisites(); }
 }
 
-function filterBiens(statut, e) {
-    currentFilter = statut;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    renderBiens();
-}
-
+// BIENS
 function saveBienPro() {
     const b = {
         id: Date.now(),
@@ -23,17 +21,13 @@ function saveBienPro() {
         nom: document.getElementById('new-bien-nom').value,
         type: document.getElementById('new-bien-type').value,
         loyer: document.getElementById('new-bien-loyer').value,
-        proprio: document.getElementById('new-bien-proprio').value || "Inconnu",
-        commission: document.getElementById('new-bien-com').value || "Non définie",
+        proprio: document.getElementById('new-bien-proprio').value,
+        commission: document.getElementById('new-bien-com').value,
         statut: 'Disponible',
         historique: [],
-        locataireActuel: null,
         jardin: document.getElementById('check-jardin').checked,
-        clim: document.getElementById('check-clim').checked,
-        parking: document.getElementById('check-parking').checked,
-        gardien: document.getElementById('check-gardien').checked
+        clim: document.getElementById('check-clim').checked
     };
-    if(!b.nom || !b.loyer) return alert("Nom et Loyer obligatoires");
     biens.push(b);
     localStorage.setItem('sama_biens', JSON.stringify(biens));
     showView('biens');
@@ -45,66 +39,71 @@ function renderBiens() {
     list.innerHTML = filtered.map(b => `
         <div class="bien-card">
             <img src="${b.photo}" class="bien-img">
-            <div style="display:flex; justify-content:space-between; align-items:start">
-                <div>
-                    <strong>${b.nom}</strong><br>
-                    <span class="com-badge">Commission: ${b.commission}</span>
-                </div>
-                <span style="font-size:0.7rem; font-weight:bold; color:${b.statut==='Occupé'?'red':'green'}">${b.statut}</span>
+            <strong>${b.nom}</strong>
+            <div style="margin:5px 0; font-size:0.8rem">Bailleur: ${b.proprio} | Com: ${b.commission}</div>
+            <div style="display:flex; gap:5px; margin-top:10px">
+                <button class="wa-btn" style="background:var(--navy)" onclick="toggleStatut(${b.id})">${b.statut === 'Occupé' ? 'Libérer' : 'Louer'}</button>
+                <button class="wa-btn" style="background:#eee; color:#333" onclick="voirHistorique(${b.id})"><i class="fas fa-history"></i></button>
             </div>
-            <div style="margin:8px 0; font-size:0.85rem; color:#666">Bailleur: ${b.proprio}</div>
-            <div style="margin-bottom:10px">
-                <span class="tag">${b.type}</span>
-                ${b.jardin?'<span class="tag">🌳 Jardin</span>':''}
-                ${b.clim?'<span class="tag">❄️ Clim</span>':''}
-            </div>
-            <div style="display:flex; gap:10px">
-                <button class="wa-btn" style="background:var(--navy); flex:2" onclick="toggleStatutLocataire(${b.id})">
-                    ${b.statut === 'Occupé' ? 'Libérer' : 'Louer'}
-                </button>
-                <button class="wa-btn" style="background:#eee; color:#333; flex:1" onclick="voirHistorique(${b.id})">
-                    <i class="fas fa-history"></i>
-                </button>
-            </div>
-            <div style="text-align:right; margin-top:8px" onclick="deleteBien(${b.id})"><i class="fas fa-trash" style="color:red; font-size:0.8rem"></i></div>
         </div>
-    `).reverse().join('') || '<p style="text-align:center; padding:20px; color:#999">Vide</p>';
+    `).join('');
 }
 
-function toggleStatutLocataire(id) {
-    const idx = biens.findIndex(x => x.id === id);
-    const b = biens[idx];
-    if (b.statut === 'Disponible') {
+function toggleStatut(id) {
+    const b = biens.find(x => x.id === id);
+    if(b.statut === 'Disponible') {
         const nom = prompt("Nom du locataire ?");
-        if(nom) {
-            b.statut = 'Occupé';
-            b.locataireActuel = nom;
-            b.dateEntree = new Date().toLocaleDateString();
-        }
+        if(nom) { b.statut = 'Occupé'; b.locataireActuel = nom; b.dateEntree = new Date().toLocaleDateString(); }
     } else {
-        if(confirm("Libérer ? Le locataire sera archivé.")) {
-            b.historique.push({ nom: b.locataireActuel, date: b.dateEntree });
-            b.statut = 'Disponible';
-            b.locataireActuel = null;
-        }
+        b.historique.push({nom: b.locataireActuel, date: b.dateEntree});
+        b.statut = 'Disponible';
     }
     localStorage.setItem('sama_biens', JSON.stringify(biens));
     renderBiens();
 }
 
-function voirHistorique(id) {
-    const b = biens.find(x => x.id === id);
-    const hist = b.historique.map(h => `<p style="font-size:0.8rem; border-bottom:1px solid #eee; padding:5px"><b>${h.nom}</b> (Entrée: ${h.date})</p>`).join('') || "Aucun historique.";
-    document.getElementById('hist-content').innerHTML = hist;
-    document.getElementById('modal-historique').style.display = 'flex';
+// VISITES (VERSION ORIGINALE RÉTABLIE)
+function populateSelect() {
+    const sel = document.getElementById('p-bien-select');
+    sel.innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
 }
 
-function deleteBien(id) {
-    if(confirm("Supprimer ?")) {
-        biens = biens.filter(x => x.id !== id);
-        localStorage.setItem('sama_biens', JSON.stringify(biens));
-        renderBiens();
-    }
+function sauverVisitePro() {
+    const v = {
+        id: Date.now(),
+        nom: document.getElementById('p-name').value,
+        date: document.getElementById('p-date').value,
+        bien: document.getElementById('p-bien-select').value,
+        status: 'prévu',
+        note: '',
+        qualif: ''
+    };
+    visites.push(v);
+    localStorage.setItem('sama_visites', JSON.stringify(visites));
+    renderVisites();
+}
+
+function renderVisites() {
+    const list = document.getElementById('visites-list');
+    list.innerHTML = visites.map(v => `
+        <div class="visite-item" style="border-left:5px solid ${v.status === 'terminé' ? '#ccc' : '#2ECC71'}">
+            <strong>${v.nom}</strong> ${v.qualif ? ' - ' + v.qualif : ''}<br>
+            <small>${v.bien} | ${v.date}</small>
+            ${v.status === 'prévu' ? `<button class="wa-btn" onclick="ouvrirRapport(${v.id})">Terminer Visite</button>` : `<p style="font-size:0.8rem; margin-top:5px; color:#666">Note: ${v.note}</p>`}
+        </div>
+    `).reverse().join('');
+}
+
+function ouvrirRapport(id) { currentVisiteId = id; document.getElementById('modal-rapport').style.display = 'flex'; }
+function setClientStatus(s) { currentQualif = s; }
+function validerRapport() {
+    const v = visites.find(x => x.id === currentVisiteId);
+    v.status = 'terminé';
+    v.note = document.getElementById('rapport-note').value;
+    v.qualif = currentQualif === 'chaud' ? '🔥 Chaud' : '❄️ Froid';
+    localStorage.setItem('sama_visites', JSON.stringify(visites));
+    document.getElementById('modal-rapport').style.display = 'none';
+    renderVisites();
 }
 
 window.onload = () => showView('dashboard');
