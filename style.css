@@ -1,49 +1,33 @@
-:root {
-    --blue: #4A69FF; --green: #2ECC71; --orange: #F39C12; --navy: #2C3E50;
-    --bg: #E9EEF5; --white: #FFFFFF;
-}
 
-body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; overflow-x: hidden; }
+:root { --blue: #4A69FF; --green: #2ECC71; --orange: #F39C12; --navy: #2C3E50; --bg: #E9EEF5; }
+body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; }
 .app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; }
 
 .main-header { background: var(--blue); padding: 20px 20px 60px; border-radius: 0 0 40px 40px; color: white; }
-.header-top { display: flex; align-items: center; font-size: 0.9rem; margin-bottom: 20px; font-weight: 500; }
-.revenue-card { background: var(--white); color: var(--navy); padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-.revenue-card p { margin: 0; font-size: 0.85rem; color: #777; }
-.revenue-card h2 { margin: 5px 0; font-size: 1.8rem; }
-.progress-container { height: 8px; background: #eee; border-radius: 10px; margin-top: 10px; }
-.progress-bar { width: 30%; height: 100%; background: var(--green); border-radius: 10px; }
-
+.revenue-card { background: white; color: var(--navy); padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
 .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; margin-top: -35px; }
-.menu-card { background: var(--white); padding: 25px; border-radius: 25px; text-align: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-.icon-circle { width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem; }
+.menu-card { background: white; padding: 25px; border-radius: 25px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+.icon-circle { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
 .blue { background: #EEF2FF; color: var(--blue); }
-.orange { background: #FFF4E5; color: var(--orange); }
-.green { background: #EAFDF3; color: var(--green); }
-.navy { background: #F0F3F6; color: var(--navy); }
 
-.view { padding: 20px; animation: fadeIn 0.3s; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-.section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-.back-btn { background: white; border: none; width: 40px; height: 40px; border-radius: 50%; color: var(--blue); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
+.view { padding: 20px; }
 .form-card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; }
-.input-group { margin-bottom: 12px; }
-.input-group label { display: block; font-size: 0.8rem; margin-bottom: 5px; color: #666; font-weight: 600; }
-input, select, textarea { width: 100%; padding: 12px; border: 1px solid #edf2f7; border-radius: 12px; background: #f8fafc; font-size: 1rem; box-sizing: border-box; }
+input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; }
+.btn-save { background: var(--blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; }
 
-.btn-save { background: var(--blue); color: white; border: none; padding: 16px; width: 100%; border-radius: 14px; font-weight: bold; cursor: pointer; }
+/* Visite Cards */
+.visite-item { background: white; padding: 15px; border-radius: 20px; margin-bottom: 12px; border-left: 5px solid #ddd; }
+.visite-item.active { border-left-color: var(--green); }
+.visite-item.done { opacity: 0.7; border-left-color: var(--navy); }
+.v-btn-check { background: var(--green); color: white; border: none; padding: 8px; border-radius: 8px; width: 100%; margin-top: 10px; font-weight: bold; }
+.v-btn-check:disabled { background: #ccc; cursor: not-allowed; }
 
-/* Styles spécifiques pour les cartes de visite */
-.visite-item { background: white; padding: 15px; border-radius: 20px; margin-bottom: 12px; border-left: 5px solid var(--blue); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-.v-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
-.v-info { font-size: 0.85rem; color: #666; margin-bottom: 10px; }
-.v-actions { display: flex; gap: 8px; }
-.v-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; text-decoration: none; }
-.v-call { background: #EEF2FF; color: var(--blue); }
-.v-wa { background: #EAFDF3; color: var(--green); }
-.v-del { background: #FFF0F0; color: #FF4D4D; flex: 0 0 40px; }
-
-.fab-add { position: fixed; bottom: 30px; right: 20px; background: var(--blue); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 100; }
-canvas { border: 1px dashed #ccc; width: 100%; height: 150px; border-radius: 10px; background: #fff; margin-top: 10px; }
+/* Modal Rapport */
+.modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center; }
+.modal-content { background:white; width:90%; max-width:400px; padding:20px; border-radius:25px; }
+.status-options { display: flex; gap: 5px; margin-bottom: 15px; }
+.st-btn { flex:1; border:none; padding:10px; border-radius:10px; font-size:0.8rem; font-weight:bold; }
+.chaud { background: #FFF4E5; color: #E67E22; }
+.relancer { background: #EBF5FB; color: #2980B9; }
+.froid { background: #F4F6F7; color: #7F8C8D; }
+.selected-st { outline: 2px solid var(--blue); }
