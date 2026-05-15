@@ -1,30 +1,29 @@
 :root { --blue: #4A69FF; --bg: #F4F7FE; --navy: #1A2B49; }
-body { font-family: 'Segoe UI', sans-serif; background: #222; margin: 0; display: flex; justify-content: center; }
+body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; }
 .app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; }
 
-/* Header bleu comme sur la photo */
-.main-header { background: var(--blue); padding: 40px 20px 80px; border-radius: 0 0 40px 40px; color: white; position: relative; }
-.revenue-card { background: white; color: var(--navy); padding: 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin-top: -60px; position: relative; z-index: 10; width: 85%; margin-left: auto; margin-right: auto; }
+.main-header { background: var(--blue); padding: 40px 20px 80px; border-radius: 0 0 40px 40px; color: white; }
+.revenue-card { background: white; color: var(--navy); padding: 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin: -60px auto 0; width: 80%; text-align: center; }
 
-/* Grid Dashboard */
-.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 25px; margin-top: 20px; }
-.menu-card { background: white; padding: 30px 15px; border-radius: 25px; text-align: center; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer; }
-.icon-circle { width: 55px; height: 55px; border-radius: 18px; background: #F8F9FF; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; }
-
-/* Petits points de couleur sur les cartes */
-.dot { width: 10px; height: 10px; border-radius: 50%; position: absolute; top: 15px; right: 15px; }
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+.menu-card { background: white; padding: 25px 10px; border-radius: 25px; text-align: center; position: relative; cursor: pointer; }
+.icon-circle { width: 50px; height: 50px; border-radius: 15px; background: #F8F9FF; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: 12px; right: 12px; }
 .blue-dot { background: var(--blue); } .orange-dot { background: #F39C12; } .green-dot { background: #2ECC71; } .navy-dot { background: var(--navy); }
 
-/* Vues */
-.view { animation: slideUp 0.3s ease-out; }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.view { display: none; padding: 15px; }
+.section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+.back-btn { background: #E0E7FF; border: none; width: 35px; height: 35px; border-radius: 50%; color: var(--blue); }
 
-.section-header { display: flex; align-items: center; padding: 20px; gap: 15px; }
-.back-btn { background: #E0E7FF; border: none; width: 40px; height: 40px; border-radius: 50%; color: var(--blue); }
+.form-card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 15px; }
+input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #f1f5f9; border-radius: 12px; background: #f8fafc; }
 
-/* Photo Area */
-.photo-upload-area { background: #f0f3f6; border: 2px dashed #ccc; border-radius: 15px; padding: 30px; text-align: center; margin-bottom: 15px; cursor: pointer; }
-.photo-upload-area i { font-size: 2rem; color: #999; }
+.btn-primary { background: var(--blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; cursor: pointer; }
+.status-options { display: flex; gap: 10px; margin-bottom: 10px; }
+.st-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: bold; }
+.chaud { background: #FFE5E5; color: #FF4A4A; }
+.froid { background: #E5F0FF; color: #4A90FF; }
 
-.btn-primary { background: var(--blue); color: white; border: none; padding: 16px; width: 100%; border-radius: 15px; font-weight: bold; font-size: 1rem; }
-.visite-item { background: white; padding: 15px; border-radius: 20px; margin-bottom: 12px; border-left: 5px solid var(--blue); }
+.bien-card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+.bien-img { width: 100%; height: 140px; object-fit: cover; }
+.photo-upload-area { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 15px; text-align: center; color: #64748b; margin-bottom: 10px; }
