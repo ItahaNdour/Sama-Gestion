@@ -39,6 +39,20 @@
             </div>
         </main>
 
+        <section id="view-planning" class="view" style="display:none;">
+            <div class="section-header">
+                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+                <h3>Visites & Rapports</h3>
+            </div>
+            <div class="form-card">
+                <input type="text" id="p-name" placeholder="Nom du prospect">
+                <select id="p-bien-select"></select>
+                <input type="datetime-local" id="p-date">
+                <button class="btn-save" onclick="sauverVisitePro()">Programmer la visite</button>
+            </div>
+            <div id="visites-list"></div>
+        </section>
+
         <section id="view-biens" class="view" style="display:none;">
             <div class="section-header">
                 <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
@@ -55,67 +69,31 @@
         <section id="view-ajouter-bien" class="view" style="display:none;">
             <div class="section-header">
                 <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
-                <h3>Nouveau Bien</h3>
+                <h3>Nouveau Bien Pro</h3>
             </div>
             <div class="form-card">
-                <label class="field-label">Nom du bien / Immeuble</label>
-                <input type="text" id="new-bien-nom" placeholder="Ex: Résidence Horizon">
-                
-                <label class="field-label">Quartier</label>
-                <input type="text" id="new-bien-quartier" placeholder="Ex: Almadies, Ngor...">
-
+                <label class="field-label">URL de la photo</label>
+                <input type="text" id="new-bien-photo" placeholder="Lien image (https://...)">
+                <label class="field-label">Nom & Quartier</label>
+                <input type="text" id="new-bien-nom" placeholder="Ex: Villa Rose, Almadies">
                 <div style="display:flex; gap:10px;">
-                    <div style="flex:1">
-                        <label class="field-label">Type</label>
-                        <select id="new-bien-type">
-                            <option value="Studio (T1)">Studio (T1)</option>
-                            <option value="T2">T2 (Ch+S)</option>
-                            <option value="T3">T3 (2Ch+S)</option>
-                            <option value="T4">T4 (3Ch+S)</option>
-                            <option value="Villa">Villa</option>
-                        </select>
-                    </div>
-                    <div style="flex:1">
-                        <label class="field-label">Étage</label>
-                        <select id="new-bien-etage">
-                            <option value="RDC">RDC</option>
-                            <option value="1er">1er</option>
-                            <option value="2ème">2ème</option>
-                            <option value="3ème+">3ème+</option>
-                        </select>
-                    </div>
+                    <select id="new-bien-type" style="flex:1">
+                        <option value="Studio (T1)">Studio (T1)</option>
+                        <option value="T2">T2</option><option value="T3">T3</option><option value="Villa">Villa</option>
+                    </select>
+                    <input type="number" id="new-bien-loyer" placeholder="Loyer CFA" style="flex:1">
                 </div>
-
-                <label class="field-label">Loyer mensuel (CFA)</label>
-                <input type="number" id="new-bien-loyer" placeholder="Ex: 350000">
-
-                <label class="field-label">Commodités</label>
+                <label class="field-label">Bailleur & Commission</label>
+                <input type="text" id="new-bien-proprio" placeholder="Nom du propriétaire">
+                <input type="text" id="new-bien-com" placeholder="Ex: 10% ou 1 mois">
                 <div class="check-grid">
+                    <label><input type="checkbox" id="check-jardin"> 🌳 Jardin</label>
                     <label><input type="checkbox" id="check-clim"> ❄️ Clim</label>
                     <label><input type="checkbox" id="check-parking"> 🅿️ Parking</label>
-                    <label><input type="checkbox" id="check-jardin"> 🌳 Jardin</label>
                     <label><input type="checkbox" id="check-gardien"> 🛡️ Gardien</label>
                 </div>
-
-                <label class="field-label">Lien Google Maps (Optionnel)</label>
-                <input type="text" id="new-bien-maps" placeholder="Coller le lien ici">
-
-                <label class="field-label">Bailleur / Propriétaire</label>
-                <input type="text" id="new-bien-proprio" placeholder="Nom du proprio">
-
-                <button class="btn-save" onclick="saveBienPro()">Enregistrer le bien</button>
+                <button class="btn-save" onclick="saveBienPro()">Créer la fiche</button>
             </div>
-        </section>
-
-        <section id="view-planning" class="view" style="display:none;">
-            <div class="section-header"><button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button><h3>Visites</h3></div>
-            <div class="form-card">
-                <input type="text" id="p-name" placeholder="Nom prospect">
-                <select id="p-bien-select"></select>
-                <input type="datetime-local" id="p-date">
-                <button class="btn-save" onclick="sauverVisitePro()">Programmer</button>
-            </div>
-            <div id="visites-list"></div>
         </section>
 
         <div id="modal-rapport" class="modal" style="display:none;">
@@ -125,8 +103,16 @@
                     <button onclick="setClientStatus('chaud')" class="st-btn chaud" id="btn-chaud">🔥 Chaud</button>
                     <button onclick="setClientStatus('froid')" class="st-btn froid" id="btn-froid">❄️ Froid</button>
                 </div>
-                <textarea id="rapport-note" placeholder="Notes..."></textarea>
-                <button class="btn-save" onclick="validerRapport()">Valider</button>
+                <textarea id="rapport-note" placeholder="Notes de la visite..."></textarea>
+                <button class="btn-save" onclick="validerRapport()">Valider le rapport</button>
+            </div>
+        </div>
+
+        <div id="modal-historique" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h4>Historique Locataires</h4>
+                <div id="hist-content"></div>
+                <button class="btn-save" onclick="document.getElementById('modal-historique').style.display='none'">Fermer</button>
             </div>
         </div>
     </div>
