@@ -1,9 +1,13 @@
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
+let comTotale = parseFloat(localStorage.getItem('sama_com_totale')) || 0;
 let currentFilter = 'Disponible';
 let selectedPhotos = [];
 let currentVisiteId = null;
 let currentQualif = '';
+
+// Mise à jour du dashboard au démarrage
+document.getElementById('total-display').innerText = comTotale.toLocaleString() + " CFA";
 
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
@@ -12,78 +16,57 @@ function showView(viewId) {
 
     if(viewId === 'planning') { updateBienSelect(); renderVisites(); }
     if(viewId === 'biens') { currentFilter = 'Disponible'; renderBiens(); }
+    if(viewId === 'collecte') updateCollecteSelect();
 }
 
-// --- LOGIQUE DES BIENS ---
-
+// --- MODULE BIENS (LOCKÉ) ---
 function ajusterChampsParType() {
     const type = document.getElementById('new-bien-type').value;
-    const loyerInput = document.getElementById('new-bien-loyer');
-    loyerInput.placeholder = (type === 'Terrain') ? "Prix de vente total (CFA)" : "Loyer mensuel (CFA)";
+    document.getElementById('new-bien-loyer').placeholder = (type === 'Terrain') ? "Prix de vente (CFA)" : "Loyer mensuel (CFA)";
 }
 
 function previewImage(input) {
     if (input.files && input.files[0]) {
         if (selectedPhotos.length >= 3) return alert("Max 3 photos");
         const reader = new FileReader();
-        reader.onload = (e) => {
-            selectedPhotos.push(e.target.result);
-            renderPhotoPreviews();
-        };
+        reader.onload = (e) => { selectedPhotos.push(e.target.result); renderPhotoPreviews(); };
         reader.readAsDataURL(input.files[0]);
     }
 }
 
 function renderPhotoPreviews() {
-    const container = document.getElementById('previews-container');
-    container.innerHTML = selectedPhotos.map((p, idx) => `
-        <div style="position:relative; display:inline-block; margin:5px">
-            <img src="${p}" style="width:60px; height:60px; border-radius:10px; object-fit:cover; border:2px solid #4A69FF">
-            <i class="fas fa-times-circle" onclick="selectedPhotos.splice(${idx},1);renderPhotoPreviews()" style="position:absolute; top:-5px; right:-5px; color:red; background:white; border-radius:50%; cursor:pointer"></i>
-        </div>`).join('');
+    document.getElementById('previews-container').innerHTML = selectedPhotos.map((p, idx) => `
+        <img src="${p}" style="width:50px; height:50px; border-radius:5px; margin:2px;">`).join('');
 }
 
 function saveBienPro() {
     const nom = document.getElementById('new-bien-nom').value;
     const loyer = document.getElementById('new-bien-loyer').value;
-    if(!nom || !loyer) return alert("Nom et Prix obligatoires !");
+    if(!nom || !loyer) return alert("Nom et Prix obligatoires");
 
-    const b = {
+    biens.push({
         id: Date.now(),
         nom: nom,
         type: document.getElementById('new-bien-type').value,
-        adresse: document.getElementById('new-bien-adresse').value || "Sénégal",
+        adresse: document.getElementById('new-bien-adresse').value,
         loyer: loyer,
-        com: document.getElementById('new-bien-com').value || "Non précisée",
-        photos: selectedPhotos.length > 0 ? [...selectedPhotos] : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400"],
+        com: document.getElementById('new-bien-com').value || "10%",
+        photos: selectedPhotos.length > 0 ? [...selectedPhotos] : ["https://via.placeholder.com/150"],
         statut: 'Disponible'
-    };
-
-    biens.push(b);
+    });
     localStorage.setItem('sama_biens', JSON.stringify(biens));
     selectedPhotos = [];
-    alert("Bien enregistré !");
     showView('biens');
 }
 
 function renderBiens() {
     const list = document.getElementById('biens-list');
-    if(!list) return;
-    biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
     const filtered = biens.filter(b => b.statut === currentFilter);
-    if(filtered.length === 0) {
-        list.innerHTML = `<p style="text-align:center; margin-top:40px; color:#64748b;">Aucun bien ${currentFilter.toLowerCase()} trouvé.</p>`;
-        return;
-    }
     list.innerHTML = filtered.map(b => `
         <div class="form-card">
-            <div class="bien-gallery" style="display:flex; gap:10px; overflow-x:auto; margin-bottom:10px;">
-                ${b.photos.map(p => `<img src="${p}" onclick="zoomPhoto('${p}')" style="width:120px; height:120px; object-fit:cover; border-radius:15px; flex-shrink:0;">`).join('')}
-            </div>
-            <div style="display:flex; justify-content:space-between">
-                <div><strong>${b.nom}</strong> <small>(${b.type})</small></div>
-                <div style="font-weight:bold; color:var(--blue)">${parseInt(b.loyer).toLocaleString()} CFA</div>
-            </div>
+            <div class="bien-gallery">${b.photos.map(p => `<img src="${p}" onclick="zoomPhoto('${p}')">`).join('')}</div>
+            <strong>${b.nom}</strong> (${b.type}) <br>
+            <span style="color:var(--blue); font-weight:bold">${parseInt(b.loyer).toLocaleString()} CFA</span><br>
             <button class="btn-primary" style="margin-top:10px" onclick="toggleStatus(${b.id})">${b.statut === 'Occupé' ? 'Libérer' : 'Louer/Vendre'}</button>
         </div>`).reverse().join('');
 }
@@ -94,103 +77,75 @@ function toggleStatus(id) {
     renderBiens();
 }
 
-// --- LOGIQUE DES VISITES (RETOUR COMPLET) ---
+function filterBiens(statut, e) {
+    currentFilter = statut;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active');
+    renderBiens();
+}
 
+// --- MODULE VISITES (LOCKÉ) ---
 function updateBienSelect() {
     const sel = document.getElementById('p-bien-select');
-    if(!sel) return;
-    biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
-    sel.innerHTML = '<option value="">Choisir un bien...</option>' + biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+    sel.innerHTML = '<option value="">Choisir...</option>' + biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
 }
 
 function sauverVisitePro() {
-    const nom = document.getElementById('p-name').value;
-    const date = document.getElementById('p-date').value;
-    const bien = document.getElementById('p-bien-select').value;
-    if(!nom || !date || !bien) return alert("Remplis tout !");
-    
-    visites.push({ id: Date.now(), nom, date, bien, status: 'prévu', qualif: '', note: '' });
+    visites.push({ id: Date.now(), nom: document.getElementById('p-name').value, date: document.getElementById('p-date').value, bien: document.getElementById('p-bien-select').value, status: 'prévu' });
     localStorage.setItem('sama_visites', JSON.stringify(visites));
-    document.getElementById('p-name').value = "";
     renderVisites();
 }
 
 function renderVisites() {
-    const list = document.getElementById('visites-list');
-    if(!list) return;
-    visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
     const today = new Date().toISOString().split('T')[0];
-
-    list.innerHTML = visites.map(v => {
-        const isToday = v.date.split('T')[0] === today;
-        const isPast = v.date.split('T')[0] < today;
-        
-        return `
-        <div class="form-card" style="border-left: 5px solid ${v.status === 'terminé' ? '#2ECC71' : '#4A69FF'}">
-            <div style="display:flex; justify-content:space-between;">
-                <div>
-                    <strong>${v.nom}</strong> <br>
-                    <small><i class="fas fa-home"></i> ${v.bien}</small><br>
-                    <small><i class="far fa-clock"></i> ${v.date.replace('T', ' à ')}</small>
-                </div>
-                <div onclick="supprimerVisite(${v.id})" style="color:#ff4a4a; cursor:pointer"><i class="fas fa-trash"></i></div>
-            </div>
-
-            <div style="margin-top:10px; display:flex; gap:5px;">
-                ${v.status === 'prévu' ? (
-                    isToday ? `<button class="btn-primary" onclick="ouvrirRapport(${v.id})" style="padding:8px">Valider la visite</button>` 
-                            : `<button class="btn-primary" style="background:#cbd5e1; padding:8px" disabled>Rappel J-J</button>`
-                ) : `
-                    <div style="background:#f1f5f9; padding:10px; border-radius:10px; width:100%; font-size:0.85rem;">
-                        <strong>${v.qualif}</strong> : ${v.note}
-                    </div>
-                `}
-            </div>
-        </div>`;
-    }).reverse().join('');
+    document.getElementById('visites-list').innerHTML = visites.map(v => `
+        <div class="form-card" style="border-left:5px solid ${v.status==='terminé'?'#2ECC71':'#4A69FF'}">
+            <strong>${v.nom}</strong> - ${v.bien} <br>
+            ${v.status === 'prévu' && v.date.split('T')[0] === today ? `<button onclick="ouvrirRapport(${v.id})" class="btn-primary" style="padding:5px">Valider J-J</button>` : `<small>${v.date.replace('T',' ')}</small>`}
+        </div>`).reverse().join('');
 }
 
-function ouvrirRapport(id) {
-    currentVisiteId = id;
-    document.getElementById('modal-rapport').style.display = 'flex';
-}
-
-function setQualif(q) {
-    currentQualif = q;
-    document.querySelectorAll('.st-btn').forEach(b => b.style.border = "none");
-    event.target.style.border = "2px solid var(--blue)";
-}
-
+function ouvrirRapport(id) { currentVisiteId = id; document.getElementById('modal-rapport').style.display='flex'; }
+function setQualif(q) { currentQualif = q; }
 function validerRapport() {
-    const note = document.getElementById('rapport-note').value;
-    visites = visites.map(v => {
-        if(v.id === currentVisiteId) {
-            v.status = 'terminé';
-            v.qualif = currentQualif || 'Visité';
-            v.note = note || 'Aucune note';
-        }
-        return v;
-    });
+    visites = visites.map(v => { if(v.id === currentVisiteId) { v.status='terminé'; v.qualif=currentQualif; v.note=document.getElementById('rapport-note').value; } return v; });
     localStorage.setItem('sama_visites', JSON.stringify(visites));
-    document.getElementById('modal-rapport').style.display = 'none';
-    document.getElementById('rapport-note').value = "";
+    document.getElementById('modal-rapport').style.display='none';
     renderVisites();
 }
 
-function supprimerVisite(id) {
-    if(confirm("Supprimer cette visite ?")) {
-        visites = visites.filter(v => v.id !== id);
-        localStorage.setItem('sama_visites', JSON.stringify(visites));
-        renderVisites();
-    }
+// --- NOUVEAU MODULE COLLECTE ---
+function updateCollecteSelect() {
+    const sel = document.getElementById('c-bien-select');
+    const occupes = biens.filter(b => b.statut === 'Occupé');
+    sel.innerHTML = occupes.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+}
+
+function preRemplirLoyer() {
+    const b = biens.find(x => x.nom === document.getElementById('c-bien-select').value);
+    if(b) document.getElementById('c-montant').value = b.loyer;
+}
+
+function validerCollecte() {
+    const montant = parseFloat(document.getElementById('c-montant').value);
+    const bien = biens.find(b => b.nom === document.getElementById('c-bien-select').value);
+    const mode = document.querySelector('input[name="pay-mode"]:checked').value;
+    
+    // Calcul de commission
+    let maCom = bien.com.includes('%') ? (parseFloat(bien.com)/100) * montant : parseFloat(bien.com);
+    comTotale += maCom;
+    localStorage.setItem('sama_com_totale', comTotale);
+    document.getElementById('total-display').innerText = comTotale.toLocaleString() + " CFA";
+
+    const msg = `*REÇU SAMA GESTION*%0A------------------%0A🏠 *Bien:* ${bien.nom}%0A💰 *Payé:* ${montant.toLocaleString()} CFA%0A💳 *Mode:* ${mode}%0A📅 *Date:* ${new Date().toLocaleDateString()}%0A------------------%0A*Commission:* ${maCom.toLocaleString()} CFA%0A*Net Proprio:* ${(montant - maCom).toLocaleString()} CFA`;
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+    showView('dashboard');
 }
 
 function zoomPhoto(url) {
     const overlay = document.createElement('div');
     overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; display:flex; align-items:center; justify-content:center;";
-    overlay.innerHTML = `<img src="${url}" style="max-width:95%; max-height:85%; border-radius:10px;">`;
+    overlay.innerHTML = `<img src="${url}" style="max-width:90%; border-radius:10px;">`;
     overlay.onclick = () => overlay.remove();
     document.body.appendChild(overlay);
 }
-
-window.onload = () => showView('dashboard');
