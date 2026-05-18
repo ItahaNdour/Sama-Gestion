@@ -60,7 +60,7 @@
         <section id="view-biens" class="view" style="display:none;">
             <div class="section-header">
                 <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Mon Parc Immobilier</h3>
+                <h3>Mes Biens</h3>
             </div>
             <div class="tabs-container">
                 <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
@@ -70,30 +70,6 @@
             <button class="fab-add" onclick="showView('ajouter-bien')"><i class="fas fa-plus"></i></button>
         </section>
 
-        <section id="view-ajouter-bien" class="view" style="display:none;">
-            <div class="section-header">
-                <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
-                <h3>Nouveau Bien</h3>
-            </div>
-            <div class="form-card">
-                <div class="photo-upload-area" onclick="document.getElementById('camera-input').click()">
-                    <i class="fas fa-camera"></i>
-                    <p>Prendre une photo</p>
-                    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="previewImage(this)">
-                    <img id="preview-img" style="display:none; width:100%; border-radius:12px; margin-top:10px;">
-                </div>
-                <input type="text" id="new-bien-nom" placeholder="Nom du bien">
-                <input type="number" id="new-bien-loyer" placeholder="Loyer mensuel (CFA)">
-                <input type="text" id="new-bien-proprio" placeholder="Bailleur">
-                <input type="text" id="new-bien-com" placeholder="Commission (ex: 10%)">
-                <div class="check-grid">
-                    <label><input type="checkbox" id="check-jardin"> 🌳 Jardin</label>
-                    <label><input type="checkbox" id="check-clim"> ❄️ Clim</label>
-                </div>
-                <button class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
-            </div>
-        </section>
-
         <div id="modal-rapport" class="modal" style="display:none;">
             <div class="modal-content">
                 <h4>Fin de visite</h4>
@@ -101,16 +77,8 @@
                     <button onclick="setQualif('🔥 Chaud')" class="st-btn chaud">Chaud</button>
                     <button onclick="setQualif('❄️ Froid')" class="st-btn froid">Froid</button>
                 </div>
-                <textarea id="rapport-note" placeholder="Notes sur le client..."></textarea>
+                <textarea id="rapport-note" placeholder="Commentaire sur la visite..."></textarea>
                 <button class="btn-primary" onclick="validerRapport()">Valider le Rapport</button>
-            </div>
-        </div>
-
-        <div id="modal-historique" class="modal" style="display:none;">
-            <div class="modal-content">
-                <h4>Historique</h4>
-                <div id="hist-content"></div>
-                <button class="btn-primary" onclick="document.getElementById('modal-historique').style.display='none'" style="margin-top:10px; background:#333;">Fermer</button>
             </div>
         </div>
     </div>
