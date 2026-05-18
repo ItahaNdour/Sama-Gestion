@@ -3,160 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sama Gestion Pro</title>
+    <title>Sama Gestion Pro v3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root { --blue: #4A69FF; --bg: #F4F7FE; --navy: #1A2B49; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; }
+        :root { --blue: #4A69FF; --bg: #F4F7FE; --navy: #1A2B49; --red: #FF4A4A; --green: #2ECC71; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; color: var(--navy); }
         .app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; padding-bottom: 80px; }
-        .main-header { background: var(--blue); padding: 40px 20px 80px; border-radius: 0 0 40px 40px; color: white; }
-        .revenue-card { background: white; color: var(--navy); padding: 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin: -60px auto 20px; width: 85%; text-align: center; }
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
-        .menu-card { background: white; padding: 25px 10px; border-radius: 25px; text-align: center; position: relative; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .icon-circle { width: 50px; height: 50px; border-radius: 15px; background: #F8F9FF; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem; }
-        .view { padding: 15px; display: none; }
-        .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .back-btn { background: #E0E7FF; border: none; width: 35px; height: 35px; border-radius: 50%; color: var(--blue); cursor: pointer; }
-        .form-card { background: white; padding: 20px; border-radius: 25px; margin-bottom: 15px; box-shadow: 0 5px 10px rgba(0,0,0,0.02); }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #f1f5f9; border-radius: 12px; background: #f8fafc; font-size: 14px; outline: none; }
-        .btn-primary { background: var(--blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; cursor: pointer; }
-        .tabs-container { display: flex; background: #e2e8f0; padding: 5px; border-radius: 15px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; border: none; padding: 10px; border-radius: 12px; font-weight: bold; color: #64748b; background: transparent; cursor: pointer; }
+
+        /* EN-TETE & DASHBOARD */
+        .main-header { background: var(--blue); padding: 30px 20px 70px; border-radius: 0 0 40px 40px; color: white; text-align: center; }
+        .revenue-card { background: white; color: var(--navy); padding: 20px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin: -50px auto 20px; width: 88%; }
+        .revenue-card h2 { margin: 5px 0; font-size: 1.6rem; color: var(--blue); }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; }
+        .menu-card { background: white; padding: 20px 10px; border-radius: 22px; text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .icon-circle { width: 45px; height: 45px; border-radius: 14px; background: #F0F4FF; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.1rem; }
+
+        /* VUES & CARTES */
+        .view { padding: 15px; display: none; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .back-btn { background: #E0E7FF; border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--blue); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .form-card { background: white; padding: 18px; border-radius: 22px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 8px; border: 1.5px solid #f1f5f9; border-radius: 12px; background: #f8fafc; font-size: 14px; outline: none; }
+        .btn-primary { background: var(--blue); color: white; border: none; padding: 14px; width: 100%; border-radius: 14px; font-weight: bold; cursor: pointer; }
+        .btn-outline { background: #f1f5f9; color: #475569; border: none; padding: 10px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; width: 100%; margin-top: 5px; }
+
+        /* TABS & GALERIE */
+        .tabs-container { display: flex; background: #e2e8f0; padding: 4px; border-radius: 14px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; border: none; padding: 9px; border-radius: 11px; font-weight: 700; color: #64748b; background: transparent; cursor: pointer; }
         .tab-btn.active { background: white; color: var(--blue); }
-        .bien-gallery { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .bien-gallery img { width: 120px; height: 120px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
-        .fab-add { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: var(--blue); color: white; border: none; font-size: 24px; box-shadow: 0 10px 20px rgba(74,105,255,0.3); z-index: 100; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 30px; width: 85%; }
-        .st-btn { flex: 1; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .mode-pay-box { flex:1; text-align:center; background:#f1f5f9; padding:10px; border-radius:10px; cursor:pointer; border: 2px solid transparent; }
-        input[type="radio"]:checked + .mode-pay-box { border-color: var(--blue); background: #e0e7ff; }
+        .bien-gallery { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; }
+        .bien-gallery img { width: 100px; height: 100px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+
+        /* MODAL */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .modal-content { background: white; padding: 25px; border-radius: 28px; width: 100%; max-width: 380px; position: relative; }
+        .fab-add { position: fixed; bottom: 25px; right: 25px; width: 56px; height: 56px; border-radius: 50%; background: var(--blue); color: white; border: none; font-size: 22px; box-shadow: 0 8px 20px rgba(74, 105, 255, 0.4); z-index: 100; }
+        
+        .mode-pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
+        .mode-pay-box { text-align: center; background: #f1f5f9; padding: 10px 5px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; font-size: 0.75rem; font-weight: bold; }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + .mode-pay-box { border-color: var(--blue); background: #E0E7FF; color: var(--blue); }
     </style>
 </head>
 <body>
-    <div class="app-shell">
-        <header class="main-header">
-            <div class="header-top"><span><i class="fas fa-user-circle"></i> Gestionnaire Immo</span></div>
-            <div class="revenue-card">
-                <p>Ma Commission Totale</p>
-                <h2 id="total-display">0 CFA</h2>
-                <div style="height:8px; background:#eee; border-radius:10px; margin-top:10px;"><div id="progress-bar" style="width:0%; height:100%; background:var(--blue); border-radius:10px;"></div></div>
-            </div>
-        </header>
 
-        <main id="view-dashboard" class="view" style="display:block;">
-            <div class="menu-grid">
-                <div class="menu-card" onclick="showView('planning')">
-                    <div class="icon-circle"><i class="fas fa-calendar-alt" style="color: #4A69FF;"></i></div>
-                    <span>Visite</span>
-                </div>
-                <div class="menu-card" onclick="showView('etat')">
-                    <div class="icon-circle"><i class="fas fa-camera" style="color: #F39C12;"></i></div>
-                    <span>État des Lieux</span>
-                </div>
-                <div class="menu-card" onclick="showView('collecte')">
-                    <div class="icon-circle"><i class="fas fa-wallet" style="color: #2ECC71;"></i></div>
-                    <span>Collecter</span>
-                </div>
-                <div class="menu-card" onclick="showView('biens')">
-                    <div class="icon-circle"><i class="fas fa-city" style="color: #2C3E50;"></i></div>
-                    <span>Mes Biens</span>
-                </div>
-            </div>
-        </main>
+<div class="app-shell">
+    <header class="main-header">
+        <h2 style="margin:0;">Sama Gestion Pro</h2>
+        <p style="opacity: 0.8; font-size: 0.8rem;">Assistant Courtier v3</p>
+    </header>
 
-        <section id="view-planning" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Visites</h3>
-            </div>
-            <div class="form-card">
-                <input type="text" id="p-name" placeholder="Nom du client">
-                <select id="p-bien-select"></select>
-                <input type="datetime-local" id="p-date">
-                <button class="btn-primary" onclick="sauverVisitePro()">Programmer</button>
-            </div>
-            <div id="visites-list"></div>
-        </section>
+    <div class="revenue-card">
+        <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Ma Commission Totale</p>
+        <h2 id="total-display">0 CFA</h2>
+    </div>
 
-        <section id="view-biens" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Mon Parc</h3>
+    <main id="view-dashboard" class="view" style="display:block;">
+        <div class="menu-grid">
+            <div class="menu-card" onclick="showView('planning')">
+                <div class="icon-circle"><i class="fas fa-calendar-check" style="color: #4A69FF;"></i></div>
+                <span>Visites</span>
             </div>
-            <div class="tabs-container">
-                <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
-                <button class="tab-btn" onclick="filterBiens('Occupé', event)">Occupés</button>
+            <div class="menu-card" onclick="showView('collecte')">
+                <div class="icon-circle"><i class="fas fa-hand-holding-usd" style="color: #2ECC71;"></i></div>
+                <span>Collecter</span>
             </div>
-            <div id="biens-list"></div>
-            <button class="fab-add" onclick="showView('ajouter-bien')"><i class="fas fa-plus"></i></button>
-        </section>
-
-        <section id="view-collecte" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-                <h3>Encaisser</h3>
+            <div class="menu-card" onclick="showView('biens')">
+                <div class="icon-circle"><i class="fas fa-building" style="color: #F39C12;"></i></div>
+                <span>Mes Biens</span>
             </div>
-            <div class="form-card">
-                <label>Bien Occupé :</label>
-                <select id="c-bien-select" onchange="preRemplirLoyer()"></select>
-                <label>Type :</label>
-                <select id="c-type">
-                    <option value="Loyer">Loyer Mensuel</option>
-                    <option value="Caution">Caution / Dépôt</option>
-                    <option value="Frais">Frais de dossier</option>
-                </select>
-                <input type="number" id="c-montant" placeholder="Montant CFA">
-                
-                <label>Mode de paiement :</label>
-                <div style="display:flex; gap:8px; margin-bottom:15px;">
-                    <input type="radio" name="pay-mode" id="m-wave" value="Wave" checked style="display:none">
-                    <label for="m-wave" class="mode-pay-box">Wave</label>
-                    <input type="radio" name="pay-mode" id="m-om" value="Orange Money" style="display:none">
-                    <label for="m-om" class="mode-pay-box">OM</label>
-                    <input type="radio" name="pay-mode" id="m-cash" value="Espèces" style="display:none">
-                    <label for="m-cash" class="mode-pay-box">Cash</label>
-                </div>
-                <button class="btn-primary" onclick="validerCollecte()">Enregistrer & Reçu WhatsApp</button>
-            </div>
-        </section>
-
-        <section id="view-ajouter-bien" class="view">
-            <div class="section-header"><button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button></div>
-            <div class="form-card">
-                <div class="photo-upload-area" onclick="document.getElementById('camera-input').click()" style="border:2px dashed #ccc; padding:20px; text-align:center; border-radius:20px; margin-bottom:15px;">
-                    <i class="fas fa-camera"></i><p>Photos (Max 3)</p>
-                    <div id="previews-container"></div>
-                    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="previewImage(this)">
-                </div>
-                <select id="new-bien-type" onchange="ajusterChampsParType()">
-                    <option value="Terrain">Terrain Nu</option>
-                    <option value="Studio">Studio (T1)</option>
-                    <option value="T2">Appartement T2</option>
-                    <option value="T3">Appartement T3</option>
-                    <option value="Villa">Villa</option>
-                </select>
-                <input type="text" id="new-bien-nom" placeholder="Nom du bien">
-                <input type="text" id="new-bien-adresse" placeholder="Quartier/Adresse">
-                <input type="number" id="new-bien-loyer" placeholder="Prix">
-                <input type="text" id="new-bien-com" placeholder="Commission (ex: 10% ou 1 mois)">
-                <button class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
-            </div>
-        </section>
-
-        <div id="modal-rapport" class="modal" style="display:none;">
-            <div class="modal-content">
-                <h4>Rapport de visite</h4>
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <button onclick="setQualif('🔥 Chaud')" class="st-btn" style="background:#FFE5E5; color:red;">Chaud</button>
-                    <button onclick="setQualif('❄️ Froid')" class="st-btn" style="background:#E5F0FF; color:blue;">Froid</button>
-                </div>
-                <textarea id="rapport-note" placeholder="Notes..." rows="3"></textarea>
-                <button class="btn-primary" onclick="validerRapport()">Valider</button>
+            <div class="menu-card" onclick="alert('Module Etat des Lieux en cours...')">
+                <div class="icon-circle"><i class="fas fa-clipboard-list" style="color: var(--navy);"></i></div>
+                <span>Etats des Lieux</span>
             </div>
         </div>
-    </div>
-    <script src="script.js"></script>
+    </main>
+
+    <section id="view-biens" class="view">
+        <div class="section-header">
+            <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+            <h3>Mon Catalogue</h3>
+        </div>
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
+            <button class="tab-btn" onclick="filterBiens('Occupé', event)">Occupés</button>
+        </div>
+        <div id="biens-list"></div>
+        <button class="fab-add" onclick="showView('ajouter-bien')"><i class="fas fa-plus"></i></button>
+    </section>
+
+    <section id="view-ajouter-bien" class="view">
+        <div class="section-header">
+            <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
+            <h3>Nouveau Bien</h3>
+        </div>
+        <div class="form-card">
+            <div onclick="document.getElementById('camera-input').click()" style="border:2px dashed #cbd5e1; border-radius:15px; padding:15px; text-align:center; color:#64748b; cursor:pointer; margin-bottom:10px;">
+                <i class="fas fa-camera"></i> <p style="margin:0; font-size:0.8rem;">Ajouter Photos (Max 3)</p>
+                <div id="previews-container" style="display:flex; justify-content:center; gap:5px; margin-top:8px;"></div>
+            </div>
+            <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" multiple onchange="previewImage(this)">
+            <select id="new-bien-type">
+                <option value="Studio">Studio (T1)</option>
+                <option value="T2">Appartement T2</option>
+                <option value="T3">Appartement T3</option>
+                <option value="Villa">Villa</option>
+                <option value="Terrain">Terrain Nu</option>
+            </select>
+            <input type="text" id="new-bien-nom" placeholder="Nom du bien">
+            <input type="text" id="new-bien-adresse" placeholder="Quartier / Adresse">
+            <input type="number" id="new-bien-loyer" placeholder="Prix / Loyer">
+            <input type="text" id="new-bien-proprio" placeholder="Nom Propriétaire">
+            <input type="text" id="new-bien-com" placeholder="Ma Commission (ex: 10% ou 1 mois)">
+            <button class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
+        </div>
+    </section>
+
+    <section id="view-collecte" class="view">
+        <div class="section-header">
+            <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
+            <h3>Encaisser</h3>
+        </div>
+        <div class="form-card">
+            <label>Bien Occupé :</label>
+            <select id="c-bien-select" onchange="remplirLoyer()"></select>
+            <label>Type :</label>
+            <select id="c-type">
+                <option value="Loyer">Loyer du mois</option>
+                <option value="Caution">3 Mois (Entrée)</option>
+                <option value="Frais">Frais de dossier</option>
+            </select>
+            <input type="number" id="c-montant" placeholder="Montant Encaissé">
+            <label>Moyen :</label>
+            <div class="mode-pay-grid">
+                <label><input type="radio" name="pay-mode" value="Wave" checked><div class="mode-pay-box">Wave</div></label>
+                <label><input type="radio" name="pay-mode" value="Orange Money"><div class="mode-pay-box">OM</div></label>
+                <label><input type="radio" name="pay-mode" value="Espèces"><div class="mode-pay-box">Cash</div></label>
+            </div>
+            <button class="btn-primary" onclick="traiterCollecte()">Valider & Reçu WhatsApp</button>
+        </div>
+    </section>
+
+    <section id="view-planning" class="view">
+        <div class="section-header"><button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button><h3>Visites</h3></div>
+        <div class="form-card">
+            <input type="text" id="p-name" placeholder="Nom Client">
+            <select id="p-bien-select"></select>
+            <input type="datetime-local" id="p-date">
+            <button class="btn-primary" onclick="sauverVisite()">Programmer</button>
+        </div>
+        <div id="visites-list"></div>
+    </section>
+
+    <div id="modal-bien" class="modal"><div class="modal-content" id="modal-body"></div></div>
+</div>
+
+<script>
+    let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
+    let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
+    let comTotale = parseFloat(localStorage.getItem('sama_com_totale')) || 0;
+    let currentFilter = 'Disponible';
+    let selectedPhotos = [];
+
+    document.getElementById('total-display').innerText = comTotale.toLocaleString() + " CFA";
+
+    function showView(id) {
+        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.getElementById('view-' + id).style.display = 'block';
+        if(id === 'biens') renderBiens();
+        if(id === 'collecte') updateSelects();
+        if(id === 'planning') { updateSelects(); renderVisites(); }
+    }
+
+    // --- BIENS ---
+    function previewImage(input) {
+        if (input.files) {
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => { selectedPhotos.push(e.target.result); renderPreviews(); };
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+    function renderPreviews() {
+        document.getElementById('previews-container').innerHTML = selectedPhotos.map(p => `<img src="${p}" style="width:40px;height:40px;border-radius:5px;">`).join('');
+    }
+
+    function saveBienPro() {
+        const nom = document.getElementById('new-bien-nom').value;
+        const loyer = document.getElementById('new-bien-loyer').value;
+        if(!nom || !loyer) return alert("Remplis tout !");
+        biens.push({
+            id: Date.now(), nom, loyer, 
+            type: document.getElementById('new-bien-type').value,
+            adresse: document.getElementById('new-bien-adresse').value,
+            proprio: document.getElementById('new-bien-proprio').value,
+            com: document.getElementById('new-bien-com').value || "10%",
+            photos: selectedPhotos.length > 0 ? [...selectedPhotos] : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"],
+            statut: 'Disponible'
+        });
+        localStorage.setItem('sama_biens', JSON.stringify(biens));
+        selectedPhotos = [];
+        showView('biens');
+    }
+
+    function renderBiens() {
+        const filtered = biens.filter(b => b.statut === currentFilter);
+        document.getElementById('biens-list').innerHTML = filtered.map(b => `
+            <div class="form-card" onclick="ouvrirFiche(${b.id})">
+                <div class="bien-gallery">${b.photos.map(p => `<img src="${p}">`).join('')}</div>
+                <strong>${b.nom}</strong><br><small>${b.adresse}</small><br>
+                <span style="color:var(--blue); font-weight:bold;">${parseInt(b.loyer).toLocaleString()} CFA</span>
+            </div>
+        `).reverse().join('');
+    }
+
+    function filterBiens(s, e) {
+        currentFilter = s;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderBiens();
+    }
+
+    function ouvrirFiche(id) {
+        const b = biens.find(x => x.id === id);
+        document.getElementById('modal-body').innerHTML = `
+            <h3>${b.nom}</h3>
+            <p><strong>Bailleur:</strong> ${b.proprio}</p>
+            <p><strong>Adresse:</strong> ${b.adresse}</p>
+            <p><strong>Com:</strong> ${b.com}</p>
+            <p><strong>Statut:</strong> ${b.statut}</p>
+            <button class="btn-primary" onclick="toggleStatut(${b.id})">${b.statut==='Disponible'?'Louer':'Libérer'}</button>
+            <button class="btn-outline" style="color:red" onclick="supprimerBien(${b.id})">Supprimer le bien</button>
+            <button class="btn-outline" onclick="fermerModal()">Fermer</button>
+        `;
+        document.getElementById('modal-bien').style.display = 'flex';
+    }
+    function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
+    function toggleStatut(id) {
+        biens = biens.map(b => { if(b.id===id) b.statut = b.statut==='Disponible'?'Occupé':'Disponible'; return b; });
+        localStorage.setItem('sama_biens', JSON.stringify(biens));
+        fermerModal(); renderBiens();
+    }
+    function supprimerBien(id) {
+        if(confirm("Supprimer ?")) {
+            biens = biens.filter(x => x.id !== id);
+            localStorage.setItem('sama_biens', JSON.stringify(biens));
+            fermerModal(); renderBiens();
+        }
+    }
+
+    // --- COLLECTE ---
+    function updateSelects() {
+        const occupes = biens.filter(b => b.statut === 'Occupé');
+        document.getElementById('c-bien-select').innerHTML = occupes.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+        document.getElementById('p-bien-select').innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+    }
+    function remplirLoyer() {
+        const b = biens.find(x => x.nom === document.getElementById('c-bien-select').value);
+        if(b) document.getElementById('c-montant').value = b.loyer;
+    }
+    function traiterCollecte() {
+        const b = biens.find(x => x.nom === document.getElementById('c-bien-select').value);
+        const montant = parseFloat(document.getElementById('c-montant').value);
+        const type = document.getElementById('c-type').value;
+        const mode = document.querySelector('input[name="pay-mode"]:checked').value;
+        
+        let maPart = (type === 'Caution') ? parseFloat(b.loyer) : (b.com.includes('%') ? (parseFloat(b.com)/100)*montant : parseFloat(b.com));
+        comTotale += maPart;
+        localStorage.setItem('sama_com_totale', comTotale);
+        document.getElementById('total-display').innerText = comTotale.toLocaleString() + " CFA";
+
+        const text = `*REÇU SAMA GESTION*%0A🏠 *Bien:* ${b.nom}%0A💰 *Montant:* ${montant.toLocaleString()} CFA%0A📝 *Type:* ${type}%0A💳 *Mode:* ${mode}%0A------------------%0A*Net Bailleur:* ${(montant - (type==='Caution'?0:maPart)).toLocaleString()} CFA`;
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+        showView('dashboard');
+    }
+
+    // --- VISITES ---
+    function sauverVisite() {
+        visites.push({ id:Date.now(), nom: document.getElementById('p-name').value, bien: document.getElementById('p-bien-select').value, date: document.getElementById('p-date').value });
+        localStorage.setItem('sama_visites', JSON.stringify(visites));
+        renderVisites();
+    }
+    function renderVisites() {
+        document.getElementById('visites-list').innerHTML = visites.map(v => `
+            <div class="form-card">
+                <strong>${v.nom}</strong> (${v.bien})<br><small>${v.date}</small>
+                <button class="btn-outline" onclick="window.open('https://wa.me/?text=Rappel visite pour le bien ${v.bien}','_blank')">WhatsApp Rappel</button>
+            </div>
+        `).reverse().join('');
+    }
+
+    window.onload = () => showView('dashboard');
+</script>
 </body>
 </html>
