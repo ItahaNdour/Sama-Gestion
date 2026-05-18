@@ -1,6 +1,7 @@
+// Initialisation propre des données
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
-let currentFilter = 'Disponible';
+let currentFilter = 'Disponible'; // Doit correspondre exactement au texte des boutons
 let selectedPhotos = [];
 
 function showView(viewId) {
@@ -10,13 +11,13 @@ function showView(viewId) {
 
     if(viewId === 'planning') { updateBienSelect(); renderVisites(); }
     if(viewId === 'biens') {
-        currentFilter = 'Disponible';
+        currentFilter = 'Disponible'; // On remet le filtre par défaut
         renderBiens(); 
     }
 }
 
-// --- GESTION DU FORMULAIRE DYNAMIQUE ---
-// Cette fonction change le texte "Loyer" en "Prix" si c'est un terrain
+// --- GESTION DU FORMULAIRE ---
+
 function ajusterChampsParType() {
     const type = document.getElementById('new-bien-type').value;
     const loyerInput = document.getElementById('new-bien-loyer');
@@ -45,10 +46,12 @@ function renderPhotoPreviews() {
         <div style="position:relative; display:inline-block; margin:5px">
             <img src="${p}" style="width:60px; height:60px; border-radius:10px; object-fit:cover; border:2px solid #4A69FF">
             <i class="fas fa-times-circle" onclick="selectedPhotos.splice(${idx},1);renderPhotoPreviews()" 
-               style="position:absolute; top:-5px; right:-5px; color:red; background:white; border-radius:50%; font-size:1.2rem; cursor:pointer"></i>
+               style="position:absolute; top:-5px; right:-5px; color:red; background:white; border-radius:50%; cursor:pointer"></i>
         </div>
     `).join('');
 }
+
+// --- SAUVEGARDE ET AFFICHAGE (CORRIGÉ) ---
 
 function saveBienPro() {
     const nom = document.getElementById('new-bien-nom').value;
@@ -61,18 +64,20 @@ function saveBienPro() {
         id: Date.now(),
         nom: nom,
         type: type,
-        adresse: document.getElementById('new-bien-adresse').value || "Sénégal",
+        adresse: document.getElementById('new-bien-adresse').value || "Non précisée",
         loyer: loyer,
         proprio: document.getElementById('new-bien-proprio').value || "-",
         com: document.getElementById('new-bien-com').value || "Non précisée",
         photos: selectedPhotos.length > 0 ? [...selectedPhotos] : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400"],
-        statut: 'Disponible'
+        statut: 'Disponible' // CRUCIAL : Doit être exactement 'Disponible'
     };
 
+    // On récupère la liste la plus fraîche, on ajoute, et on sauvegarde
+    biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
     biens.push(b);
     localStorage.setItem('sama_biens', JSON.stringify(biens));
     
-    // Reset complet
+    // Reset du formulaire
     selectedPhotos = [];
     document.getElementById('new-bien-nom').value = "";
     document.getElementById('new-bien-loyer').value = "";
@@ -81,17 +86,22 @@ function saveBienPro() {
     document.getElementById('new-bien-com').value = "";
     document.getElementById('previews-container').innerHTML = "";
     
+    // On force le filtre sur Disponible pour être sûr de voir le bien
     currentFilter = 'Disponible';
+    
     alert("Bien enregistré !");
-    showView('biens');
-    renderBiens();
+    showView('biens'); // Retour à la liste
+    renderBiens();    // Lancer l'affichage immédiatement
 }
 
 function renderBiens() {
     const list = document.getElementById('biens-list');
     if(!list) return;
 
+    // On recharge les données depuis le stockage
     biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
+    
+    // Filtrage
     const filtered = biens.filter(b => b.statut === currentFilter);
     
     if(filtered.length === 0) {
@@ -101,8 +111,7 @@ function renderBiens() {
 
     list.innerHTML = filtered.map(b => {
         const estTerrain = b.type === 'Terrain';
-        const labelPrix = estTerrain ? 'Prix' : 'Loyer';
-        const actionBouton = estTerrain ? 'Marquer comme Vendu' : 'Marquer comme Loué';
+        const actionBouton = b.statut === 'Occupé' ? (estTerrain ? 'Remettre en Vente' : 'Libérer le bien') : (estTerrain ? 'Marquer comme Vendu' : 'Marquer comme Loué');
 
         return `
         <div class="form-card">
@@ -120,7 +129,7 @@ function renderBiens() {
                 </div>
             </div>
             <button class="btn-primary" style="margin-top:10px; background:${b.statut === 'Occupé'?'#94a3b8':'#4A69FF'}" onclick="toggleStatus(${b.id})">
-                ${b.statut === 'Occupé' ? (estTerrain ? 'Remettre en Vente' : 'Libérer le bien') : actionBouton}
+                ${actionBouton}
             </button>
         </div>`;
     }).reverse().join('');
@@ -138,7 +147,7 @@ function toggleStatus(id) {
 function filterBiens(statut, e) {
     currentFilter = statut;
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    e.target.classList.add('active');
+    if(e) e.target.classList.add('active');
     renderBiens();
 }
 
@@ -157,8 +166,10 @@ function sauverVisitePro() {
     const date = document.getElementById('p-date').value;
     const bien = document.getElementById('p-bien-select').value;
     if(!nom || !date || !bien) return alert("Remplis tout !");
+    
     visites.push({ id: Date.now(), nom, date, bien, status: 'prévu', qualif: '', note: '' });
     localStorage.setItem('sama_visites', JSON.stringify(visites));
+    
     document.getElementById('p-name').value = "";
     renderVisites();
     alert("Visite ajoutée !");
