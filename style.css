@@ -4,7 +4,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; disp
 .app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; overflow-x: hidden; }
 
 .main-header { background: var(--blue); padding: 40px 20px 80px; border-radius: 0 0 40px 40px; color: white; }
-.revenue-card { background: white; color: var(--navy); padding: 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin: -60px auto 20px; width: 85%; text-align: center; }
+.revenue-card { background: white; color:  var(--navy); padding: 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin: -60px auto 20px; width: 85%; text-align: center; }
 
 /* Dashboard Grille 2x2 */
 .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
