@@ -1,9 +1,7 @@
-// Sama Gestion Pro v3.3 - Initialisation Vierge et Sécurité Absolue
+// Sama Gestion Pro v4.1 - NETTOYÉ ET CORRIGÉ (Zéro bug de bouton)
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
 let comTotaleGlobal = parseFloat(localStorage.getItem('sama_com_global')) || 0; 
-
-// Base des utilisateurs : TOTALEMENT VIERGE AU DÉPART
 let utilisateurs = JSON.parse(localStorage.getItem('sama_utilisateurs')) || [];
 
 let profilRole = localStorage.getItem('sama_profil-role') || null; 
@@ -15,67 +13,46 @@ window.onload = () => {
     verifierEtatBaseDonnees();
 };
 
-// --- LE BOUTON MAGIQUE : DÉTECTION DU PREMIER LANCEMENT ---
 function verifierEtatBaseDonnees() {
     const loginScreen = document.getElementById('login-screen');
     
-    // S'il n'y a absolument aucun compte dans la machine (Premier lancement)
     if (utilisateurs.length === 0) {
         loginScreen.style.display = 'flex';
-        // On transforme l'écran de login en écran de configuration du Patron
-        document.querySelector('#login-screen h3').innerText = "👑 Configuration Super Admin";
-        document.querySelector('#login-screen p').style.color = "#E74C3C";
-        document.querySelector('#login-screen p').innerHTML = "<b>Aucun compte détecté.</b><br>Créez le compte du Directeur Général maintenant.";
-        
-        // On change le texte du bouton pour être clair
-        document.querySelector('#login-screen button').innerHTML = "<i class='fas fa-user-shield'></i> Initialiser mon compte Admin";
-        // On redirige temporairement le clic vers la fonction de création initiale
-        document.querySelector('#login-screen button').setAttribute('onclick', 'initialiserSuperAdmin()');
+        document.getElementById('login-title').innerText = "👑 Premier Lancement";
+        document.getElementById('login-subtitle').innerHTML = "<b>Créez le compte Maître de l'agence.</b><br>Ce compte aura le bouton de gestion d'équipe.";
+        document.getElementById('login-submit-btn').innerHTML = "<i class='fas fa-user-shield'></i> Initialiser mon SuperAdmin";
+        document.getElementById('login-submit-btn').setAttribute('onclick', 'initialiserSuperAdmin()');
     } else {
-        // La base contient déjà des comptes, on charge la session normale
         verifierSessionActive();
     }
 }
 
-// --- FONCTION UNIQUE DE CRÉATION DU COMPTE RACINE ---
 function initialiserSuperAdmin() {
     const nomSaisi = document.getElementById('login-username').value.trim();
     const pinSaisi = document.getElementById('login-password').value.trim();
     const errorMsg = document.getElementById('login-error');
-    errorMsg.style.display = 'none';
 
     if (!nomSaisi || pinSaisi.length < 4) {
-        errorMsg.innerText = "⚠️ Veuillez entrer votre nom et un code PIN d'au moins 4 chiffres.";
+        errorMsg.innerText = "⚠️ Entrez un nom et un PIN à 4 chiffres.";
         errorMsg.style.display = 'block';
         return;
     }
 
-    // On crée ton compte SuperAdmin sur mesure dans le stockage local du téléphone/navigateur
-    const monCompteAdmin = {
-        nom: nomSaisi,
-        pin: pinSaisi,
-        role: "SuperAdmin"
-    };
-
-    utilisateurs.push(monCompteAdmin);
+    // CORRIGÉ : "maitre" écrit proprement sans accent pour éviter le crash JS
+    const maitre = { nom: nomSaisi, pin: pinSaisi, role: "SuperAdmin" };
+    utilisateurs.push(maitre);
     localStorage.setItem('sama_utilisateurs', JSON.stringify(utilisateurs));
 
-    // On connecte immédiatement l'admin fraîchement créé
     profilRole = "SuperAdmin";
     courtierNom = nomSaisi;
-    localStorage.setItem('sama_profil-role', profilRole);
-    localStorage.setItem('sama_courtier_nom', courtierNom);
+    localStorage.setItem('sama_profil-role', "SuperAdmin");
+    localStorage.setItem('sama_courtier_nom', nomSaisi);
 
-    // On remet le bouton de connexion dans son état normal pour le futur
-    document.querySelector('#login-screen button').setAttribute('onclick', 'verifierConnexion()');
-
-    // Nettoyage et ouverture du tableau de bord
     document.getElementById('login-username').value = '';
     document.getElementById('login-password').value = '';
     document.getElementById('login-screen').style.display = 'none';
     
-    alert(`👑 Bienvenue Directeur. Votre compte "${nomSaisi}" a été configuré comme unique Super Admin.`);
-    
+    alert(`Compte Admin activé ! Vous possédez les droits de contrôle.`);
     majInterfaceBadge();
     showView('dashboard');
 }
@@ -87,40 +64,28 @@ function verifierSessionActive() {
         majInterfaceBadge();
         showView('dashboard');
     } else {
-        // On s'assure que l'écran affiche les textes standards de connexion
-        document.querySelector('#login-screen h3').innerText = "Sama Gestion Pro";
-        document.querySelector('#login-screen p').innerText = "Veuillez vous authentifier";
-        document.querySelector('#login-screen p').style.color = "#64748b";
-        document.querySelector('#login-screen button').innerHTML = "<i class='fas fa-sign-in-alt'></i> Se connecter";
-        document.querySelector('#login-screen button').setAttribute('onclick', 'verifierConnexion()');
+        document.getElementById('login-title').innerText = "Sama Gestion Pro";
+        document.getElementById('login-subtitle').innerText = "Veuillez vous authentifier";
+        document.getElementById('login-submit-btn').innerHTML = "<i class='fas fa-sign-in-alt'></i> Se connecter";
+        document.getElementById('login-submit-btn').setAttribute('onclick', 'verifierConnexion()');
         loginScreen.style.display = 'flex';
     }
 }
 
-// --- VERIFICATION DE CONNEXION STANDARD ---
 function verifierConnexion() {
     const nomSaisi = document.getElementById('login-username').value.trim();
     const pinSaisi = document.getElementById('login-password').value.trim();
     const errorMsg = document.getElementById('login-error');
-    errorMsg.style.display = 'none';
 
-    if (!nomSaisi || !pinSaisi) {
-        errorMsg.innerText = "⚠️ Veuillez remplir les deux champs.";
+    const utilisateurValide = utilisateurs.find(u => u.nom.toLowerCase() === nomSaisi.toLowerCase());
+
+    if (!utilisateurValide) {
+        errorMsg.innerText = "❌ Vous n'avez pas de compte.";
         errorMsg.style.display = 'block';
         return;
     }
 
-    const nomExiste = utilisateurs.some(u => u.nom.toLowerCase() === nomSaisi.toLowerCase());
-
-    if (!nomExiste) {
-        errorMsg.innerText = "❌ Vous n'avez pas de compte. Veuillez contacter l'administrateur.";
-        errorMsg.style.display = 'block';
-        return;
-    }
-
-    const utilisateurValide = utilisateurs.find(u => u.nom.toLowerCase() === nomSaisi.toLowerCase() && u.pin === pinSaisi);
-
-    if (utilisateurValide) {
+    if (utilisateurValide.pin === pinSaisi) {
         profilRole = utilisateurValide.role;
         courtierNom = utilisateurValide.nom;
         
@@ -134,62 +99,9 @@ function verifierConnexion() {
         majInterfaceBadge();
         showView('dashboard');
     } else {
-        errorMsg.innerText = "❌ Code PIN incorrect ! Veuillez réessayer.";
+        errorMsg.innerText = "❌ Code PIN incorrect !";
         errorMsg.style.display = 'block';
     }
-}
-
-function deconnexion() {
-    localStorage.removeItem('sama_profil-role');
-    localStorage.removeItem('sama_courtier_nom');
-    profilRole = null;
-    courtierNom = null;
-    verifierSessionActive();
-}
-
-// --- CRÉATION DES COMPTES COURTIERS PAR L'ADMIN ---
-function adminCreerCompteCourtier() {
-    if (profilRole !== "SuperAdmin") return;
-
-    const nom = document.getElementById('admin-new-user-name').value.trim();
-    const pin = document.getElementById('admin-new-user-pin').value.trim();
-    
-    if(!nom || pin.length < 4) return alert("Veuillez entrer un nom et un PIN à 4 chiffres.");
-    
-    if(utilisateurs.some(u => u.nom.toLowerCase() === nom.toLowerCase())) {
-        return alert("Un membre de l'équipe possède déjà ce compte.");
-    }
-
-    utilisateurs.push({ nom: nom, pin: pin, role: "Courtier" });
-    localStorage.setItem('sama_utilisateurs', JSON.stringify(utilisateurs));
-    
-    document.getElementById('admin-new-user-name').value = '';
-    document.getElementById('admin-new-user-pin').value = '';
-    
-    alert(`Compte créé ! L'agent "${nom}" peut maintenant se connecter.`);
-    renderAdminUsersList();
-}
-
-function adminSupprimerCompte(nom) {
-    // Le compte principal (le premier créé) ne peut pas s'auto-supprimer
-    if(nom === courtierNom) return alert("Action impossible : Vous ne pouvez pas supprimer votre propre compte Super Admin actif.");
-    
-    if(confirm(`Supprimer définitivement les accès de ${nom} ?`)) {
-        utilisateurs = utilisateurs.filter(u => u.nom !== nom);
-        localStorage.setItem('sama_utilisateurs', JSON.stringify(utilisateurs));
-        renderAdminUsersList();
-    }
-}
-
-function renderAdminUsersList() {
-    const conteneur = document.getElementById('admin-users-list');
-    if(!conteneur) return;
-    conteneur.innerHTML = utilisateurs.map(u => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:8px 12px; border-radius:8px; margin-bottom:5px; border:1px solid #e2e8f0; font-size:0.85rem; text-align: left;">
-            <span>👤 <b>${u.nom}</b> (PIN : ${u.pin}) — <i>${u.role === 'SuperAdmin' ? 'Directeur (Moi)' : 'Agent'}</i></span>
-            ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444; cursor:pointer;" onclick="adminSupprimerCompte('${u.nom}')"></i>` : ''}
-        </div>
-    `).join('');
 }
 
 function majInterfaceBadge() {
@@ -202,14 +114,96 @@ function majInterfaceBadge() {
     }
     
     const adminSection = document.getElementById('admin-management-section');
-    if(adminSection) {
-        if(profilRole === "SuperAdmin") {
+    if (adminSection) {
+        if (profilRole === "SuperAdmin") {
             adminSection.style.display = 'block';
             renderAdminUsersList();
         } else {
             adminSection.style.display = 'none';
         }
     }
+}
+
+function adminCreerCompteCourtier() {
+    if (profilRole !== "SuperAdmin") return;
+
+    const nom = document.getElementById('admin-new-user-name').value.trim();
+    const pin = document.getElementById('admin-new-user-pin').value.trim();
+    
+    if(!nom || pin.length < 4) return alert("Nom invalide ou PIN trop court.");
+    if(utilisateurs.some(u => u.nom.toLowerCase() === nom.toLowerCase())) return alert("Ce nom est déjà pris.");
+
+    utilisateurs.push({ nom: nom, pin: pin, role: "Courtier" });
+    localStorage.setItem('sama_utilisateurs', JSON.stringify(utilisateurs));
+    
+    document.getElementById('admin-new-user-name').value = '';
+    document.getElementById('admin-new-user-pin').value = '';
+    
+    alert(`Compte créé pour ${nom} !`);
+    renderAdminUsersList();
+}
+
+function renderAdminUsersList() {
+    const conteneur = document.getElementById('admin-users-list');
+    if(!conteneur) return;
+    conteneur.innerHTML = utilisateurs.map(u => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:8px; border-radius:8px; margin-bottom:5px; border:1px solid #e2e8f0; font-size:0.85rem;">
+            <span>👤 <b>${u.nom}</b> (PIN : ${u.pin})</span>
+            ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444; cursor:pointer;" onclick="adminSupprimerCompte('${u.nom}')"></i>` : ''}
+        </div>
+    `).join('');
+}
+
+function adminSupprimerCompte(nom) {
+    if(confirm(`Supprimer définitivement ${nom} ?`)) {
+        utilisateurs = utilisateurs.filter(u => u.nom !== nom);
+        localStorage.setItem('sama_utilisateurs', JSON.stringify(utilisateurs));
+        renderAdminUsersList();
+    }
+}
+
+function cloudExporterDonnees() {
+    const packageDonnees = {
+        utilisateurs: utilisateurs,
+        biens: biens,
+        visites: visites,
+        comGlobal: comTotaleGlobal
+    };
+    const stringData = btoa(unescape(encodeURIComponent(JSON.stringify(packageDonnees))));
+    
+    navigator.clipboard.writeText(stringData).then(() => {
+        alert("🟢 Sauvegarde Cloud copiée ! Collez-la sur WhatsApp pour la sauvegarder ou la partager.");
+    }).catch(() => {
+        alert("Voici votre clé de sauvegarde : \n\n" + stringData);
+    });
+}
+
+function cloudImporterDonnees() {
+    const cleSaisie = prompt("Collez votre texte de sauvegarde Cloud ici :");
+    if (!cleSaisie) return;
+    
+    try {
+        const donneesDecohees = JSON.parse(decodeURIComponent(escape(atob(cleSaisie))));
+        if (donneesDecohees.utilisateurs && donneesDecohees.biens) {
+            if (confirm("🔄 Écraser les données locales pour synchroniser ce Cloud ?")) {
+                localStorage.setItem('sama_utilisateurs', JSON.stringify(donneesDecohees.utilisateurs));
+                localStorage.setItem('sama_biens', JSON.stringify(donneesDecohees.biens));
+                localStorage.setItem('sama_visites', JSON.stringify(donneesDecohees.visites || []));
+                localStorage.setItem('sama_com_global', donneesDecohees.comGlobal || 0);
+                location.reload();
+            }
+        }
+    } catch (e) {
+        alert("❌ Erreur de lecture de la sauvegarde Cloud.");
+    }
+}
+
+function deconnexion() {
+    localStorage.removeItem('sama_profil-role');
+    localStorage.removeItem('sama_courtier_nom');
+    profilRole = null;
+    courtierNom = null;
+    location.reload();
 }
 
 function showView(id) {
@@ -222,7 +216,6 @@ function showView(id) {
     if(id === 'planning') { updateSelects(); renderVisites(); }
 }
 
-// [Le reste des fonctions financières, de biens et de visites reste inchangé pour garder tes données]
 function rafraichirCompteurCommission() { if (!profilRole) return; if (profilRole === "SuperAdmin") { document.getElementById('total-display').innerText = comTotaleGlobal.toLocaleString() + " CFA"; document.querySelector('.revenue-card p').innerText = "Commission Totale Agence"; } else { let comCourtier = 0; biens.forEach(b => { if(b.agentCreateur === courtierNom && b.historiquePaiements) { b.historiquePaiements.forEach(p => { if(p.type === 'Caution') comCourtier += parseFloat(b.loyer); else if(p.type === 'Loyer Mois') comCourtier += b.com.includes('%') ? (parseFloat(b.com)/100) * p.montant : parseFloat(b.com); else comCourtier += p.montant; }); } }); document.getElementById('total-display').innerText = comCourtier.toLocaleString() + " CFA"; document.querySelector('.revenue-card p').innerText = `Ma Commission Encaissée`; } }
 function previewImage(input) { if (input.files) { Array.from(input.files).forEach(file => { const reader = new FileReader(); reader.onload = e => { if(selectedPhotos.length < 3) { selectedPhotos.push(e.target.result); renderPreviews(); } }; reader.readAsDataURL(file); }); } }
 function renderPreviews() { document.getElementById('previews-container').innerHTML = selectedPhotos.map(p => `<img src="${p}" style="width:40px;height:40px;border-radius:5px;object-fit:cover;">`).join(''); }
