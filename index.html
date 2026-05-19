@@ -45,11 +45,19 @@
         </div>
     </main>
 
-    <section id="view-biens" class="view">
+    <section id="view-biens" class="view" style="display:none;">
         <div class="section-header">
             <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
             <h3>Mon Catalogue</h3>
         </div>
+        
+        <div style="padding: 0 15px; margin-bottom: 10px;">
+            <div style="position: relative;">
+                <input type="text" id="search-bien-input" oninput="renderBiens()" placeholder="🔍 Rechercher par quartier, nom, proprio..." style="width: 100%; padding: 10px 12px 10px 35px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;">
+                <i class="fas fa-search" style="position: absolute; left: 12px; top: 13px; color: #94a3b8;"></i>
+            </div>
+        </div>
+
         <div class="tabs-container">
             <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
             <button class="tab-btn" onclick="filterBiens('Occupé', event)">Occupés</button>
@@ -58,16 +66,16 @@
         <button class="fab-add" onclick="showView('ajouter-bien')"><i class="fas fa-plus"></i></button>
     </section>
 
-    <section id="view-ajouter-bien" class="view">
+    <section id="view-ajouter-bien" class="view" style="display:none;">
         <div class="section-header">
             <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
             <h3>Nouveau Bien</h3>
         </div>
-        <div class="form-card">
+        <div class="form-card" style="max-height: 70vh; overflow-y: auto;">
             <div onclick="document.getElementById('camera-input').click()" class="photo-upload-area">
                 <i class="fas fa-camera"></i> 
                 <p style="margin:0; font-size:0.8rem;">Ajouter Photos (Max 3)</p>
-                <div id="previews-container"></div>
+                <div id="previews-container" style="display:flex; gap:5px; margin-top:5px;"></div>
             </div>
             <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" multiple onchange="previewImage(this)">
             
@@ -80,23 +88,33 @@
                 <option value="Terrain">Terrain Nu</option>
             </select>
             
-            <input type="text" id="new-bien-nom" placeholder="Nom du bien">
+            <input type="text" id="new-bien-nom" placeholder="Nom du bien (ex: Studio A1 Almadies)">
             <input type="text" id="new-bien-adresse" placeholder="Quartier / Adresse">
-            <input type="number" id="new-bien-loyer" placeholder="Prix / Loyer">
-            <input type="text" id="new-bien-proprio" placeholder="Nom Propriétaire">
+            <input type="number" id="new-bien-loyer" placeholder="Prix / Loyer (CFA)">
             <input type="text" id="new-bien-com" placeholder="Ma Commission (ex: 10% ou 1 mois)">
-            <button class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
+            
+            <div style="margin: 15px 0; padding: 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: var(--navy);"><i class="fas fa-user-shield"></i> Propriétaire</span>
+                <input type="text" id="new-bien-proprio" placeholder="Nom du Propriétaire" style="margin-top:5px;">
+                <input type="tel" id="new-bien-proprio-tel" placeholder="Téléphone (ex: 77XXXXXXX)">
+            </div>
+
+            <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: #166534;"><i class="fas fa-user"></i> Locataire (Si déjà occupé)</span>
+                <input type="text" id="new-bien-locataire" placeholder="Nom du Locataire" style="margin-top:5px;">
+                <input type="tel" id="new-bien-locataire-tel" placeholder="Téléphone (ex: 77XXXXXXX)">
+            </div>
+
+            <button class="btn-primary" onclick="saveBienPro()">Enregistrer le bien</button>
         </div>
     </section>
 
-    <section id="view-collecte" class="view">
+    <section id="view-collecte" class="view" style="display:none;">
         <div class="section-header">
             <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
             <h3>Encaisser</h3>
         </div>
-        
         <div id="alerte-dette-collecte"></div>
-
         <div class="form-card">
             <label>Bien Occupé :</label>
             <select id="c-bien-select" onchange="remplirLoyer()"></select>
@@ -118,12 +136,19 @@
                 <label><input type="radio" name="pay-mode" value="Espèces"><div class="mode-pay-box">Cash</div></label>
             </div>
             
-            <button class="btn-primary" onclick="validerCollecte()">Valider & Reçu WhatsApp</button>
-            <button class="btn-outline" style="margin-top: 10px; background: #E5F0FF; color: var(--blue);" onclick="partagerLienPaiement()"><i class="fas fa-link"></i> Partager un lien de paiement</button>
+            <button class="btn-primary" style="background:#2ECC71;" onclick="validerCollecte()">
+                <i class="fas fa-user"></i> Valider & Reçu Locataire
+            </button>
+            <button class="btn-primary" style="background:var(--blue); margin-top: 10px;" onclick="validerReçuProprio()">
+                <i class="fas fa-user-shield"></i> Valider & Reçu Propriétaire
+            </button>
+            <button class="btn-outline" style="margin-top: 10px; background: #E5F0FF; color: var(--blue);" onclick="partagerLienPaiement()">
+                <i class="fas fa-link"></i> Partager un lien de paiement
+            </button>
         </div>
     </section>
 
-    <section id="view-planning" class="view">
+    <section id="view-planning" class="view" style="display:none;">
         <div class="section-header">
             <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
             <h3>Visites</h3>
