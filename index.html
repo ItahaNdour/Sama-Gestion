@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sama Gestion Pro v3</title>
+    <title>Sama Gestion Pro v4.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,16 +14,16 @@
         <div style="width: 60px; height: 60px; background: #E0E7FF; color: #3B82F6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; font-size: 1.6rem;">
             <i class="fas fa-lock"></i>
         </div>
-        <h3 style="margin: 0 0 5px 0; color: #1E3A8A;">Sama Gestion Pro</h3>
-        <p style="margin: 0 0 20px 0; font-size: 0.85rem; color: #64748b;">Veuillez vous authentifier</p>
+        <h3 id="login-title" style="margin: 0 0 5px 0; color: #1E3A8A;">Sama Gestion Pro</h3>
+        <p id="login-subtitle" style="margin: 0 0 20px 0; font-size: 0.85rem; color: #64748b;">Veuillez vous authentifier</p>
         
-        <input type="text" id="login-username" placeholder="Votre Nom / Identifiant" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; box-sizing: border-box;">
-        <input type="password" id="login-password" placeholder="Code Secret (PIN)" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; text-align: center; letter-spacing: 4px; box-sizing: border-box;">
+        <input type="text" id="login-username" placeholder="Votre Nom complet" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; box-sizing: border-box;">
+        <input type="password" id="login-password" placeholder="Code Secret (PIN)" inputmode="numeric" pattern="[0-9]*" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; text-align: center; letter-spacing: 4px; box-sizing: border-box;">
         
-        <button onclick="verifierConnexion()" style="width: 100%; background: #2ECC71; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer;">
+        <button id="login-submit-btn" onclick="verifierConnexion()" style="width: 100%; background: #2ECC71; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer;">
             <i class="fas fa-sign-in-alt"></i> Se connecter
         </button>
-        <p id="login-error" style="color: #EF4444; font-size: 0.8rem; margin: 10px 0 0 0; display: none; font-weight: bold;"></p>
+        <p id="login-error" style="color: #EF4444; font-size: 0.85rem; margin: 12px 0 0 0; display: none; font-weight: bold; background: #FEE2E2; padding: 8px; border-radius: 8px; border: 1px solid #FCA5A5;"></p>
     </div>
 </div>
 
@@ -64,10 +64,6 @@
                 <div class="dot navy-dot"></div>
             </div>
         </div>
-        
-        <button class="btn-outline" style="margin-top:20px; width:100%; border:1px dashed #cbd5e1;" onclick="alert('Module État des Lieux (Suivant)')">
-            <i class="fas fa-clipboard-list"></i> Module États des Lieux
-        </button>
     </main>
 
     <section id="view-biens" class="view" style="display:none;">
@@ -75,31 +71,26 @@
             <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
             <h3>Mon Catalogue</h3>
         </div>
-        
         <div style="padding: 0 15px; margin-bottom: 10px;">
-            <div style="position: relative;">
-                <input type="text" id="search-bien-input" oninput="renderBiens()" placeholder="🔍 Rechercher par quartier, nom, proprio..." style="width: 100%; padding: 10px 12px 10px 35px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box;">
-                <i class="fas fa-search" style="position: absolute; left: 12px; top: 13px; color: #94a3b8;"></i>
-            </div>
+            <input type="text" id="search-bien-input" oninput="renderBiens()" placeholder="🔍 Rechercher..." style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box;">
         </div>
-
         <div class="tabs-container">
             <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
             <button class="tab-btn" onclick="filterBiens('Occupé', event)">Occupés</button>
         </div>
         <div id="biens-list"></div>
-        <button class="fab-add" onclick="showView('ajouter-bien')"><i class="fas fa-plus"></i></button>
+        <button class="fab-add" onclick="ouvrirFormulaireAjout()"><i class="fas fa-plus"></i></button>
     </section>
 
     <section id="view-ajouter-bien" class="view" style="display:none;">
         <div class="section-header">
             <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
-            <h3>Nouveau Bien</h3>
+            <h3 id="form-bien-title">Nouveau Bien</h3>
         </div>
         <div class="form-card" style="max-height: 70vh; overflow-y: auto;">
+            <input type="hidden" id="edit-bien-id">
             <div onclick="document.getElementById('camera-input').click()" class="photo-upload-area">
-                <i class="fas fa-camera"></i> 
-                <p style="margin:0; font-size:0.8rem;">Ajouter Photos (Max 3)</p>
+                <i class="fas fa-camera"></i> <p style="margin:0; font-size:0.8rem;">Photos (Max 3)</p>
                 <div id="previews-container" style="display:flex; gap:5px; margin-top:5px;"></div>
             </div>
             <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" multiple onchange="previewImage(this)">
@@ -110,27 +101,16 @@
                 <option value="T2">Appartement T2</option>
                 <option value="T3">Appartement T3</option>
                 <option value="Villa">Villa</option>
-                <option value="Terrain">Terrain Nu</option>
             </select>
-            
-            <input type="text" id="new-bien-nom" placeholder="Nom du bien (ex: Studio A1 Almadies)">
+            <input type="text" id="new-bien-nom" placeholder="Nom du bien">
             <input type="text" id="new-bien-adresse" placeholder="Quartier / Adresse">
             <input type="number" id="new-bien-loyer" placeholder="Prix / Loyer (CFA)">
-            <input type="text" id="new-bien-com" placeholder="Ma Commission (ex: 10% ou 1 mois)">
-            
-            <div style="margin: 15px 0; padding: 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <span style="font-size: 0.8rem; font-weight: bold; color: var(--navy);"><i class="fas fa-user-shield"></i> Propriétaire</span>
-                <input type="text" id="new-bien-proprio" placeholder="Nom du Propriétaire" style="margin-top:5px;">
-                <input type="tel" id="new-bien-proprio-tel" placeholder="Téléphone (ex: 77XXXXXXX)">
-            </div>
-
-            <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
-                <span style="font-size: 0.8rem; font-weight: bold; color: #166534;"><i class="fas fa-user"></i> Locataire (Si déjà occupé)</span>
-                <input type="text" id="new-bien-locataire" placeholder="Nom du Locataire" style="margin-top:5px;">
-                <input type="tel" id="new-bien-locataire-tel" placeholder="Téléphone (ex: 77XXXXXXX)">
-            </div>
-
-            <button class="btn-primary" onclick="saveBienPro()">Enregistrer le bien</button>
+            <input type="text" id="new-bien-com" placeholder="Ma Commission (ex: 10%)">
+            <input type="text" id="new-bien-proprio" placeholder="Nom du Propriétaire">
+            <input type="tel" id="new-bien-proprio-tel" placeholder="Téléphone Propriétaire">
+            <input type="text" id="new-bien-locataire" placeholder="Nom du Locataire (Si occupé)">
+            <input type="tel" id="new-bien-locataire-tel" placeholder="Téléphone Locataire">
+            <button id="btn-valider-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
         </div>
     </section>
 
@@ -139,37 +119,23 @@
             <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
             <h3>Encaisser</h3>
         </div>
-        <div id="alerte-dette-collecte"></div>
         <div class="form-card">
             <label>Bien Occupé :</label>
             <select id="c-bien-select" onchange="remplirLoyer()"></select>
-            
             <label>Type :</label>
             <select id="c-type" onchange="remplirLoyer()">
                 <option value="Loyer">Loyer du mois</option>
-                <option value="Caution">3 Mois (Entrée)</option>
-                <option value="Frais">Frais de dossier</option>
+                <option value="Caution">Caution (Entrée)</option>
             </select>
-            
-            <label>Montant à Encaisser :</label>
-            <input type="number" id="c-montant" placeholder="Montant Encaissé">
-            
-            <label>Moyen de paiement :</label>
+            <label>Montant :</label>
+            <input type="number" id="c-montant">
             <div class="mode-pay-grid">
                 <label><input type="radio" name="pay-mode" value="Wave" checked><div class="mode-pay-box">Wave</div></label>
                 <label><input type="radio" name="pay-mode" value="Orange Money"><div class="mode-pay-box">OM</div></label>
                 <label><input type="radio" name="pay-mode" value="Espèces"><div class="mode-pay-box">Cash</div></label>
             </div>
-            
-            <button class="btn-primary" style="background:#2ECC71;" onclick="validerCollecte()">
-                <i class="fas fa-user"></i> Valider & Reçu Locataire
-            </button>
-            <button class="btn-primary" style="background:var(--blue); margin-top: 10px;" onclick="validerReçuProprio()">
-                <i class="fas fa-user-shield"></i> Valider & Reçu Propriétaire
-            </button>
-            <button class="btn-outline" style="margin-top: 10px; background: #E5F0FF; color: var(--blue);" onclick="partagerLienPaiement()">
-                <i class="fas fa-link"></i> Partager un lien de paiement
-            </button>
+            <button class="btn-primary" style="background:#2ECC71;" onclick="validerCollecte('locataire')">WhatsApp Locataire</button>
+            <button class="btn-primary" style="background:var(--blue); margin-top:10px;" onclick="validerCollecte('proprio')">WhatsApp Propriétaire</button>
         </div>
     </section>
 
@@ -192,21 +158,36 @@
             <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
             <h3>Mon Espace Profil</h3>
         </div>
-        <div class="form-card">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="width: 70px; height: 70px; background: #E0E7FF; color: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto; font-size: 1.8rem;">
-                    <i class="fas fa-user-shield"></i>
+        <div class="form-card" style="max-height: 75vh; overflow-y: auto;">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h4 id="profil-statut-actuel" style="margin: 0;">-</h4>
+                <small id="profil-role-badge" style="color: var(--blue); font-weight: bold;">-</small>
+            </div>
+
+            <div style="border-top: 2px solid #e2e8f0; margin-top: 15px; padding-top: 15px;">
+                <h4 style="margin: 0 0 10px 0; color: #2ECC71; text-align: left;"><i class="fas fa-cloud-upload-alt"></i> Synchro Cloud Manuel</h4>
+                <p style="font-size: 0.75rem; color: #64748b; text-align: left; margin: 0 0 10px 0;">Copiez le texte de sauvegarde pour l'envoyer à votre équipe ou sauvegarder vos données.</p>
+                <button class="btn-outline" style="padding:8px; font-size:0.8rem; margin-bottom: 5px; border-color:#2ECC71; color:#2ECC71;" onclick="cloudExporterDonnees()">
+                    <i class="fas fa-copy"></i> Copier ma sauvegarde Cloud
+                </button>
+                <button class="btn-outline" style="padding:8px; font-size:0.8rem; border-color:#3B82F6; color:#3B82F6;" onclick="cloudImporterDonnees()">
+                    <i class="fas fa-download"></i> Charger une sauvegarde Cloud
+                </button>
+            </div>
+
+            <div id="admin-management-section" style="display: none; border-top: 2px dashed #cbd5e1; margin-top: 20px; padding-top: 15px;">
+                <h4 style="margin: 0 0 10px 0; color: var(--navy); text-align: left;"><i class="fas fa-users-cog"></i> Gestion de l'Équipe</h4>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                    <input type="text" id="admin-new-user-name" placeholder="Nom complet de l'agent">
+                    <input type="number" id="admin-new-user-pin" placeholder="PIN de connexion (4 chiffres)" inputmode="numeric">
+                    <button class="btn-primary" style="padding: 8px; font-size: 0.85rem; margin-top:8px;" onclick="adminCreerCompteCourtier()">Enregistrer l'agent</button>
                 </div>
-                <h4 id="profil-statut-actuel" style="margin: 0; color: var(--navy);">Utilisateur</h4>
+                <small style="font-weight: bold; color: #64748b; display: block; margin-bottom: 5px; text-align: left;">Membres autorisés :</small>
+                <div id="admin-users-list"></div>
             </div>
 
-            <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-                <p style="margin: 0 0 5px 0; font-size: 0.85rem; color: #64748b;">Niveau d'accréditation :</p>
-                <strong id="profil-role-badge" style="color: var(--blue); font-size: 1rem;">-</strong>
-            </div>
-
-            <button class="btn-outline" style="color: #EF4444; border: 1px solid #EF4444; background: #FFF5F5;" onclick="deconnexion()">
-                <i class="fas fa-power-off"></i> Déconnexion de la session
+            <button class="btn-outline" style="color: #EF4444; border: 1px solid #EF4444; background: #FFF5F5; margin-top: 20px;" onclick="deconnexion()">
+                <i class="fas fa-power-off"></i> Déconnexion
             </button>
         </div>
     </section>
