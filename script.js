@@ -1,4 +1,4 @@
-// Sama Gestion Pro v3 - Correctif Reçu Client Secrétisé & Fix Enregistrement Mobile
+// Sama Gestion Pro v3 - Double Reçu (Locataire vs Propriétaire) & Commission claire
 let biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
 let visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
 let comTotale = parseFloat(localStorage.getItem('sama_com_totale')) || 0;
@@ -12,7 +12,7 @@ function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     document.getElementById('view-' + id).style.display = 'block';
     
-    if(id === 'biens') renderBiens();
+    if(id === 'biens') { document.getElementById('search-bien-input').value = ''; renderBiens(); }
     if(id === 'collecte') updateSelects();
     if(id === 'planning') { updateSelects(); renderVisites(); }
 }
@@ -39,14 +39,15 @@ function renderPreviews() {
     ).join('');
 }
 
-// --- AJOUT BIENS AVEC SECURITE ANTI-BUG MOBILE (LOCALSTORAGE OVERFLOW) ---
+// --- GESTION DES BIENS ---
 function saveBienPro() {
     const nom = document.getElementById('new-bien-nom').value;
     const loyer = document.getElementById('new-bien-loyer').value;
     if(!nom || !loyer) return alert("Veuillez remplir au moins le nom et le prix.");
     
-    // Image par défaut si pas de photo ou si bug de mémoire mobile
     const imageDefaut = ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"];
+    const nomLocataire = document.getElementById('new-bien-locataire').value;
+    const statutInitial = nomLocataire.trim() !== "" ? "Occupé" : "Disponible";
 
     const nouveauBien = {
         id: Date.now(),
@@ -55,9 +56,12 @@ function saveBienPro() {
         type: document.getElementById('new-bien-type').value,
         adresse: document.getElementById('new-bien-adresse').value || 'Non renseignée',
         proprio: document.getElementById('new-bien-proprio').value || 'Inconnu',
+        proprioTel: document.getElementById('new-bien-proprio-tel').value || '',
+        locataire: nomLocataire || 'Aucun',
+        locataireTel: document.getElementById('new-bien-locataire-tel').value || '',
         com: document.getElementById('new-bien-com').value || "10%",
         photos: selectedPhotos.length > 0 ? [...selectedPhotos] : imageDefaut,
-        statut: 'Disponible',
+        statut: statutInitial,
         reliquat: 0,
         historiquePaiements: []
     };
@@ -66,28 +70,37 @@ function saveBienPro() {
         biens.push(nouveauBien);
         localStorage.setItem('sama_biens', JSON.stringify(biens));
     } catch (e) {
-        // Mode secours mobile : Si les photos de l'appareil sont trop lourdes et font crasher le stockage, on retire les photos lourdes
-        console.log("Alerte mémoire mobile saturée : Optimisation sans les images lourdes.");
-        biens.pop(); // Retire le crashé
-        nouveauBien.photos = imageDefaut; // Remplace par l'image légère de secours
+        biens.pop();
+        nouveauBien.photos = imageDefaut;
         biens.push(nouveauBien);
         localStorage.setItem('sama_biens', JSON.stringify(biens));
-        alert("Bien enregistré ! (Photos optimisées automatiquement pour le stockage de votre mobile)");
+        alert("Bien enregistré ! (Photos optimisées)");
     }
     
-    // Reset de l'interface
     selectedPhotos = [];
     document.getElementById('previews-container').innerHTML = '';
     document.getElementById('new-bien-nom').value = '';
     document.getElementById('new-bien-loyer').value = '';
     document.getElementById('new-bien-adresse').value = '';
     document.getElementById('new-bien-proprio').value = '';
+    document.getElementById('new-bien-proprio-tel').value = '';
+    document.getElementById('new-bien-locataire').value = '';
+    document.getElementById('new-bien-locataire-tel').value = '';
     
     showView('biens');
 }
 
 function renderBiens() {
-    const filtered = biens.filter(b => b.statut === currentFilter);
+    const searchText = document.getElementById('search-bien-input').value.toLowerCase();
+    const filtered = biens.filter(b => 
+        b.statut === currentFilter && 
+        (b.nom.toLowerCase().includes(searchText) || 
+         b.adresse.toLowerCase().includes(searchText) || 
+         b.type.toLowerCase().includes(searchText) ||
+         b.proprio.toLowerCase().includes(searchText) ||
+         (b.locataire && b.locataire.toLowerCase().includes(searchText)))
+    );
+
     document.getElementById('biens-list').innerHTML = filtered.map(b => `
         <div class="form-card" onclick="voirDetailBien(${b.id})">
             <div class="bien-gallery">${b.photos.map(p => `<img src="${p}">`).join('')}</div>
@@ -107,20 +120,50 @@ function renderBiens() {
 function voirDetailBien(id) {
     const b = biens.find(x => x.id === id);
     const modal = document.getElementById('modal-bien');
+    
+    let contactProprioHTML = `<p><strong>Propriétaire:</strong> ${b.proprio}</p>`;
+    if(b.proprioTel) {
+        contactProprioHTML = `
+            <div style="background:#f1f5f9; padding:8px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div><small style="color:#64748b;">Propriétaire :</small><br><strong>${b.proprio}</strong></div>
+                <div style="display:flex; gap:6px;">
+                    <a href="tel:${b.proprioTel}" style="background:#3498DB; color:white; width:32px; height:32px; border-radius:5px; display:flex; align-items:center; justify-content:center; text-decoration:none;"><i class="fas fa-phone"></i></a>
+                    <a href="https://wa.me/${b.proprioTel.replace(/\s+/g, '')}" target="_blank" style="background:#2ECC71; color:white; width:32px; height:32px; border-radius:5px; display:flex; align-items:center; justify-content:center; text-decoration:none;"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+        `;
+    }
+
+    let contactLocataireHTML = '';
+    if(b.statut === 'Occupé') {
+        contactLocataireHTML = `
+            <div style="background:#e0f2fe; padding:8px; border-radius:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                <div><small style="color:#0369a1;">Locataire actuel :</small><br><strong>${b.locataire || 'Inconnu'}</strong></div>
+                ${b.locataireTel ? `
+                <div style="display:flex; gap:6px;">
+                    <a href="tel:${b.locataireTel}" style="background:#3498DB; color:white; width:32px; height:32px; border-radius:5px; display:flex; align-items:center; justify-content:center; text-decoration:none;"><i class="fas fa-phone"></i></a>
+                    <a href="https://wa.me/${b.locataireTel.replace(/\s+/g, '')}" target="_blank" style="background:#2ECC71; color:white; width:32px; height:32px; border-radius:5px; display:flex; align-items:center; justify-content:center; text-decoration:none;"><i class="fab fa-whatsapp"></i></a>
+                </div>` : '<span style="font-size:0.75rem; color:#0369a1;">Pas de numéro</span>'}
+            </div>
+        `;
+    }
+
     document.getElementById('modal-body').innerHTML = `
-        <h3 style="color:var(--blue); margin-top:0;">${b.nom}</h3>
-        <p><strong>Type:</strong> ${b.type}</p>
-        <p><strong>Adresse:</strong> ${b.adresse}</p>
-        <p><strong>Prix/Loyer:</strong> ${parseInt(b.loyer).toLocaleString()} CFA</p>
-        <p><strong>Propriétaire:</strong> ${b.proprio}</p>
-        <p><strong>Ma Commission prévue:</strong> ${b.com}</p>
-        <p><strong>Statut:</strong> ${b.statut}</p>
-        ${b.reliquat > 0 ? `<p style="color:var(--red);"><strong>Reste dû :</strong> ${b.reliquat.toLocaleString()} CFA</p>` : ''}
-        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        <h3 style="color:var(--blue); margin-top:0; margin-bottom:5px;">${b.nom}</h3>
+        <p style="margin:0 0 10px 0; font-size:0.85rem; color:#64748b;"><i class="fas fa-map-marker-alt"></i> ${b.adresse} (${b.type})</p>
+        <p style="margin:5px 0;"><strong>Loyer:</strong> ${parseInt(b.loyer).toLocaleString()} CFA / mois</p>
+        <p style="margin:5px 0;"><strong>Ma Commission:</strong> ${b.com}</p>
+        <p style="margin:5px 0;"><strong>Statut actuel:</strong> <span style="font-weight:bold; color:${b.statut === 'Disponible' ? '#2ECC71':'#E74C3C'}">${b.statut}</span></p>
+        ${b.reliquat > 0 ? `<p style="color:var(--red); margin:5px 0;"><strong>Reste dû :</strong> ${b.reliquat.toLocaleString()} CFA</p>` : ''}
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+        ${contactProprioHTML}
+        ${contactLocataireHTML}
+        <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
         
         <button class="btn-primary" onclick="toggleStatut(${b.id})">${b.statut === 'Disponible' ? 'Marquer comme Loué' : 'Libérer le bien'}</button>
-        <button class="btn-outline" style="background:#F0F4FF; color:var(--blue); margin-top:8px;" onclick="ouvrirPortefeuille(${b.id})"><i class="fas fa-wallet"></i> Voir le Portefeuille Financier</button>
-        ${b.reliquat > 0 ? `<button class="btn-outline" style="background:#FFE5E5; color:var(--red); margin-top:8px;" onclick="envoyerRelance('${b.nom}', ${b.reliquat})"><i class="fab fa-whatsapp"></i> Envoyer Relance Reste</button>` : ''}
+        <button class="btn-outline" style="background:#F0F4FF; color:var(--blue); margin-top:8px;" onclick="ouvrirPortefeuille(${b.id})"><i class="fas fa-wallet"></i> Portefeuille Financier</button>
+        ${b.reliquat > 0 ? `<button class="btn-outline" style="background:#FFE5E5; color:var(--red); margin-top:8px;" onclick="envoyerRelance('${b.nom}', ${b.reliquat})"><i class="fab fa-whatsapp"></i> Relancer Reste à Payer</button>` : ''}
         <button class="btn-outline" style="color:var(--red); margin-top:8px;" onclick="supprimerBien(${b.id})"><i class="fas fa-trash"></i> Supprimer le bien</button>
         <button class="btn-outline" style="margin-top:8px;" onclick="fermerModal()">Fermer</button>
     `;
@@ -153,18 +196,15 @@ function ouvrirPortefeuille(id) {
             <h3 style="color:var(--navy); margin:0;"><i class="fas fa-wallet" style="color:var(--blue);"></i> Portefeuille</h3>
             <span style="font-size:0.8rem; background:#E0E7FF; color:var(--blue); padding:4px 8px; border-radius:20px; font-weight:bold;">${b.nom}</span>
         </div>
-        
         <div style="background:linear-gradient(135deg, #4A69FF, #324BDB); color:white; padding:15px; border-radius:18px; text-align:center; margin-bottom:15px; box-shadow:0 4px 10px rgba(74,105,255,0.2);">
             <small style="opacity:0.8; font-size:0.75rem;">Total encaissé sur ce bien</small>
             <h2 style="margin:5px 0 0 0; font-size:1.4rem;">${totalEncaisseBien.toLocaleString()} CFA</h2>
             ${b.reliquat > 0 ? `<div style="background:rgba(255,74,74,0.2); color:#FF8E8E; font-size:0.75rem; font-weight:bold; padding:4px; border-radius:8px; margin-top:8px;">⚠️ Reste dû : ${b.reliquat.toLocaleString()} CFA</div>` : ''}
         </div>
-
         <h4 style="text-align:left; margin:10px 0; color:var(--navy); font-size:0.9rem;"><i class="fas fa-history"></i> Historique</h4>
         <div style="max-height:180px; overflow-y:auto; margin-bottom:15px; padding-right:2px;">
             ${historiqueHTML}
         </div>
-
         <button class="btn-primary" onclick="voirDetailBien(${b.id})"><i class="fas fa-arrow-left"></i> Retour</button>
         <button class="btn-outline" style="margin-top:8px;" onclick="fermerModal()">Fermer</button>
     `;
@@ -184,7 +224,19 @@ function filterBiens(s, e) {
 
 function toggleStatut(id) {
     biens = biens.map(b => { 
-        if(b.id === id) b.statut = (b.statut === 'Disponible' ? 'Occupé' : 'Disponible'); 
+        if(b.id === id) {
+            if(b.statut === 'Disponible') {
+                const loc = prompt("Nom du locataire entrant :", b.locataire !== 'Aucun' ? b.locataire : "");
+                const tel = prompt("Numéro de téléphone du locataire :", b.locataireTel || "");
+                b.locataire = loc || "Inconnu";
+                b.locataireTel = tel || "";
+                b.statut = 'Occupé';
+            } else {
+                if(confirm("Confirmer la libération de ce bien ?")) {
+                    b.statut = 'Disponible';
+                }
+            }
+        }
         return b; 
     });
     localStorage.setItem('sama_biens', JSON.stringify(biens));
@@ -201,7 +253,7 @@ function supprimerBien(id) {
     }
 }
 
-// --- COLLECTE & GENERATION DE REÇU LOCATAIRE PRO ---
+// --- COLLECTE ---
 function updateSelects() {
     const occupes = biens.filter(b => b.statut === 'Occupé');
     const disponibles = biens.filter(b => b.statut === 'Disponible');
@@ -237,16 +289,17 @@ function remplirLoyer() {
     }
 }
 
-function validerCollecte() {
+// --- FONCTION DE CALCUL ET DE SAUVEGARDE COMMUNE EN INTERNE ---
+function executerSauvegardeFinanciere() {
     const bienNom = document.getElementById('c-bien-select').value;
     const montantPaye = parseFloat(document.getElementById('c-montant').value);
     const type = document.getElementById('c-type').value;
     const mode = document.querySelector('input[name="pay-mode"]:checked').value;
     
-    if(!bienNom || isNaN(montantPaye)) return alert("Sélectionnez un bien et indiquez le montant.");
+    if(!bienNom || isNaN(montantPaye)) { alert("Sélectionnez un bien et un montant valide."); return null; }
 
     const bienIndex = biens.findIndex(b => b.nom === bienNom);
-    if(bienIndex === -1) return alert("Sélectionnez un bien valide");
+    if(bienIndex === -1) return null;
     const bien = biens[bienIndex];
 
     let loyerTheorique = parseFloat(bien.loyer);
@@ -273,7 +326,6 @@ function validerCollecte() {
 
     localStorage.setItem('sama_biens', JSON.stringify(biens));
 
-    // Calcul de la Commission en Interne (Reste masqué pour le locataire !)
     let maCom = 0;
     if(type === 'Caution') {
         maCom = loyerTheorique; 
@@ -287,16 +339,23 @@ function validerCollecte() {
     localStorage.setItem('sama_com_totale', comTotale);
     document.getElementById('total-display').innerText = comTotale.toLocaleString() + " CFA";
 
-    // CORRECTION : Reçu 100% PROPRE ET SÉCURISÉ pour le Locataire (Pas de mention Net Proprio ni de Commission)
+    return { bien, montantPaye, type, mode, reliquat, maCom };
+}
+
+// OPTION 1 : REÇU LOCATAIRE (100% PROPRE ET MASQUÉ)
+function validerCollecte() {
+    const data = executerSauvegardeFinanciere();
+    if(!data) return;
+
     let msg = `*REÇU DE PAIEMENT OFFICIEL*%0A` +
               `*SAMA GESTION IMMOBILIÈRE*%0A` +
               `-------------------------------------%0A` +
-              `🏠 *Bien concerné:* ${bien.nom}%0A` +
-              `💰 *Montant encaissé:* ${montantPaye.toLocaleString()} CFA%0A` +
-              `📝 *Nature du paiement:* ${type}%0A` +
-              `💳 *Mode de règlement:* ${mode}%0A`;
+              `🏠 *Bien concerné:* ${data.bien.nom}%0A` +
+              `💰 *Montant encaissé:* ${data.montantPaye.toLocaleString()} CFA%0A` +
+              `📝 *Nature du paiement:* ${data.type}%0A` +
+              `💳 *Mode de règlement:* ${data.mode}%0A`;
     
-    if(reliquat > 0) msg += `⚠️ *RESTE À PAYER SUR LE MOIS:* ${reliquat.toLocaleString()} CFA%0A`;
+    if(data.reliquat > 0) msg += `⚠️ *RESTE À PAYER SUR LE MOIS:* ${data.reliquat.toLocaleString()} CFA%0A`;
     
     msg += `📅 *Date de valeur:* ${new Date().toLocaleDateString()}%0A` +
            `-------------------------------------%0A` +
@@ -304,7 +363,36 @@ function validerCollecte() {
            `• *Agent émetteur :* _${courtierNom}_%0A` +
            `_Merci pour votre confiance._`;
 
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${data.bien.locataireTel ? data.bien.locataireTel.replace(/\s+/g, '') : ''}?text=${msg}`, '_blank');
+    showView('dashboard');
+}
+
+// OPTION 2 : REÇU PROPRIÉTAIRE (COMPLET AVEC MA COM ET LE NET PROPRIO)
+function validerReçuProprio() {
+    const data = executerSauvegardeFinanciere();
+    if(!data) return;
+
+    let netProprio = data.montantPaye - data.maCom;
+
+    let msg = `*COMPTE-RENDU D'ENCAISSEMENT PROPRIO*%0A` +
+              `*SAMA GESTION IMMOBILIÈRE*%0A` +
+              `-------------------------------------%0A` +
+              `🏠 *Bien :* ${data.bien.nom}%0A` +
+              `👤 *Locataire :* ${data.bien.locataire}%0A` +
+              `💰 *Loyer Perçu :* ${data.montantPaye.toLocaleString()} CFA%0A` +
+              `📝 *Type :* ${data.type}%0A` +
+              `💳 *Mode :* ${data.mode}%0A`;
+              
+    if(data.reliquat > 0) msg += `⚠️ *Reste dû locataire :* ${data.reliquat.toLocaleString()} CFA%0A`;
+
+    msg += `-------------------------------------%0A` +
+           `📊 *Frais de gestion / Com (${data.bien.com}) :* - ${data.maCom.toLocaleString()} CFA%0A` +
+           `💵 *NET À VOUS REVERSER :* *${netProprio.toLocaleString()} CFA*%0A` +
+           `-------------------------------------%0A` +
+           `📅 *Date d'opération :* ${new Date().toLocaleDateString()}%0A` +
+           `• *Gestionnaire :* _${courtierNom}_`;
+
+    window.open(`https://wa.me/${data.bien.proprioTel ? data.bien.proprioTel.replace(/\s+/g, '') : ''}?text=${msg}`, '_blank');
     showView('dashboard');
 }
 
@@ -326,6 +414,7 @@ function partagerLienPaiement() {
 }
 
 function envoyerRelance(bienNom, reste) {
+    const bien = biens.find(x => x.nom === bienNom);
     const msg = `*RAPPEL DE PAIEMENT - SAMA GESTION*%0A` +
                 `------------------------------%0A` +
                 `Bonjour,%0A` +
@@ -334,7 +423,7 @@ function envoyerRelance(bienNom, reste) {
                 `Merci de régulariser dès que possible.%0A` +
                 `------------------------------%0A` +
                 `• _${courtierNom}_`;
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${(bien && bien.locataireTel) ? bien.locataireTel.replace(/\s+/g, '') : ''}?text=${msg}`, '_blank');
 }
 
 // --- VISITES ---
