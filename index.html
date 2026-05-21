@@ -67,10 +67,12 @@
             cursor: pointer; transition: background 0.2s;
         }
         .btn-primary:hover { background: #B45309; }
+        .btn-primary:disabled { background: #CBD5E1; color: #94A3B8; cursor: not-allowed; }
         .btn-outline {
             width: 100%; background: transparent; color: var(--text); border: 1px solid var(--border);
             padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer;
         }
+        .btn-outline:disabled { border-color: #E2E8F0; color: #94A3B8; cursor: not-allowed; }
 
         nav {
             position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card);
@@ -103,6 +105,10 @@
         .table-suivi { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
         .table-suivi th, .table-suivi td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); }
         .table-suivi th { background: #F1F5F9; color: var(--text-light); font-weight: 600; }
+
+        .live-status-box {
+            padding: 12px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 15px; border-left: 4px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -248,14 +254,17 @@
             <h2>Encaisser un versement</h2>
             <div class="form-card">
                 <label>Sélectionner le bien occupé</label>
-                <select id="c-bien-select" onchange="remplirLoyer()"></select>
+                <select id="c-bien-select" onchange="analyserReliquatComptable()"></select>
                 <label>Nature du Versement</label>
-                <select id="c-type" onchange="remplirLoyer()">
+                <select id="c-type" onchange="analyserReliquatComptable()">
                     <option value="Loyer">Loyer Mensuel</option>
                     <option value="Prorata">Loyer Prorata</option>
-                    <option value="Caution">Caution de Garantie (3 mois)</option>
-                    <option value="Avance">Avance Partielle</option>
+                    <option value="Caution">Caution de Garantie</option>
+                    <option value="Avance">Avance Partielle (Loyer)</option>
                 </select>
+
+                <div id="c-live-status" class="live-status-box" style="display: none;"></div>
+
                 <label>Montant Encaissé (CFA)</label>
                 <input type="number" id="c-montant">
                 <label>Mode de paiement</label>
@@ -264,8 +273,8 @@
                     <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Wave/OM" style="width:auto; margin:0;"> Wave / OM</label>
                     <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Virement" style="width:auto; margin:0;"> Virement</label>
                 </div>
-                <button class="btn-primary" style="background: var(--green);" onclick="validerCollecte('locataire')"><i class="fab fa-whatsapp"></i> Valider & Reçu Locataire</button>
-                <button class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Reçu Propriétaire</button>
+                <button id="btn-collecte-locataire" class="btn-primary" style="background: var(--green);" onclick="validerCollecte('locataire')"><i class="fab fa-whatsapp"></i> Valider & Reçu Locataire</button>
+                <button id="btn-collecte-proprio" class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Reçu Propriétaire</button>
             </div>
         </div>
 
