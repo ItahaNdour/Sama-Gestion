@@ -1,5 +1,5 @@
 // ==============================================================================
-// SAMA GESTION PRO V8.0 - ZÉRO POPUP, PRORATA, HISTORIQUE COMPLET & SÉCURITÉ
+// SAMA GESTION PRO V8.5 - SYSTÈME DE CONTRÔLE DE RELIQUAT COMPTABLE ANTI-DOUBLONS
 // ==============================================================================
 
 let profilRole = null;
@@ -141,7 +141,6 @@ function envoyerMessageWhatsApp(telephone, message) {
         return;
     }
     
-    // Ajout systématique de la signature de l'expéditeur
     let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Sama Gestion Pro`;
     if(monLienPaiement) {
         signatureFormatee += `\n💳 Lien de paiement sécurisé : ${monLienPaiement}`;
@@ -150,7 +149,6 @@ function envoyerMessageWhatsApp(telephone, message) {
     let messageComplet = message + signatureFormatee;
     let messageEncode = encodeURIComponent(messageComplet);
     
-    // SOLUTION ULTIME : Redirection directe au lieu de window.open (Contourne le blocage de popup)
     window.location.href = `https://api.whatsapp.com/send?phone=${numeroPropre}&text=${messageEncode}`;
 }
 
@@ -170,8 +168,6 @@ function calculerProrataAutomatique() {
 
     const dateEntree = new Date(dateEntreeStr);
     const jourEntree = dateEntree.getDate();
-    
-    // Calculer le nombre de jours total dans ce mois spécifique
     const annee = dateEntree.getFullYear();
     const mois = dateEntree.getMonth();
     const joursDansLeMois = new Date(annee, mois + 1, 0).getDate();
@@ -278,7 +274,7 @@ async function adminSupprimerAgence(uid) {
 }
 
 // ==========================================
-// MODULE BIENS & ENTRÉE LOCATAIRE
+// MODULE BIENS
 // ==========================================
 function ouvrirFormulaireAjout() {
     selectedPhotos = [];
@@ -428,9 +424,9 @@ async function supprimerBien(id) {
     }
 }
 
-// ==============================================================================
-// FICHE PORTFOLIO : SUIVI FINANCIER & HISTORIQUE INTEGRAL COMPLET
-// ==============================================================================
+// ==========================================
+// FICHE PORTFOLIO
+// ==========================================
 function ouvrirPortefeuille(id) {
     const b = biens.find(x => x.id === id);
     const paiements = b.historiquePaiements || [];
@@ -475,9 +471,7 @@ function ouvrirPortefeuille(id) {
 function relancerPaiementWhatsApp(id) {
     const b = biens.find(x => x.id === id);
     if(!b.locataireTel) return alert("Pas de numéro enregistré.");
-    
-    // Message rédigé de façon courtoise et professionnelle
-    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé dans nos registres pour ce terme.\n\nNous vous invitons à effectuer le versement à votre convenance. Si cela a déjà été fait, merci de ne pas tenir compte de ce rappel.`;
+    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé dans nos registres pour ce terme.\n\nWe vous invitons à effectuer le versement à votre convenance. Si cela a déjà été fait, merci de ne pas tenir compte de ce rappel.`;
     envoyerMessageWhatsApp(b.locataireTel, msg);
 }
 
@@ -585,31 +579,94 @@ function partagerEDLExistant(id) {
 }
 
 // ==============================================================================
-// GESTION COMPTABLE DES COLLECTES ENRICHIES (LOCATAIRE vs PROPRIÉTAIRE)
+// 🧠 MOTEUR DE VÉRIFICATION & ANALYSE DE RELIQUAT COMPTABLE (ANTI-DOUBLONS)
 // ==============================================================================
+function analyserReliquatComptable() {
+    const name = document.getElementById('c-bien-select').value;
+    const type = document.getElementById('c-type').value;
+    const liveBox = document.getElementById('c-live-status');
+    const inputMontant = document.getElementById('c-montant');
+    
+    const btnLocataire = document.getElementById('btn-collecte-locataire');
+    const btnProprio = document.getElementById('btn-collecte-proprio');
+
+    if(!name) {
+        liveBox.style.display = 'none';
+        return;
+    }
+
+    const b = biens.find(x => x.nom === name);
+    const paiements = b.historiquePaiements || [];
+    
+    // Obtenir le mois et l'année en cours (format local ex: "05/2026")
+    const dateAujourdhui = new Date();
+    const moisCourant = String(dateAujourdhui.getMonth() + 1).padStart(2, '0');
+    const anneeCourante = dateAujourdhui.getFullYear();
+    const filtreMois = `${moisCourant}/${anneeCourante}`;
+
+    let totalDu = 0;
+    let dejaPayeCeMois = 0;
+
+    // 1. Calcul du montant théorique exigé selon la nature
+    if (type === 'Loyer' || type === 'Avance') {
+        totalDu = parseFloat(b.loyer);
+        // On cumule ce que le locataire a déjà payé comme "Loyer" ou "Avance" CE MOIS-CI
+        dejaPayeCeMois = paiements
+            .filter(p => p.date.endsWith(filtreMois) && (p.type === 'Loyer' || p.type === 'Avance'))
+            .reduce((sum, p) => sum + p.montant, 0);
+    } 
+    else if (type === 'Prorata') {
+        const dateEntree = b.dateEntree ? new Date(b.dateEntree) : new Date();
+        const joursDansLeMois = new Date(dateEntree.getFullYear(), dateEntree.getMonth() + 1, 0).getDate();
+        const joursDus = (joursDansLeMois - dateEntree.getDate()) + 1;
+        totalDu = Math.round((parseFloat(b.loyer) / joursDansLeMois) * joursDus);
+        
+        dejaPayeCeMois = paiements
+            .filter(p => p.date.endsWith(filtreMois) && p.type === 'Prorata')
+            .reduce((sum, p) => sum + p.montant, 0);
+    } 
+    else if (type === 'Caution') {
+        totalDu = parseFloat(b.loyer) * 3; // Modèle standard de 3 mois de caution
+        // La caution est globale sur toute la durée du contrat, pas seulement sur le mois en cours
+        dejaPayeCeMois = paiements
+            .filter(p => p.type === 'Caution')
+            .reduce((sum, p) => sum + p.montant, 0);
+    }
+
+    // 2. Calcul du reste à percevoir (Reliquat)
+    let reliquat = totalDu - dejaPayeCeMois;
+    if (reliquat < 0) reliquat = 0;
+
+    // 3. Mise à jour de l'affichage UI et verrouillage intelligent
+    liveBox.style.display = 'block';
+    
+    if (reliquat === 0) {
+        liveBox.style.background = '#FEE2E2';
+        liveBox.style.borderColor = 'var(--red)';
+        liveBox.style.color = '#991B1B';
+        liveBox.innerHTML = `⚠️ <b>Opération Bloquée :</b> Le montant total pour la catégorie <b>${type}</b> a déjà été entièrement perçu et soldé.`;
+        
+        inputMontant.value = 0;
+        btnLocataire.disabled = true;
+        btnProprio.disabled = true;
+    } else {
+        liveBox.style.background = 'var(--gold-light)';
+        liveBox.style.borderColor = 'var(--gold)';
+        liveBox.style.color = '#9A3412';
+        liveBox.innerHTML = `📊 <b>Statut Financier :</b> Total Dû : ${totalDu.toLocaleString()} CFA | Déjà perçu : ${dejaPayeCeMois.toLocaleString()} CFA<br>🎯 <b>Reste à payer (Reliquat) : ${reliquat.toLocaleString()} CFA</b>`;
+        
+        inputMontant.value = reliquat;
+        btnLocataire.disabled = false;
+        btnProprio.disabled = false;
+    }
+}
+
 function updateSelects() {
     const occ = biens.filter(b => b.statut === 'Occupé' && (profilRole === "SuperAdmin" || b.agentCreateur === courtierNom));
     const disp = biens.filter(b => b.statut === 'Disponible' && (profilRole === "SuperAdmin" || b.agentCreateur === courtierNom));
     document.getElementById('c-bien-select').innerHTML = occ.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
     document.getElementById('p-bien-select').innerHTML = disp.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    remplirLoyer();
-}
-
-function remplirLoyer() {
-    const name = document.getElementById('c-bien-select').value;
-    const type = document.getElementById('c-type').value;
-    const b = biens.find(x => x.nom === name);
-    if(b) { 
-        if(type === 'Caution') document.getElementById('c-montant').value = parseFloat(b.loyer)*3;
-        else if(type === 'Prorata') {
-            const dateEntree = b.dateEntree ? new Date(b.dateEntree) : new Date();
-            const joursDansLeMois = new Date(dateEntree.getFullYear(), dateEntree.getMonth() + 1, 0).getDate();
-            const joursDus = (joursDansLeMois - dateEntree.getDate()) + 1;
-            document.getElementById('c-montant').value = Math.round((parseFloat(b.loyer) / joursDansLeMois) * joursDus);
-        } else {
-            document.getElementById('c-montant').value = b.loyer; 
-        }
-    }
+    analyserReliquatComptable();
 }
 
 async function validerCollecte(cible) {
@@ -619,7 +676,11 @@ async function validerCollecte(cible) {
     const mode = document.querySelector('input[name="pay-mode"]:checked').value;
     const b = biens.find(x => x.nom === name);
 
+    if (mt <= 0 || isNaN(mt)) return alert("⚠️ Veuillez saisir un montant supérieur à 0.");
+
     if(!b.historiquePaiements) b.historiquePaiements = [];
+    
+    // Enregistrement de la transaction
     b.historiquePaiements.push({ id: Date.now(), type: type, montant: mt, mode: mode, date: new Date().toLocaleDateString('fr-FR') });
 
     let maCom = type==='Caution' ? parseFloat(b.loyer) : (b.com.includes('%') ? (parseFloat(b.com)/100)*mt : parseFloat(b.com));
@@ -629,22 +690,30 @@ async function validerCollecte(cible) {
     await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
     await chargerDonneesCloud();
 
+    // Re-calcul immédiat après validation pour connaître le nouveau reliquat à envoyer par message
+    let paiementsMois = b.historiquePaiements;
+    let totalExige = (type === 'Caution') ? (parseFloat(b.loyer)*3) : parseFloat(b.loyer);
+    let totalPercuApres = paiementsMois.filter(p => p.type === type).reduce((s,p) => s + p.montant, 0);
+    let resteAPayerApres = totalExige - totalPercuApres;
+    if(resteAPayerApres < 0) resteAPayerApres = 0;
+
+    let chaineReliquat = resteAPayerApres > 0 ? `\n*Reste à payer (Reliquat) :* ${resteAPayerApres.toLocaleString()} CFA` : `\n*Statut :* Terme entièrement soldé ! 🎉`;
+
     let txt = "";
     if (cible === 'locataire') {
-        txt = `*REÇU DE VERSEMENT OFFICIEL*\n\nNous confirmons la bonne réception de votre paiement.\n\n*Désignation :* ${b.nom}\n*Versement :* ${mt.toLocaleString()} CFA\n*Type de règlement :* ${type}\n*Mode retenu :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}\n\nMerci pour votre confiance.`;
+        txt = `*REÇU DE VERSEMENT OFFICIEL*\n\nNous confirmons la bonne réception de votre paiement.\n\n*Désignation :* ${b.nom}\n*Versement perçu :* ${mt.toLocaleString()} CFA\n*Nature du versement :* ${type}\n*Mode de paiement :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}\n\nMerci pour votre confiance.`;
         envoyerMessageWhatsApp(b.locataireTel, txt);
     } else {
-        // Message Propriétaire enrichi : Détail financier transparent
         let netAReverser = mt - maCom;
-        txt = `*RAPPORT DE RECOUVREMENT DE LOYER*\n\nBonjour Cher Propriétaire, nous avons procédé à l'encaissement du terme pour votre bien.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion agence (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net à vous reverser :* ${netAReverser.toLocaleString()} CFA\n*Mode d'encaissement :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}`;
+        txt = `*RAPPORT DE RECOUVREMENT DE LOYER*\n\nBonjour Cher Propriétaire, nous avons procédé à l'encaissement d'un versement pour votre bien.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion agence (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net à vous reverser :* ${netAReverser.toLocaleString()} CFA\n*Mode d'encaissement :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
         envoyerMessageWhatsApp(b.proprioTel, txt);
     }
     showView('dashboard');
 }
 
-// ==============================================================================
-// VISITES & INTERFACES AVEC NETTOYAGE / ANNULATION DE RENDEZ-VOUS
-// ==============================================================================
+// ==========================================
+// VISITES & PLANNING
+// ==========================================
 async function sauverVisite() {
     const nom = document.getElementById('p-name').value;
     const tel = document.getElementById('p-tel').value;
