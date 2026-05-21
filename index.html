@@ -1,191 +1,30 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sama Gestion Pro v5.0</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-<div id="login-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1E3A8A, #3B82F6); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
-    <div style="background: white; padding: 30px 25px; border-radius: 20px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;">
-        <div style="width: 60px; height: 60px; background: #E0E7FF; color: #3B82F6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; font-size: 1.6rem;">
-            <i class="fas fa-user-shield"></i>
-        </div>
-        <h3 id="login-title" style="margin: 0 0 5px 0; color: #1E3A8A;">Sama Gestion Pro</h3>
-        <p id="login-subtitle" style="margin: 0 0 20px 0; font-size: 0.85rem; color: #64748b;">Veuillez vous authentifier</p>
-        
-        <input type="text" id="login-username" placeholder="Identifiant unique" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; box-sizing: border-box;">
-        <input type="password" id="login-password" placeholder="Mot de passe" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; box-sizing: border-box; text-align: center;">
-        
-        <button id="login-submit-btn" onclick="verifierConnexion()" style="width: 100%; background: #3B82F6; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer;">
-            <i class="fas fa-sign-in-alt"></i> Se connecter
-        </button>
-        <p id="login-error" style="color: #EF4444; font-size: 0.85rem; margin: 12px 0 0 0; display: none; font-weight: bold; background: #FEE2E2; padding: 8px; border-radius: 8px; border: 1px solid #FCA5A5;"></p>
-    </div>
-</div>
+  // Ta configuration officielle Sama Gestion Pro
+  const firebaseConfig = {
+    apiKey: "AIzaSyB2Sa42rvZZyZu-lwfKNtu6RVvX1lXgA4s",
+    authDomain: "sama-gestion-pro.firebaseapp.com",
+    projectId: "sama-gestion-pro",
+    storageBucket: "sama-gestion-pro.firebasestorage.app",
+    messagingSenderId: "584735387587",
+    appId: "1:584735387587:web:4bb5f2c9671474da23d776"
+  };
 
-<div class="app-shell">
-    <header class="main-header">
-        <h2 style="margin:0;">Sama Gestion Pro</h2>
-        <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9; font-size: 0.8rem; margin-top: 2px;">
-            <span id="header-user-badge"><i class="fas fa-user-circle"></i> Session</span>
-            <span onclick="deconnexion()" style="text-decoration: underline; cursor: pointer; color: #FF8E8E;"><i class="fas fa-power-off"></i> Quitter</span>
-        </div>
-    </header>
+  // Initialisation du Cloud
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    <div class="revenue-card">
-        <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Commission</p>
-        <h2 id="total-display">0 CFA</h2>
-    </div>
-
-    <main id="view-dashboard" class="view" style="display:block;">
-        <div class="menu-grid">
-            <div class="menu-card" onclick="showView('planning')">
-                <div class="icon-circle"><i class="fas fa-calendar-check" style="color: #4A69FF;"></i></div>
-                <span>Visites</span>
-                <div class="dot blue-dot"></div>
-            </div>
-            <div class="menu-card" onclick="showView('collecte')">
-                <div class="icon-circle"><i class="fas fa-hand-holding-usd" style="color: #2ECC71;"></i></div>
-                <span>Collecter</span>
-                <div class="dot green-dot"></div>
-            </div>
-            <div class="menu-card" onclick="showView('biens')">
-                <div class="icon-circle"><i class="fas fa-building" style="color: #F39C12;"></i></div>
-                <span>Mes Biens</span>
-                <div class="dot orange-dot"></div>
-            </div>
-            <div class="menu-card" onclick="showView('profil')">
-                <div class="icon-circle"><i class="fas fa-user-cog" style="color: #1E3A8A;"></i></div>
-                <span>Mon Profil</span>
-                <div class="dot navy-dot"></div>
-            </div>
-        </div>
-    </main>
-
-    <section id="view-biens" class="view" style="display:none;">
-        <div class="section-header">
-            <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-            <h3>Mon Catalogue</h3>
-        </div>
-        <div style="padding: 0 15px; margin-bottom: 10px;">
-            <input type="text" id="search-bien-input" oninput="renderBiens()" placeholder="🔍 Rechercher un bien..." style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #cbd5e1; box-sizing: border-box;">
-        </div>
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
-            <button class="tab-btn" onclick="filterBiens('Occupé', event)">Occupés</button>
-        </div>
-        <div id="biens-list"></div>
-        <button class="fab-add" onclick="ouvrirFormulaireAjout()"><i class="fas fa-plus"></i></button>
-    </section>
-
-    <section id="view-ajouter-bien" class="view" style="display:none;">
-        <div class="section-header">
-            <button class="back-btn" onclick="showView('biens')"><i class="fas fa-times"></i></button>
-            <h3 id="form-bien-title">Nouveau Bien</h3>
-        </div>
-        <div class="form-card" style="max-height: 70vh; overflow-y: auto;">
-            <input type="hidden" id="edit-bien-id">
-            <div onclick="document.getElementById('camera-input').click()" class="photo-upload-area">
-                <i class="fas fa-camera"></i> <p style="margin:0; font-size:0.8rem;">Photos (Max 3)</p>
-                <div id="previews-container" style="display:flex; gap:5px; margin-top:5px;"></div>
-            </div>
-            <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" multiple onchange="previewImage(this)">
-            
-            <label>Type de bien</label>
-            <select id="new-bien-type">
-                <option value="Studio">Studio (T1)</option>
-                <option value="T2">Appartement T2</option>
-                <option value="T3">Appartement T3</option>
-                <option value="Villa">Villa</option>
-            </select>
-            <input type="text" id="new-bien-nom" placeholder="Nom du bien">
-            <input type="text" id="new-bien-adresse" placeholder="Quartier / Adresse">
-            <input type="number" id="new-bien-loyer" placeholder="Prix / Loyer (CFA)">
-            <input type="text" id="new-bien-com" placeholder="Ma Commission (ex: 10%)">
-            <input type="text" id="new-bien-proprio" placeholder="Nom du Propriétaire">
-            <input type="tel" id="new-bien-proprio-tel" placeholder="Téléphone Propriétaire">
-            <input type="text" id="new-bien-locataire" placeholder="Nom du Locataire (Si occupé)">
-            <input type="tel" id="new-bien-locataire-tel" placeholder="Téléphone Locataire">
-            <button id="btn-valider-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
-        </div>
-    </section>
-
-    <section id="view-collecte" class="view" style="display:none;">
-        <div class="section-header">
-            <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-            <h3>Encaisser</h3>
-        </div>
-        <div class="form-card">
-            <label>Bien Occupé :</label>
-            <select id="c-bien-select" onchange="remplirLoyer()"></select>
-            <label>Type :</label>
-            <select id="c-type" onchange="remplirLoyer()">
-                <option value="Loyer">Loyer du mois</option>
-                <option value="Caution">Caution (Entrée)</option>
-            </select>
-            <label>Montant :</label>
-            <input type="number" id="c-montant">
-            <div class="mode-pay-grid">
-                <label><input type="radio" name="pay-mode" value="Wave" checked><div class="mode-pay-box">Wave</div></label>
-                <label><input type="radio" name="pay-mode" value="Orange Money"><div class="mode-pay-box">OM</div></label>
-                <label><input type="radio" name="pay-mode" value="Espèces"><div class="mode-pay-box">Cash</div></label>
-            </div>
-            <button class="btn-primary" style="background:#2ECC71;" onclick="validerCollecte('locataire')">WhatsApp Locataire</button>
-            <button class="btn-primary" style="background:var(--blue); margin-top:10px;" onclick="validerCollecte('proprio')">WhatsApp Propriétaire</button>
-        </div>
-    </section>
-
-    <section id="view-planning" class="view" style="display:none;">
-        <div class="section-header">
-            <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-            <h3>Visites</h3>
-        </div>
-        <div class="form-card">
-            <input type="text" id="p-name" placeholder="Nom Client">
-            <select id="p-bien-select"></select>
-            <input type="datetime-local" id="p-date">
-            <button class="btn-primary" onclick="sauverVisite()">Programmer la visite</button>
-        </div>
-        <div id="visites-list"></div>
-    </section>
-
-    <section id="view-profil" class="view" style="display:none;">
-        <div class="section-header">
-            <button class="back-btn" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i></button>
-            <h3>Mon Espace Profil</h3>
-        </div>
-        <div class="form-card" style="max-height: 75vh; overflow-y: auto;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h4 id="profil-statut-actuel" style="margin: 0; color: #1E3A8A; font-size: 1.2rem;">-</h4>
-                <small id="profil-role-badge" style="background: #E0E7FF; color: #1E3A8A; padding: 4px 10px; border-radius: 20px; font-weight: bold; display: inline-block; margin-top: 5px;">-</small>
-            </div>
-
-            <div id="admin-management-section" style="display: none; border-top: 2px dashed #cbd5e1; margin-top: 20px; padding-top: 15px;">
-                <h4 style="margin: 0 0 10px 0; color: #1E3A8A; text-align: left;"><i class="fas fa-building"></i> Enregistrer une Agence / Courtier</h4>
-                <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
-                    <input type="text" id="admin-new-user-name" placeholder="Identifiant de l'agence (ex: agence_almadies)">
-                    <input type="password" id="admin-new-user-pin" placeholder="Mot de passe de l'agence">
-                    <button class="btn-primary" style="padding: 10px; font-size: 0.85rem; margin-top:8px; background: #2ECC71;" onclick="adminCreerCompteCourtier()">Créer l'accès Agence</button>
-                </div>
-                <small style="font-weight: bold; color: #64748b; display: block; margin-bottom: 5px; text-align: left;">Agences & Courtiers enregistrés :</small>
-                <div id="admin-users-list"></div>
-            </div>
-
-            <button class="btn-outline" style="color: #EF4444; border: 1px solid #EF4444; background: #FFF5F5; margin-top: 30px; width: 100%;" onclick="deconnexion()">
-                <i class="fas fa-power-off"></i> Se déconnecter de la session
-            </button>
-        </div>
-    </section>
-
-    <div id="modal-bien" class="modal" style="display: none;">
-        <div class="modal-content" id="modal-body"></div>
-    </div>
-</div>
+  // Partage des fonctions au fichier script.js
+  window.db = db;
+  window.fsDoc = doc;
+  window.fsGetDoc = getDoc;
+  window.fsSetDoc = setDoc;
+  window.fsCollection = collection;
+  window.fsGetDocs = getDocs;
+  window.fsUpdateDoc = updateDoc;
+  window.fsDeleteDoc = deleteDoc;
+</script>
 
 <script src="script.js"></script>
-</body>
-</html>
