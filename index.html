@@ -1,30 +1,340 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sama Gestion Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-weight/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --blue: #4F46E5;
+            --blue-dark: #3730A3;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --text: #1E293B;
+            --text-light: #64748B;
+            --green: #10B981;
+            --red: #EF4444;
+            --border: #E2E8F0;
+        }
 
-  // Ta configuration officielle Sama Gestion Pro
-  const firebaseConfig = {
-    apiKey: "AIzaSyB2Sa42rvZZyZu-lwfKNtu6RVvX1lXgA4s",
-    authDomain: "sama-gestion-pro.firebaseapp.com",
-    projectId: "sama-gestion-pro",
-    storageBucket: "sama-gestion-pro.firebasestorage.app",
-    messagingSenderId: "584735387587",
-    appId: "1:584735387587:web:4bb5f2c9671474da23d776"
-  };
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 75px; font-size: 15px; }
 
-  // Initialisation du Cloud
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+        /* Écran de Login Firebase */
+        #login-screen {
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: linear-gradient(135deg, #4F46E5 0%, #312E81 100%);
+            z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .login-box {
+            background: var(--card); width: 100%; max-width: 400px; 
+            padding: 30px; border-radius: 24px; text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+        }
 
-  // Partage des fonctions au fichier script.js
-  window.db = db;
-  window.fsDoc = doc;
-  window.fsGetDoc = getDoc;
-  window.fsSetDoc = setDoc;
-  window.fsCollection = collection;
-  window.fsGetDocs = getDocs;
-  window.fsUpdateDoc = updateDoc;
-  window.fsDeleteDoc = deleteDoc;
-</script>
+        /* En-tête de l'application */
+        header {
+            background: var(--card); padding: 15px 20px; display: flex; 
+            justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+        }
+        .logo-area { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--blue); font-size: 1.1rem; }
+        .user-badge { background: var(--bg); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
 
-<script src="script.js"></script>
+        /* Conteneur Principal */
+        main { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .view { display: none; }
+        
+        /* Composants Cartes et Formulaires */
+        .form-card {
+            background: var(--card); padding: 20px; border-radius: 16px;
+            border: 1px solid var(--border); margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        h2, h3 { margin-bottom: 15px; font-weight: 700; color: #0F172A; }
+        label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); }
+        input, select, textarea {
+            width: 100%; padding: 12px; border: 1px solid var(--border);
+            border-radius: 10px; margin-bottom: 15px; font-size: 0.95rem; background: #F1F5F9; outline: none;
+        }
+        input:focus, select:focus { border-color: var(--blue); background: var(--card); }
+        
+        /* Boutons */
+        .btn-primary {
+            width: 100%; background: var(--blue); color: white; border: none;
+            padding: 14px; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .btn-primary:hover { background: var(--blue-dark); }
+        .btn-outline {
+            width: 100%; background: transparent; color: var(--text); border: 1px solid var(--border);
+            padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer;
+        }
+
+        /* Barre de navigation basse (Mobile-first) */
+        nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+            padding: 10px 0; z-index: 1000; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--text-light); text-decoration: none; font-size: 0.75rem; font-weight: 500; cursor: pointer;
+        }
+        .nav-item i { font-size: 1.25rem; margin-bottom: 4px; }
+        .nav-item.active { color: var(--blue); font-weight: 700; }
+
+        /* Filtres et Listes de biens */
+        .tabs-container { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn {
+            background: var(--card); border: 1px solid var(--border); padding: 8px 16px;
+            border-radius: 20px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; cursor: pointer;
+        }
+        .tab-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+        .bien-gallery { display: flex; gap: 5px; overflow-x: auto; border-radius: 12px; }
+        .bien-gallery img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+
+        /* Modale */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content { background: var(--card); width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="color: var(--blue); margin-bottom: 5px;">Sama Gestion Pro</h2>
+            <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 25px;">Accès sécurisé à votre base Cloud</p>
+            
+            <div id="standard-login-zone">
+                <input type="email" id="login-username" placeholder="Votre Adresse Email">
+                <input type="password" id="login-password" placeholder="Votre Mot de passe">
+                <button class="btn-primary" onclick="verifierConnexion()">Se connecter</button>
+                <p id="login-error" style="color: var(--red); font-size: 0.85rem; margin-top: 10px; display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo-area">
+            <i class="fas fa-building"></i> Sama Gestion Pro
+        </div>
+        <div class="user-badge" id="header-user-badge">
+            </div>
+    </header>
+
+    <main>
+        <div id="view-dashboard" class="view" style="display: block;">
+            <div class="form-card" style="background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%); color: white; border: none; text-align: center; padding: 30px 20px;">
+                <p style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; font-weight: 500;">Commissions Générées</p>
+                <h1 id="total-display" style="font-size: 2.2rem; font-weight: 800; letter-spacing: -1px;">0 CFA</h1>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px;">
+                <button class="form-card" style="text-align: center; cursor: pointer; background: var(--card);" onclick="ouvrirFormulaireAjout()">
+                    <i class="fas fa-plus-circle" style="color: var(--blue); font-size: 1.8rem; margin-bottom: 8px;"></i><br>
+                    <span style="font-weight: 600; font-size: 0.85rem;">Nouveau Bien</span>
+                </button>
+                <button class="form-card" style="text-align: center; cursor: pointer; background: var(--card);" onclick="showView('collecte')">
+                    <i class="fas fa-wallet" style="color: var(--green); font-size: 1.8rem; margin-bottom: 8px;"></i><br>
+                    <span style="font-weight: 600; font-size: 0.85rem;">Encaisser / Suivi</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="view-biens" class="view">
+            <h2>Catalogue Immobilier</h2>
+            <input type="text" id="search-bien-input" placeholder="🔍 Rechercher un quartier, un nom..." oninput="renderBiens()">
+            
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
+                <button class="tab-btn" onclick="filterBiens('Occupé', event)">Loués</button>
+            </div>
+            <div id="biens-list" style="display: grid; gap: 15px;"></div>
+        </div>
+
+        <div id="view-ajouter-bien" class="view">
+            <h2 id="form-bien-title">Nouveau Bien</h2>
+            <div class="form-card">
+                <label>Nom du bien / Référence</label>
+                <input type="text" id="new-bien-nom" placeholder="Ex: Studio Almadies A3">
+
+                <label>Type de bien</label>
+                <select id="new-bien-type">
+                    <option value="Studio">Studio</option>
+                    <option value="Appartement">Appartement</option>
+                    <option value="Chambre">Chambre</option>
+                    <option value="Magasin">Magasin</option>
+                </select>
+
+                <label>Prix Loyer Mensuel (CFA)</label>
+                <input type="number" id="new-bien-loyer" placeholder="Ex: 250000">
+
+                <label>Adresse / Quartier</label>
+                <input type="text" id="new-bien-adresse" placeholder="Ex: Patte d'Oie, Dakar">
+
+                <label>Commission Agence (Fixe ou %)</label>
+                <input type="text" id="new-bien-com" value="10%" placeholder="Ex: 10% ou 50000">
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+
+                <label>Nom du Propriétaire</label>
+                <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
+                <label>Téléphone du Propriétaire</label>
+                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: +22177...">
+
+                <label>Photos (Max 3)</label>
+                <input type="file" accept="image/*" multiple onchange="previewImage(this)" style="background: transparent; padding: 0;">
+                <div id="previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
+
+                <button class="btn-primary" onclick="saveBienPro()">Enregistrer sur le Cloud</button>
+                <button class="btn-outline" style="margin-top: 8px;" onclick="showView('dashboard')">Annuler</button>
+            </div>
+        </div>
+
+        <div id="view-collecte" class="view">
+            <h2>Encaisser un flux</h2>
+            <div class="form-card">
+                <label>Sélectionner le bien occupé</label>
+                <select id="c-bien-select" onchange="remplirLoyer()"></select>
+
+                <label>Nature du Versement</label>
+                <select id="c-type" onchange="remplirLoyer()">
+                    <option value="Loyer">Loyer Mensuel</option>
+                    <option value="Caution">Caution de Garantie (3 mois)</option>
+                    <option value="Avance">Avance Partielle</option>
+                </select>
+
+                <label>Montant Encaissé (CFA)</label>
+                <input type="number" id="c-montant">
+
+                <label>Mode de paiement</label>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-weight: 500; font-size: 0.9rem;">
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Espèces" checked style="width:auto; margin:0;"> Espèces</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Wave/OM" style="width:auto; margin:0;"> Wave / OM</label>
+                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Virement" style="width:auto; margin:0;"> Virement</label>
+                </div>
+
+                <button class="btn-primary" style="background: var(--green);" onclick="validerCollecte('locataire')"><i class="fab fa-whatsapp"></i> Valider & Reçu Locataire</button>
+                <button class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Reçu Propriétaire</button>
+            </div>
+        </div>
+
+        <div id="view-planning" class="view">
+            <h2>Planning des Visites</h2>
+            <div class="form-card">
+                <h3>Planifier un rendez-vous</h3>
+                <label>Nom du Client Prospect</label>
+                <input type="text" id="p-name" placeholder="Ex: Aminata Sarr">
+                
+                <label>Numéro de Téléphone Client</label>
+                <input type="tel" id="p-tel" placeholder="Ex: +221...">
+
+                <label>Bien à faire visiter</label>
+                <select id="p-bien-select"></select>
+
+                <label>Date et Heure du rendez-vous</label>
+                <input type="datetime-local" id="p-date">
+
+                <button class="btn-primary" onclick="sauverVisite()">Fixer le rendez-vous</button>
+            </div>
+
+            <h3>Visites enregistrées</h3>
+            <div id="visites-list" style="display: grid; gap: 12px; margin-top: 10px;"></div>
+        </div>
+
+        <div id="view-profil" class="view">
+            <h2>Mon Compte</h2>
+            <div class="form-card" style="text-align: center;">
+                <h3 id="profil-statut-actuel">👑 Admin</h3>
+                <span id="profil-role-badge" style="background: #EEF2F6; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: var(--text-light);"></span>
+                <button class="btn-outline" style="color: var(--red); border-color: var(--red); margin-top: 15px;" onclick="deconnexion()">Se déconnecter</button>
+            </div>
+
+            <div id="admin-management-section" class="form-card" style="display: none; margin-top: 20px;">
+                <h3 style="color: var(--blue);"><i class="fas fa-shield-alt"></i> Activer une Agence Partenaire</h3>
+                <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:15px;">Créez un compte Cloud direct pour vos agents ou courtiers partenaires.</p>
+                
+                <div style="display: grid; gap: 5px;">
+                    <label>Adresse E-mail de l'agence</label>
+                    <input type="email" id="admin-new-user-name" placeholder="Ex: agence.almadies@gmail.com">
+                    
+                    <label>Mot de passe d'accès (6 char. min)</label>
+                    <input type="password" id="admin-new-user-pin" placeholder="Choisir un mot de passe solide">
+                    
+                    <button class="btn-primary" onclick="adminCreerCompteCourtier()">Activer le compte Cloud</button>
+                </div>
+                
+                <h4 style="margin-top: 25px; margin-bottom: 10px; font-size:0.9rem;">Agences partenaires connectées</h4>
+                <div id="admin-users-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-bien" class="modal" onclick="fermerModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <nav>
+        <div class="nav-item active" onclick="showView('dashboard'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
+            <i class="fas fa-chart-pie"></i>Dashboard
+        </div>
+        <div class="nav-item" onclick="showView('biens'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
+            <i class="fas fa-home"></i>Biens
+        </div>
+        <div class="nav-item" onclick="showView('planning'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
+            <i class="fas fa-calendar-alt"></i>Planning
+        </div>
+        <div class="nav-item" onclick="showView('profil'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
+            <i class="fas fa-user-shield"></i>Profil
+        </div>
+    </nav>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+      // Ta configuration officielle Firebase reliée à ton projet
+      const firebaseConfig = {
+        apiKey: "AIzaSyB2Sa42rvZZyZu-lwfKNtu6RVvX1lXgA4s",
+        authDomain: "sama-gestion-pro.firebaseapp.com",
+        projectId: "sama-gestion-pro",
+        storageBucket: "sama-gestion-pro.firebasestorage.app",
+        messagingSenderId: "584735387587",
+        appId: "1:584735387587:web:4bb5f2c9671474da23d776"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      // Exportation pour script.js
+      window.db = db;
+      window.auth = auth;
+      window.fsDoc = doc;
+      window.fsGetDoc = getDoc;
+      window.fsSetDoc = setDoc;
+      window.fsCollection = collection;
+      window.fsGetDocs = getDocs;
+      window.fsUpdateDoc = updateDoc;
+      window.fsDeleteDoc = deleteDoc;
+      
+      window.fbSignIn = signInWithEmailAndPassword;
+      window.fbCreateUser = createUserWithEmailAndPassword;
+      window.fbSignOut = signOut;
+      window.fbOnAuth = onAuthStateChanged;
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
