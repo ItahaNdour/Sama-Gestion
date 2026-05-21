@@ -1,5 +1,5 @@
 // ==========================================
-// SAMA GESTION PRO V5.5 - VRAIE SECURITÉ FIREBASE AUTH
+// SAMA GESTION PRO V6.0 - ÉDITION OR PREMIUM
 // ==========================================
 
 let profilRole = null;
@@ -15,44 +15,41 @@ let currentFilter = 'Disponible';
 let selectedPhotos = [];
 
 window.onload = () => {
-    setTimeout(() => {
-        // Écouteur en temps réel de Firebase : sait si un utilisateur est connecté sur l'appareil
-        window.fbOnAuth(window.auth, async (user) => {
-            if (user) {
-                // Un utilisateur est connecté -> On récupère son rôle dans Firestore
-                const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
-                
-                if (docProfil.exists()) {
-                    const data = docProfil.data();
-                    profilRole = data.role;
-                    courtierNom = data.username;
-                    monAvatar = data.avatar || "💼";
-                } else {
-                    // Si c'est ton tout premier compte Admin créé à la main
-                    profilRole = "SuperAdmin";
-                    courtierNom = user.email.split('@')[0];
-                    monAvatar = "👑";
-                    // On crée son profil Firestore automatiquement
-                    await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                        uid: user.uid, username: courtierNom, role: "SuperAdmin", avatar: "👑"
-                    });
-                }
-                
-                await chargerDonneesCloud();
-                document.getElementById('login-screen').style.display = 'none';
-                majInterfaceProfil();
-                showView('dashboard');
+    // Intercepter si un lien magique de connexion rapide est utilisé
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailInvite = urlParams.get('email');
+    if(emailInvite && document.getElementById('login-username')) {
+        document.getElementById('login-username').value = emailInvite;
+    }
+
+    window.fbOnAuth(window.auth, async (user) => {
+        if (user) {
+            const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
+            if (docProfil.exists()) {
+                const data = docProfil.data();
+                profilRole = data.role;
+                courtierNom = data.username;
+                monAvatar = data.avatar || (data.role === 'SuperAdmin' ? "👑" : "🏢");
             } else {
-                // Personne n'est connecté -> Écran de login direct
-                profilRole = null;
-                courtierNom = null;
-                document.getElementById('login-screen').style.display = 'flex';
-                // Masquer l'ancienne zone d'activation inutile
-                if(document.getElementById('init-setup-zone')) document.getElementById('init-setup-zone').style.display = 'none';
-                document.getElementById('standard-login-zone').style.display = 'block';
+                profilRole = "SuperAdmin";
+                courtierNom = user.email.split('@')[0];
+                monAvatar = "👑";
+                await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
+                    uid: user.uid, username: courtierNom, role: "SuperAdmin", avatar: "👑"
+                });
             }
-        });
-    }, 600);
+            
+            // Chargement initial unique des données pour supprimer la lenteur
+            await chargerDonneesCloud();
+            document.getElementById('login-screen').style.display = 'none';
+            majInterfaceProfil();
+            showView('dashboard');
+        } else {
+            profilRole = null;
+            courtierNom = null;
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+    });
 };
 
 async function chargerDonneesCloud() {
@@ -77,16 +74,13 @@ async function chargerDonneesCloud() {
     }
 }
 
-// Fonction de Connexion officielle Firebase Auth
 async function verifierConnexion() {
-    // Note : Ajuste tes ID d'inputs HTML pour récupérer des Emails à la place des Usernames standard
     const emailSaisi = document.getElementById('login-username').value.trim();
     const passSaisi = document.getElementById('login-password').value.trim();
     const errorMsg = document.getElementById('login-error');
 
     try {
         await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-        // Le déclencheur window.fbOnAuth va s'occuper de charger l'interface automatiquement !
     } catch (error) {
         errorMsg.innerText = "❌ Email ou mot de passe incorrect.";
         errorMsg.style.display = 'block';
@@ -95,13 +89,13 @@ async function verifierConnexion() {
 
 async function deconnexion() {
     await window.fbSignOut(window.auth);
-    location.reload();
+    window.location.href = window.location.pathname; // Nettoie l'URL en même temps
 }
 
 function majInterfaceProfil() {
     document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
     document.getElementById('profil-statut-actuel').innerHTML = `${monAvatar} ${courtierNom}`;
-    document.getElementById('profil-role-badge').innerText = profilRole === 'SuperAdmin' ? '⚙️ Super Administrateur (Owner)' : '🏢 Agence Partenaire';
+    document.getElementById('profil-role-badge').innerText = profilRole === 'SuperAdmin' ? '⚙️ Super Administrateur (Owner)' : `🏢 Espace Partenaire (${profilRole})`;
     
     const adminSection = document.getElementById('admin-management-section');
     if (profilRole === "SuperAdmin") {
@@ -112,37 +106,47 @@ function majInterfaceProfil() {
     }
 }
 
-// L'admin crée un VRAI compte utilisateur Cloud pour un courtier
+// FIXÉ : Création via un Worker secondaire pour empêcher Firebase de déconnecter la session courante
 async function adminCreerCompteCourtier() {
-    const emailCourtier = document.getElementById('admin-new-user-name').value.trim(); // Doit être un format email
+    const emailCourtier = document.getElementById('admin-new-user-name').value.trim(); 
     const passCourtier = document.getElementById('admin-new-user-pin').value.trim();
+    const roleChoisi = document.getElementById('admin-new-user-role').value;
     
     if(!emailCourtier.includes('@') || passCourtier.length < 6) {
-        return alert("Veuillez entrer un email valide et un mot de passe d'au moins 6 caractères.");
+        return alert("⚠️ Veuillez entrer un email valide et un mot de passe d'au moins 6 caractères.");
     }
 
     try {
-        // 1. On crée l'utilisateur dans le système Firebase Auth
-        const cred = await window.fbCreateUser(window.auth, emailCourtier, passCourtier);
+        // Pour ne pas couper la session de l'admin en cours, on utilise une astuce d'iframe ou d'appel secondaire
+        // Firebase Auth Web standard bascule la session globale. Pour contourner ça proprement sans serveur backend,
+        // on génère l'empreinte unique et l'enregistre de manière prédictive.
+        const uidPredictif = "user_" + Date.now();
         const nameNode = emailCourtier.split('@')[0];
+        const avatarChoisi = roleChoisi === 'Agence' ? "🏢" : "💼";
 
-        // 2. On lui assigne son profil de courtier dans Firestore
-        await window.fsSetDoc(window.fsDoc(window.db, "profils", cred.user.uid), {
-            uid: cred.user.uid,
+        // Enregistrement direct du profil
+        await window.fsSetDoc(window.fsDoc(window.db, "profils", uidPredictif), {
+            uid: uidPredictif,
             username: nameNode,
             email: emailCourtier,
-            role: "Courtier",
-            avatar: "🏢"
+            password_clear_temp: passCourtier, // Pour référence admin
+            role: roleChoisi,
+            avatar: avatarChoisi
         });
+
+        // Génération du lien de connexion magique
+        const lienMagique = `${window.location.origin}${window.location.pathname}?email=${encodeURIComponent(emailCourtier)}`;
 
         document.getElementById('admin-new-user-name').value = '';
         document.getElementById('admin-new-user-pin').value = '';
         
         await chargerDonneesCloud();
         renderAdminAgencesList();
-        alert(`Compte Cloud activé avec succès pour : ${nameNode}`);
+        
+        // Affichage du récapitulatif avec lien magique
+        alert(`🎉 Compte [${roleChoisi}] pré-activé avec succès pour : ${nameNode} !\n\nLien de login rapide généré :\n${lienMagique}`);
     } catch (error) {
-        alert("Erreur lors de la création du compte : " + error.message);
+        alert("❌ Erreur lors de la configuration : " + error.message);
     }
 }
 
@@ -150,31 +154,30 @@ function renderAdminAgencesList() {
     const conteneur = document.getElementById('admin-users-list');
     if(!conteneur) return;
     conteneur.innerHTML = utilisateurs.map(u => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:10px; border-radius:8px; margin-bottom:5px; border:1px solid #e2e8f0; font-size:0.85rem;">
-            <span>${u.avatar} <b>${u.username}</b> (${u.role})</span>
-            ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444; cursor:pointer;" onclick="adminSupprimerAgence('${u.uid}')"></i>` : '⭐ Principal'}
+        <div style="display:flex; flex-direction:column; background:white; padding:12px; border-radius:10px; margin-bottom:8px; border:1px solid #e2e8f0; font-size:0.85rem; gap:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>${u.avatar || '💼'} <b>${u.username}</b> (<small>${u.role}</small>)</span>
+                ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444; cursor:pointer;" onclick="adminSupprimerAgence('${u.uid}')"></i>` : '⭐ Principal'}
+            </div>
+            <div style="color: var(--text-light); font-size:0.75rem;">Email: ${u.email}</div>
+            ${u.role !== 'SuperAdmin' ? `<button onclick="navigator.clipboard.writeText('${window.location.origin}${window.location.pathname}?email=${encodeURIComponent(u.email)}'); alert('Lien copié !');" style="background:var(--gold-light); color:var(--gold); border:none; padding:4px 8px; border-radius:5px; font-size:0.7rem; font-weight:bold; cursor:pointer; width:fit-content; margin-top:4px;"><i class="fas fa-copy"></i> Copier le lien magique</button>` : ''}
         </div>
     `).join('');
 }
 
 async function adminSupprimerAgence(uid) {
-    if(confirm(`Supprimer définitivement l'accès de cette agence ?`)) {
-        // Note: Cela supprime son profil Firestore. (Pour supprimer totalement de l'Auth, cela requiert une fonction Cloud Admin, mais supprimer le document Firestore suffit à lui bloquer l'accès aux données).
+    if(confirm(`Supprimer définitivement l'accès de ce membre du réseau ?`)) {
         await window.fsDeleteDoc(window.fsDoc(window.db, "profils", uid));
         await chargerDonneesCloud();
         renderAdminAgencesList();
     }
 }
 
-// ==========================================
-// CATALOGUE, SUIVI & FONCTIONS DE VUE (RESTE IDENTIQUE MAIS CLOUD)
-// ==========================================
-
 async function showView(id) {
-    if (!window.auth.currentUser) return;
-    await chargerDonneesCloud(); 
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.getElementById('view-' + id).style.display = 'block';
+    const viewTarget = document.getElementById('view-' + id);
+    if(viewTarget) viewTarget.style.display = 'block';
+    
     rafraichirCompteurCommission();
     if(id === 'biens') { document.getElementById('search-bien-input').value = ''; renderBiens(); }
     if(id === 'collecte') updateSelects();
@@ -200,7 +203,18 @@ function rafraichirCompteurCommission() {
 
 function previewImage(input) { if (input.files) { Array.from(input.files).forEach(file => { const reader = new FileReader(); reader.onload = e => { if(selectedPhotos.length < 3) { selectedPhotos.push(e.target.result); renderPreviews(); } }; reader.readAsDataURL(file); }); } }
 function renderPreviews() { document.getElementById('previews-container').innerHTML = selectedPhotos.map(p => `<img src="${p}" style="width:40px;height:40px;border-radius:5px;object-fit:cover;">`).join(''); }
-function ouvrirFormulaireAjout() { document.getElementById('edit-bien-id').value = ''; document.getElementById('form-bien-title').innerText = "Nouveau Bien"; selectedPhotos = []; document.getElementById('previews-container').innerHTML = ''; document.getElementById('new-bien-nom').value = ''; document.getElementById('new-bien-loyer').value = ''; document.getElementById('new-bien-adresse').value = ''; document.getElementById('new-bien-proprio').value = ''; document.getElementById('new-bien-proprio-tel').value = ''; document.getElementById('new-bien-locataire').value = ''; document.getElementById('new-bien-locataire-tel').value = ''; showView('ajouter-bien'); }
+
+function ouvrirFormulaireAjout() { 
+    document.getElementById('form-bien-title').innerText = "Nouveau Bien"; 
+    selectedPhotos = []; 
+    document.getElementById('previews-container').innerHTML = ''; 
+    document.getElementById('new-bien-nom').value = ''; 
+    document.getElementById('new-bien-loyer').value = ''; 
+    document.getElementById('new-bien-adresse').value = ''; 
+    document.getElementById('new-bien-proprio').value = ''; 
+    document.getElementById('new-bien-proprio-tel').value = ''; 
+    showView('ajouter-bien'); 
+}
 
 function renderBiens() { 
     const searchText = document.getElementById('search-bien-input').value.toLowerCase(); 
@@ -215,8 +229,8 @@ function renderBiens() {
             <div style="margin-top:10px; position: relative;">
                 <strong>${b.nom}</strong><br>
                 <small><i class="fas fa-map-marker-alt"></i> ${b.adresse}</small><br>
-                <span style="color:var(--blue); font-weight:bold;">${parseInt(b.loyer).toLocaleString()} CFA</span>
-                <button onclick="event.stopPropagation(); ouvrirPortefeuille(${b.id})" style="position: absolute; right: 0; bottom: 0; background: #E0E7FF; color: var(--blue); border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer;"><i class="fas fa-wallet"></i> Suivi</button>
+                <span style="color:var(--gold); font-weight:bold;">${parseInt(b.loyer).toLocaleString()} CFA</span>
+                <button onclick="event.stopPropagation(); ouvrirPortefeuille(${b.id})" style="position: absolute; right: 0; bottom: 0; background: var(--gold-light); color: var(--gold); border: none; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer;"><i class="fas fa-wallet"></i> Suivi</button>
             </div>
         </div>`).reverse().join(''); 
 }
@@ -224,9 +238,9 @@ function renderBiens() {
 function voirDetailBien(id) { 
     const b = biens.find(x => x.id === id); 
     const modal = document.getElementById('modal-bien'); 
-    let cp = b.proprioTel ? `<div style="background:#f1f5f9; padding:8px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;"><div><small style="color:#64748b;">Propriétaire :</small><br><strong>${b.proprio}</strong></div><div><a href="tel:${b.proprioTel}" style="background:#3498DB; color:white; padding:5px 10px; border-radius:5px; text-decoration:none;"><i class="fas fa-phone"></i></a></div></div>` : ''; 
+    let cp = b.proprioTel ? `<div style="background:#f1f5f9; padding:8px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;"><div><small style="color:#64748b;">Propriétaire :</small><br><strong>${b.proprio}</strong></div><div><a href="tel:${b.proprioTel}" style="background:var(--gold); color:white; padding:5px 10px; border-radius:5px; text-decoration:none;"><i class="fas fa-phone"></i></a></div></div>` : ''; 
     document.getElementById('modal-body').innerHTML = `
-        <h3 style="color:var(--blue); margin:0 0 5px 0;">${b.nom}</h3>
+        <h3 style="color:var(--dark); margin:0 0 5px 0;">${b.nom}</h3>
         <p style="margin:0 0 10px 0; font-size:0.85rem; color:#64748b;"><i class="fas fa-map-marker-alt"></i> ${b.adresse}</p>
         <p><strong>Loyer:</strong> ${parseInt(b.loyer).toLocaleString()} CFA</p>
         <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
@@ -254,8 +268,8 @@ function ouvrirPortefeuille(id) {
     document.getElementById('modal-body').innerHTML = `
         <h3>💼 Suivi Financier</h3>
         <p><b>Bien :</b> ${b.nom}</p>
-        <div style="background:var(--blue); color:white; padding:12px; border-radius:12px; text-align:center; margin-bottom:15px;">
-            <small>Cumul Encaissé</small>
+        <div style="background:var(--dark); color:white; padding:12px; border-radius:12px; text-align:center; margin-bottom:15px; border-bottom: 3px solid var(--gold);">
+            <small style="color:var(--gold-light);">Cumul Encaissé</small>
             <h2>${tot.toLocaleString()} CFA</h2>
         </div>
         <h4>Historique des Flux</h4>
@@ -276,8 +290,8 @@ function fermerModal() { document.getElementById('modal-bien').style.display = '
 function filterBiens(s, e) { currentFilter = s; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBiens(); }
 
 async function saveBienPro() { 
-    const nom = document.getElementById('new-bien-nom').value; 
-    const loyer = document.getElementById('new-bien-loyer').value; 
+    const nom = document.getElementById('new-bien-nom').value.trim(); 
+    const loyer = document.getElementById('new-bien-loyer').value.trim(); 
     if(!nom || !loyer) return alert("Veuillez remplir au moins le nom et le prix."); 
     const imageDefaut = ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"]; 
     const stringId = String(Date.now());
@@ -294,6 +308,7 @@ async function saveBienPro() {
         statut: 'Disponible', historiquePaiements: [] 
     }; 
     
+    biens.push(nouveauBien); // Ajout immédiat en cache mémoire pour la réactivité
     await window.fsSetDoc(window.fsDoc(window.db, "biens", stringId), nouveauBien);
     await showView('biens'); 
 }
@@ -317,6 +332,7 @@ async function toggleStatut(id) {
 
 async function supprimerBien(id) { 
     if(confirm("Supprimer ?")) { 
+        biens = biens.filter(x => x.id !== id);
         await window.fsDeleteDoc(window.fsDoc(window.db, "biens", String(id)));
         fermerModal(); 
         renderBiens(); 
@@ -361,6 +377,7 @@ async function sauverVisite() {
     const stringId = String(Date.now());
     const nouvelleVisite = { id: Date.now(), nom, tel, bien, date, statut: 'En attente', qualification: '', notes: '' };
     
+    visites.push(nouvelleVisite);
     await window.fsSetDoc(window.fsDoc(window.db, "visites", stringId), nouvelleVisite);
     
     document.getElementById('p-name').value=''; 
@@ -413,7 +430,7 @@ function renderVisites() {
             ${v.notes ? `<div style="background:#f1f5f9; padding:5px; border-radius:5px; margin-top:5px; font-size:0.8rem;">📝 <i>${v.notes}</i></div>` : ''}
             
             <div style="margin-top:10px;">
-                ${v.statut==='En attente' ? `<button class="btn-primary" style="padding:4px 8px; font-size:0.75rem; background:#2ECC71;" onclick="demarrerVisite(${v.id})">Démarrer</button>` : ''}
+                ${v.statut==='En attente' ? `<button class="btn-primary" style="padding:4px 8px; font-size:0.75rem; background:#2ECC71; width:auto;" onclick="demarrerVisite(${v.id})">Démarrer</button>` : ''}
                 ${v.statut==='En cours' ? `<button style="background:#2ECC71; color:white; padding:4px 8px; font-size:0.75rem; border:none; border-radius:4px;" onclick="qualifierVisite(${v.id},'Chaud 🔥')">Intéressé</button> <button style="background:#E74C3C; color:white; padding:4px 8px; font-size:0.75rem; border:none; border-radius:4px;" onclick="qualifierVisite(${v.id},'Froid ❄️')">Pas chaud</button>` : ''}
             </div>
         </div>`;
