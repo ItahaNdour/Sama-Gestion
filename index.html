@@ -9,9 +9,9 @@
     
     <style>
         :root {
-            --gold: #D97706; /* Or Doré Premium */
+            --gold: #D97706;
             --gold-light: #FEF3C7;
-            --dark: #0F172A; /* Bleu nuit / Anthracite */
+            --dark: #0F172A;
             --bg: #F8FAFC;
             --card: #FFFFFF;
             --text: #1E293B;
@@ -184,14 +184,14 @@
 
                 <label>Nom du Propriétaire</label>
                 <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
-                <label>Téléphone du Propriétaire</label>
-                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: +22177...">
+                <label>Téléphone du Propriétaire (Ex: +22177...)</label>
+                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: 771234567">
 
-                <label>Photos (Max 3)</label>
-                <input type="file" accept="image/*" multiple onchange="previewImage(this)" style="background: transparent; padding: 0;">
+                <label>Photos (Max 3 - Compression auto active)</label>
+                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this)" style="background: transparent; padding: 0;">
                 <div id="previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
 
-                <button class="btn-primary" onclick="saveBienPro()">Enregistrer sur le Cloud</button>
+                <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer sur le Cloud</button>
                 <button class="btn-outline" style="margin-top: 8px;" onclick="showView('dashboard')">Annuler</button>
             </div>
         </div>
@@ -232,7 +232,7 @@
                 <input type="text" id="p-name" placeholder="Ex: Aminata Sarr">
                 
                 <label>Numéro de Téléphone Client</label>
-                <input type="tel" id="p-tel" placeholder="Ex: +221...">
+                <input type="tel" id="p-tel" placeholder="Ex: 771234567">
 
                 <label>Bien à faire visiter</label>
                 <select id="p-bien-select"></select>
