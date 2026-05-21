@@ -98,7 +98,7 @@
             background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none;
             align-items: center; justify-content: center; padding: 20px;
         }
-        .modal-content { background: var(--card); width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; text-align: center; }
+        .modal-content { background: var(--card); width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; text-align: left; }
     </style>
 </head>
 <body>
@@ -106,10 +106,10 @@
     <div id="login-screen">
         <div class="login-box">
             <h2 style="color: var(--dark); margin-bottom: 5px;"><i class="fas fa-hotel"></i> Sama Gestion Pro</h2>
-            <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 25px;">Espace Cloud Sécurisé</p>
+            <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 25px;">Espace Sécurisé</p>
             <div id="standard-login-zone">
-                <input type="email" id="login-username" placeholder="Votre Adresse Email">
-                <input type="password" id="login-password" placeholder="Votre Mot de passe">
+                <input type="email" id="login-username" placeholder="Adresse Email">
+                <input type="password" id="login-password" placeholder="Mot de passe">
                 <button class="btn-primary" onclick="verifierConnexion()">Se connecter</button>
                 <p id="login-error" style="color: var(--red); font-size: 0.85rem; margin-top: 10px; display: none;"></p>
             </div>
@@ -156,6 +156,7 @@
         <div id="view-ajouter-bien" class="view">
             <h2 id="form-bien-title">Nouveau Bien</h2>
             <div class="form-card">
+                <input type="hidden" id="edit-bien-id">
                 <label>Nom du bien / Référence</label>
                 <input type="text" id="new-bien-nom" placeholder="Ex: Studio Almadies A3">
                 <label>Type de bien</label>
@@ -174,12 +175,22 @@
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
                 <label>Nom du Propriétaire</label>
                 <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
-                <label>Téléphone du Propriétaire</label>
-                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: 771234567">
+                <label>Téléphone du Propriétaire (Mettre l'indicatif, ex: +221... ou +33...)</label>
+                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: +221771234567">
+                
+                <div id="edit-only-fields" style="display:none;">
+                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+                    <label>Nom du Locataire</label>
+                    <input type="text" id="edit-bien-locataire" placeholder="Nom du locataire actuel">
+                    <label>Téléphone du Locataire (Mettre l'indicatif)</label>
+                    <input type="tel" id="edit-bien-locataire-tel" placeholder="Ex: +221779876543">
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
                 <label>Photos du Bien (Max 3)</label>
                 <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')" style="background: transparent; padding: 0;">
                 <div id="previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
-                <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer sur le Cloud</button>
+                <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer les modifications</button>
                 <button class="btn-outline" style="margin-top: 8px;" onclick="showView('biens')">Annuler</button>
             </div>
         </div>
@@ -211,12 +222,12 @@
                 <input type="number" id="edl-elec" placeholder="Ex: 4721">
                 <label>🔑 Nombre de trousseaux remis</label>
                 <input type="number" id="edl-cles" placeholder="Ex: 2">
-                <label>📸 Photos de Justificatif EDL (État, Compteurs... Max 3)</label>
+                <label>📸 Photos de Justificatif (Max 3)</label>
                 <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'edl')" style="background: transparent; padding: 0;">
                 <div id="edl-previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
                 <label>📝 Remarques particulières</label>
-                <textarea id="edl-notes" rows="3" placeholder="RAS, ou notez une dégradation spécifique..."></textarea>
-                <button id="btn-save-edl" class="btn-primary" onclick="saveEDLCloud()">Générer, Signer & Envoyer</button>
+                <textarea id="edl-notes" rows="3" placeholder="Notez une dégradation spécifique..."></textarea>
+                <button id="btn-save-edl" class="btn-primary" onclick="saveEDLCloud()">Valider et Envoyer</button>
                 <button class="btn-outline" style="margin-top: 8px;" onclick="showView('etat-lieux')">Annuler</button>
             </div>
         </div>
@@ -251,8 +262,8 @@
                 <h3>Planifier un rendez-vous</h3>
                 <label>Nom du Client Prospect</label>
                 <input type="text" id="p-name" placeholder="Ex: Aminata Sarr">
-                <label>Numéro de Téléphone Client</label>
-                <input type="tel" id="p-tel" placeholder="Ex: 771234567">
+                <label>Numéro de Téléphone Client (Avec indicatif pays)</label>
+                <input type="tel" id="p-tel" placeholder="Ex: +221771234567">
                 <label>Bien à faire visiter</label>
                 <select id="p-bien-select"></select>
                 <label>Date et Heure</label>
@@ -273,7 +284,6 @@
 
             <div id="admin-management-section" class="form-card" style="display: none; margin-top: 20px; border-left: 4px solid var(--gold);">
                 <h3><i class="fas fa-shield-alt"></i> Activer un Compte Partenaire</h3>
-                <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:15px;">Configurez les accès sans déconnexion.</p>
                 <div style="display: grid; gap: 5px;">
                     <label>Type d'accès</label>
                     <select id="admin-new-user-role">
