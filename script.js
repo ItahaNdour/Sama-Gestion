@@ -1,6 +1,6 @@
-// ==========================================
-// SAMA GESTION PRO V6.0 - ÉDITION OR PREMIUM
-// ==========================================
+// ================================================================
+// SAMA GESTION PRO V6.2 - PROTECTION SÉCURITÉ DOUBLONS & WHATSAPP
+// ================================================================
 
 let profilRole = null;
 let courtierNom = null;
@@ -15,7 +15,6 @@ let currentFilter = 'Disponible';
 let selectedPhotos = [];
 
 window.onload = () => {
-    // Intercepter si un lien magique de connexion rapide est utilisé
     const urlParams = new URLSearchParams(window.location.search);
     const emailInvite = urlParams.get('email');
     if(emailInvite && document.getElementById('login-username')) {
@@ -39,7 +38,6 @@ window.onload = () => {
                 });
             }
             
-            // Chargement initial unique des données pour supprimer la lenteur
             await chargerDonneesCloud();
             document.getElementById('login-screen').style.display = 'none';
             majInterfaceProfil();
@@ -89,7 +87,7 @@ async function verifierConnexion() {
 
 async function deconnexion() {
     await window.fbSignOut(window.auth);
-    window.location.href = window.location.pathname; // Nettoie l'URL en même temps
+    window.location.href = window.location.pathname;
 }
 
 function majInterfaceProfil() {
@@ -106,7 +104,75 @@ function majInterfaceProfil() {
     }
 }
 
-// FIXÉ : Création via un Worker secondaire pour empêcher Firebase de déconnecter la session courante
+// FORMATTEUR STRICT WHATSAPP (Nettoie les +, les 00 et les espaces)
+function formaterNumeroWhatsApp(num) {
+    if(!num) return "";
+    let propre = num.replace(/\D/g, ''); // Enlève tout ce qui n'est pas un chiffre
+    
+    // Si l'utilisateur commence par 00, on remplace par l'indicatif pur
+    if(propre.startsWith('00')) propre = propre.substring(2);
+    
+    // Si le numéro fait 9 chiffres et commence par 7, c'est un numéro Sénégal sans indicatif, on ajoute 221
+    if(propre.length === 9 && propre.startsWith('7')) propre = '221' + propre;
+    
+    return propre;
+}
+
+// ENVOYEUR UNIVERSEL WHATSAPP ACCÉLÉRÉ
+function envoyerMessageWhatsApp(telephone, message) {
+    const numeroPropre = formaterNumeroWhatsApp(telephone);
+    if(!numeroPropre) {
+        alert("⚠️ Aucun numéro valide configuré pour ce contact.");
+        return;
+    }
+    const url = `https://wa.me/${numeroPropre}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+}
+
+// COMPRESSEUR DE PHOTOS ULTRA-RAPIDE EN BANDE PASSANTE
+function previewAndCompressImage(input) {
+    if (input.files) {
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    // Création d'un mini-canvas pour redimensionner l'image à la volée
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const MAX_WIDTH = 400; // Format ultra-léger idéal pour mobile
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Transformation en texte compressé à 60% de sa taille d'origine
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    if(selectedPhotos.length < 3) {
+                        selectedPhotos.push(compressedBase64);
+                        renderPreviews();
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+function renderPreviews() {
+    document.getElementById('previews-container').innerHTML = selectedPhotos.map(p => `<img src="${p}" style="width:40px;height:40px;border-radius:5px;object-fit:cover; border: 1px solid var(--border);">`).join('');
+}
+
 async function adminCreerCompteCourtier() {
     const emailCourtier = document.getElementById('admin-new-user-name').value.trim(); 
     const passCourtier = document.getElementById('admin-new-user-pin').value.trim();
@@ -117,34 +183,21 @@ async function adminCreerCompteCourtier() {
     }
 
     try {
-        // Pour ne pas couper la session de l'admin en cours, on utilise une astuce d'iframe ou d'appel secondaire
-        // Firebase Auth Web standard bascule la session globale. Pour contourner ça proprement sans serveur backend,
-        // on génère l'empreinte unique et l'enregistre de manière prédictive.
         const uidPredictif = "user_" + Date.now();
         const nameNode = emailCourtier.split('@')[0];
         const avatarChoisi = roleChoisi === 'Agence' ? "🏢" : "💼";
 
-        // Enregistrement direct du profil
         await window.fsSetDoc(window.fsDoc(window.db, "profils", uidPredictif), {
-            uid: uidPredictif,
-            username: nameNode,
-            email: emailCourtier,
-            password_clear_temp: passCourtier, // Pour référence admin
-            role: roleChoisi,
-            avatar: avatarChoisi
+            uid: uidPredictif, username: nameNode, email: emailCourtier, password_clear_temp: passCourtier, role: roleChoisi, avatar: avatarChoisi
         });
 
-        // Génération du lien de connexion magique
         const lienMagique = `${window.location.origin}${window.location.pathname}?email=${encodeURIComponent(emailCourtier)}`;
-
         document.getElementById('admin-new-user-name').value = '';
         document.getElementById('admin-new-user-pin').value = '';
         
         await chargerDonneesCloud();
         renderAdminAgencesList();
-        
-        // Affichage du récapitulatif avec lien magique
-        alert(`🎉 Compte [${roleChoisi}] pré-activé avec succès pour : ${nameNode} !\n\nLien de login rapide généré :\n${lienMagique}`);
+        alert(`🎉 Compte [${roleChoisi}] pré-activé avec succès !\n\nLien rapide :\n${lienMagique}`);
     } catch (error) {
         alert("❌ Erreur lors de la configuration : " + error.message);
     }
@@ -166,7 +219,7 @@ function renderAdminAgencesList() {
 }
 
 async function adminSupprimerAgence(uid) {
-    if(confirm(`Supprimer définitivement l'accès de ce membre du réseau ?`)) {
+    if(confirm(`Supprimer définitivement l'accès de ce membre ?`)) {
         await window.fsDeleteDoc(window.fsDoc(window.db, "profils", uid));
         await chargerDonneesCloud();
         renderAdminAgencesList();
@@ -201,9 +254,6 @@ function rafraichirCompteurCommission() {
     } 
 }
 
-function previewImage(input) { if (input.files) { Array.from(input.files).forEach(file => { const reader = new FileReader(); reader.onload = e => { if(selectedPhotos.length < 3) { selectedPhotos.push(e.target.result); renderPreviews(); } }; reader.readAsDataURL(file); }); } }
-function renderPreviews() { document.getElementById('previews-container').innerHTML = selectedPhotos.map(p => `<img src="${p}" style="width:40px;height:40px;border-radius:5px;object-fit:cover;">`).join(''); }
-
 function ouvrirFormulaireAjout() { 
     document.getElementById('form-bien-title').innerText = "Nouveau Bien"; 
     selectedPhotos = []; 
@@ -213,6 +263,8 @@ function ouvrirFormulaireAjout() {
     document.getElementById('new-bien-adresse').value = ''; 
     document.getElementById('new-bien-proprio').value = ''; 
     document.getElementById('new-bien-proprio-tel').value = ''; 
+    document.getElementById('btn-save-bien').disabled = false;
+    document.getElementById('btn-save-bien').innerText = "Enregistrer sur le Cloud";
     showView('ajouter-bien'); 
 }
 
@@ -281,9 +333,9 @@ function ouvrirPortefeuille(id) {
 
 function relancerPaiementWhatsApp(id) {
     const b = biens.find(x => x.id === id);
-    if(!b || !b.locataireTel) return alert("Pas de numéro de téléphone pour ce locataire.");
-    const msg = encodeURIComponent(`*RAPPEL DE PAIEMENT SAMA GESTION*%0A%0ABonjour ${b.locataire}, nous vous rappelons que le terme de votre loyer pour le bien *${b.nom}* (${parseInt(b.loyer).toLocaleString()} CFA) est échu. Merci de régulariser.`);
-    window.open(`https://api.whatsapp.com/send?phone=${b.locataireTel.replace(/\s+/g, '')}&text=${msg}`, '_blank');
+    if(!b || !b.locataireTel) return alert("Pas de numéro de téléphone enregistré pour ce locataire.");
+    const message = `*RAPPEL DE PAIEMENT SAMA GESTION*\n\nBonjour ${b.locataire}, nous vous rappelons amicalement que le terme de votre loyer pour le bien *${b.nom}* (${parseInt(b.loyer).toLocaleString()} CFA) est échu. Merci de régulariser dans les meilleurs délais.`;
+    envoyerMessageWhatsApp(b.locataireTel, message);
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
@@ -293,6 +345,12 @@ async function saveBienPro() {
     const nom = document.getElementById('new-bien-nom').value.trim(); 
     const loyer = document.getElementById('new-bien-loyer').value.trim(); 
     if(!nom || !loyer) return alert("Veuillez remplir au moins le nom et le prix."); 
+    
+    // Blocage préventif du bouton pour éviter la création en doublon
+    const btn = document.getElementById('btn-save-bien');
+    btn.disabled = true;
+    btn.innerText = "⏳ Enregistrement Cloud...";
+
     const imageDefaut = ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"]; 
     const stringId = String(Date.now());
 
@@ -308,8 +366,8 @@ async function saveBienPro() {
         statut: 'Disponible', historiquePaiements: [] 
     }; 
     
-    biens.push(nouveauBien); // Ajout immédiat en cache mémoire pour la réactivité
     await window.fsSetDoc(window.fsDoc(window.db, "biens", stringId), nouveauBien);
+    await chargerDonneesCloud(); // Rafraîchissement propre du cache global
     await showView('biens'); 
 }
 
@@ -319,21 +377,22 @@ async function toggleStatut(id) {
 
     if(b.statut === 'Disponible') { 
         b.locataire = prompt("Nom locataire:") || "Inconnu"; 
-        b.locataireTel = prompt("Téléphone locataire:") || ""; 
+        b.locataireTel = prompt("Téléphone locataire (Ex: 771234567) :") || ""; 
         b.statut = 'Occupé'; 
     } else { 
         if(confirm("Libérer ce bien ?")) b.statut = 'Disponible'; 
     } 
     
     await window.fsSetDoc(window.fsDoc(window.db, "biens", String(id)), b);
+    await chargerDonneesCloud();
     fermerModal(); 
     renderBiens(); 
 }
 
 async function supprimerBien(id) { 
-    if(confirm("Supprimer ?")) { 
-        biens = biens.filter(x => x.id !== id);
+    if(confirm("Supprimer ce bien définitivement du Cloud ?")) { 
         await window.fsDeleteDoc(window.fsDoc(window.db, "biens", String(id)));
+        await chargerDonneesCloud();
         fermerModal(); 
         renderBiens(); 
     } 
@@ -359,11 +418,12 @@ async function validerCollecte(cible) {
     
     await window.fsSetDoc(window.fsDoc(window.db, "biens", String(b.id)), b);
     await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
+    await chargerDonneesCloud();
     
     let num = cible === 'locataire' ? b.locataireTel : b.proprioTel;
-    let txt = `*REÇU SAMA GESTION*%0ABien: ${b.nom}%0AMontant: ${mt.toLocaleString()} CFA (%0APaiement: ${type})`;
-    window.open(`https://api.whatsapp.com/send?phone=${num.replace(/\s+/g, '')}&text=${txt}`, '_blank');
+    let txt = `*REÇU DE PAIEMENT NUMÉRIQUE - SAMA GESTION*\n\nBien : ${b.nom}\nMontant versé : ${mt.toLocaleString()} CFA\nType de versement : ${type}\nMode de règlement : ${mode}\nDate : ${new Date().toLocaleDateString('fr-FR')}\n\nMerci pour votre confiance.`;
     
+    envoyerMessageWhatsApp(num, txt);
     showView('dashboard'); 
 }
 
@@ -377,8 +437,8 @@ async function sauverVisite() {
     const stringId = String(Date.now());
     const nouvelleVisite = { id: Date.now(), nom, tel, bien, date, statut: 'En attente', qualification: '', notes: '' };
     
-    visites.push(nouvelleVisite);
     await window.fsSetDoc(window.fsDoc(window.db, "visites", stringId), nouvelleVisite);
+    await chargerDonneesCloud();
     
     document.getElementById('p-name').value=''; 
     document.getElementById('p-tel').value=''; 
@@ -390,6 +450,7 @@ async function demarrerVisite(id) {
     if(!v) return;
     v.statut = 'En cours';
     await window.fsSetDoc(window.fsDoc(window.db, "visites", String(id)), v);
+    await chargerDonneesCloud();
     renderVisites(); 
 }
 
@@ -402,6 +463,7 @@ async function qualifierVisite(id, avis) {
     v.notes = n || '';
     
     await window.fsSetDoc(window.fsDoc(window.db, "visites", String(id)), v);
+    await chargerDonneesCloud();
     renderVisites(); 
 }
 
@@ -422,9 +484,9 @@ function renderVisites() {
             <small>🏠 Bien : ${v.bien}</small><br>
             <small>📅 Rendez-vous : ${v.date.replace('T',' à ')}</small>
             
-            <div style="margin-top:8px; display:flex; gap:10px; align-items:center;">
-                <a href="tel:${v.tel}" style="color:#3498DB; font-size:0.9rem; text-decoration:none;"><i class="fas fa-phone-alt"></i> Appeler</a>
-                <a href="https://api.whatsapp.com/send?phone=${v.tel.replace(/\s+/g, '')}&text=Bonjour%20${v.nom},%20concernant%20notre%20visite..." target="_blank" style="color:#2ECC71; font-size:0.9rem; text-decoration:none;"><i class="fab fa-whatsapp"></i> Relancer</a>
+            <div style="margin-top:10px; display:flex; gap:15px; align-items:center;">
+                <a href="tel:${v.tel}" style="color:#3498DB; font-size:0.9rem; text-decoration:none; font-weight:600;"><i class="fas fa-phone-alt"></i> Appeler</a>
+                <span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je reviens vers vous suite à notre rendez-vous programmé pour la visite du bien ${v.bien}.')" style="color:#2ECC71; font-size:0.9rem; cursor:pointer; font-weight:600;"><i class="fab fa-whatsapp"></i> Relancer</span>
             </div>
 
             ${v.notes ? `<div style="background:#f1f5f9; padding:5px; border-radius:5px; margin-top:5px; font-size:0.8rem;">📝 <i>${v.notes}</i></div>` : ''}
