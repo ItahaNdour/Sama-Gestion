@@ -1,5 +1,5 @@
 // ==============================================================================
-// SAMA GESTION PRO V7.0 - INTÉGRAL AVEC ENCODAGE SÉCURISÉ WHATSAPP & MODULE EDL
+// SAMA GESTION PRO V7.5 - WHATSAPP UNIVERSEL RE-CORRIGÉ & REMISE DE LA MODIFICATION
 // ==============================================================================
 
 let profilRole = null;
@@ -16,7 +16,7 @@ let currentFilter = 'Disponible';
 let selectedPhotos = [];
 let selectedPhotosEDL = [];
 
-const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC Retenue", "Balcon"];
+const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
 
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -72,7 +72,7 @@ async function chargerDonneesCloud() {
         if(docCom.exists()) comTotaleGlobal = docCom.data().comTotaleGlobal || 0;
         
     } catch (error) {
-        console.error("Erreur de synchronisation Cloud:", error);
+        console.error("Erreur de synchronisation :", error);
     }
 }
 
@@ -105,35 +105,45 @@ function majInterfaceProfil() {
 }
 
 // ==========================================
-// NETTOYAGE ET ENCODAGE UNIVERSEL WHATSAPP 2026
+// CORRECTEUR NETTOYAGE INTELLIGENT WHATSAPP
 // ==========================================
 function formaterNumeroWhatsApp(num) {
     if(!num) return "";
-    let propre = num.replace(/\D/g, ''); 
+    let propre = num.replace(/\s+/g, '').replace(/[-+]/g, ''); 
+    
+    // Si l'utilisateur tape un numéro français commençant par 06 ou 07 sans indicatif
+    if ((propre.startsWith('06') || propre.startsWith('07')) && propre.length === 10) {
+        propre = '33' + propre.substring(1); 
+    }
+    // Si c'est un numéro sénégalais classique de 9 chiffres commençant par 7
+    else if (propre.length === 9 && propre.startsWith('7')) {
+        propre = '221' + propre;
+    }
+    // Si le numéro commence déjà par un 0 général (ex: 0033 ou 00221)
     if(propre.startsWith('00')) propre = propre.substring(2);
-    if(propre.length === 9 && propre.startsWith('7')) propre = '221' + propre;
+
     return propre;
 }
 
 function envoyerMessageWhatsApp(telephone, message) {
     const numeroPropre = formaterNumeroWhatsApp(telephone);
-    if(!numeroPropre) {
-        alert("⚠️ Numéro invalide ou absent.");
+    if(!numeroPropre || numeroPropre.length < 8) {
+        alert("⚠️ Le numéro de téléphone est mal formaté ou incomplet.");
         return;
     }
-    // Nettoyage complet : Remplacement des retours chariots bruts par des codes web sécurisés %0A
-    let messageEncode = encodeURIComponent(message);
-    const url = `https://wa.me/${numeroPropre}?text=${messageEncode}`;
     
-    // Ouverture forcée pour contourner les limitations mobiles
+    // Encodage strict et propre de la chaîne de caractères
+    let messageEncode = encodeURIComponent(message);
+    const url = `https://api.whatsapp.com/send?phone=${numeroPropre}&text=${messageEncode}`;
+    
     const w = window.open(url, '_blank');
     if(!w) {
-        alert("⚠️ Ouverture bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up.");
+        alert("⚠️ Autorisez les fenêtres pop-up sur votre téléphone pour ouvrir le message.");
     }
 }
 
 // ==========================================
-// COMPRESSEUR PHOTO PRESTIGE EN TEXTE LIGHT
+// COMPRESSEUR PHOTO
 // ==========================================
 function previewAndCompressImage(input, target) {
     if (input.files) {
@@ -155,7 +165,7 @@ function previewAndCompressImage(input, target) {
                     canvas.width = width;
                     canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5); // Format 50% ultra-léger
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5); 
                     
                     if(target === 'bien' && selectedPhotos.length < 3) {
                         selectedPhotos.push(compressedBase64);
@@ -196,7 +206,7 @@ async function adminCreerCompteCourtier() {
         document.getElementById('admin-new-user-pin').value = '';
         await chargerDonneesCloud();
         renderAdminAgencesList();
-        alert("🎉 Compte configuré avec succès !");
+        alert("🎉 Compte configuré !");
     } catch (e) { alert(e.message); }
 }
 
@@ -209,7 +219,7 @@ function renderAdminAgencesList() {
                 <span>${u.avatar || '💼'} <b>${u.username}</b> (${u.role})</span>
                 ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444;" onclick="adminSupprimerAgence('${u.uid}')"></i>` : '⭐'}
             </div>
-            ${u.role !== 'SuperAdmin' ? `<button onclick="navigator.clipboard.writeText('${window.location.origin}${window.location.pathname}?email=${encodeURIComponent(u.email)}'); alert('Lien copié !');" style="background:var(--gold-light); color:var(--gold); border:none; padding:4px; border-radius:4px; font-size:0.7rem; margin-top:5px; cursor:pointer;">Copier le lien magique</button>` : ''}
+            ${u.role !== 'SuperAdmin' ? `<button onclick="navigator.clipboard.writeText('${window.location.origin}${window.location.pathname}?email=${encodeURIComponent(u.email)}'); alert('Lien copié !');" style="background:var(--gold-light); color:var(--gold); border:none; padding:4px; border-radius:4px; font-size:0.7 Rar; margin-top:5px; cursor:pointer;">Copier le lien d'accès</button>` : ''}
         </div>
     `).join('');
 }
@@ -223,10 +233,13 @@ async function adminSupprimerAgence(uid) {
 }
 
 // ==========================================
-// MODULE CATALOGUE ET BIENS
+// MODULE CATALOGUE ET BIENS (AVEC ÉDITION REMISE)
 // ==========================================
 function ouvrirFormulaireAjout() {
     selectedPhotos = [];
+    document.getElementById('edit-bien-id').value = '';
+    document.getElementById('form-bien-title').innerText = "Nouveau Bien";
+    document.getElementById('edit-only-fields').style.display = 'none';
     document.getElementById('previews-container').innerHTML = '';
     document.getElementById('new-bien-nom').value = '';
     document.getElementById('new-bien-loyer').value = '';
@@ -234,33 +247,69 @@ function ouvrirFormulaireAjout() {
     document.getElementById('new-bien-proprio').value = '';
     document.getElementById('new-bien-proprio-tel').value = '';
     document.getElementById('btn-save-bien').disabled = false;
-    document.getElementById('btn-save-bien').innerText = "Enregistrer sur le Cloud";
+    document.getElementById('btn-save-bien').innerText = "Enregistrer";
+    showView('ajouter-bien');
+}
+
+function modifierBienExistant(id) {
+    const b = biens.find(x => x.id === id);
+    if(!b) return;
+
+    fermerModal();
+    selectedPhotos = b.photos || [];
+    document.getElementById('edit-bien-id').value = b.id;
+    document.getElementById('form-bien-title').innerText = "Modifier le Bien";
+    document.getElementById('new-bien-nom').value = b.nom;
+    document.getElementById('new-bien-type').value = b.type;
+    document.getElementById('new-bien-loyer').value = b.loyer;
+    document.getElementById('new-bien-adresse').value = b.adresse;
+    document.getElementById('new-bien-com').value = b.com || '10%';
+    document.getElementById('new-bien-proprio').value = b.proprio;
+    document.getElementById('new-bien-proprio-tel').value = b.proprioTel;
+    
+    // Champs spécifiques à l'édition si déjà occupé
+    document.getElementById('edit-only-fields').style.display = 'block';
+    document.getElementById('edit-bien-locataire').value = b.locataire || 'Aucun';
+    document.getElementById('edit-bien-locataire-tel').value = b.locataireTel || '';
+
+    renderPreviews('previews-container', selectedPhotos);
     showView('ajouter-bien');
 }
 
 async function saveBienPro() {
     const nom = document.getElementById('new-bien-nom').value.trim();
     const loyer = document.getElementById('new-bien-loyer').value.trim();
+    const existingId = document.getElementById('edit-bien-id').value;
+
     if(!nom || !loyer) return alert("Champs obligatoires manquants.");
 
     const btn = document.getElementById('btn-save-bien');
     btn.disabled = true;
-    btn.innerText = "⏳ Synchronisation...";
+    btn.innerText = "⏳ Enregistrement...";
 
-    const stringId = String(Date.now());
-    const nouveauBien = {
-        id: Date.now(), agentCreateur: courtierNom, nom: nom, loyer: loyer,
+    const currentId = existingId ? parseInt(existingId) : Date.now();
+    
+    // Récupérer les anciennes valeurs si c'est une modification
+    const ancienBien = existingId ? biens.find(x => x.id === currentId) : null;
+
+    const structureBien = {
+        id: currentId,
+        agentCreateur: ancienBien ? ancienBien.agentCreateur : courtierNom,
+        nom: nom,
+        loyer: loyer,
         type: document.getElementById('new-bien-type').value,
         adresse: document.getElementById('new-bien-adresse').value || 'Non spécifiée',
         proprio: document.getElementById('new-bien-proprio').value || 'Inconnu',
         proprioTel: document.getElementById('new-bien-proprio-tel').value || '',
-        locataire: 'Aucun', locataireTel: '',
+        locataire: existingId ? document.getElementById('edit-bien-locataire').value : 'Aucun',
+        locataireTel: existingId ? document.getElementById('edit-bien-locataire-tel').value : '',
         com: document.getElementById('new-bien-com').value || '10%',
         photos: selectedPhotos.length > 0 ? [...selectedPhotos] : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"],
-        statut: 'Disponible', historiquePaiements: []
+        statut: ancienBien ? ancienBien.statut : 'Disponible',
+        historiquePaiements: ancienBien ? (ancienBien.historiquePaiements || []) : []
     };
 
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", stringId), nouveauBien);
+    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(currentId)), structureBien);
     await chargerDonneesCloud();
     showView('biens');
 }
@@ -297,12 +346,14 @@ function voirDetailBien(id) {
     const b = biens.find(x => x.id === id);
     document.getElementById('modal-body').innerHTML = `
         <h3>${b.nom}</h3>
-        <p>Loyer : ${parseInt(b.loyer).toLocaleString()} CFA</p>
-        <p>Propriétaire : ${b.proprio} (${b.proprioTel || 'Pas de numéro'})</p>
+        <p style="margin-top:5px;"><b>Loyer :</b> ${parseInt(b.loyer).toLocaleString()} CFA</p>
+        <p><b>Propriétaire :</b> ${b.proprio} (${b.proprioTel || 'Pas de numéro'})</p>
+        <p><b>Locataire :</b> ${b.locataire || 'Aucun'} (${b.locataireTel || 'Pas de numéro'})</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:15px;">
             <button class="btn-primary" onclick="toggleStatut(${b.id})">${b.statut==='Disponible'?'Marquer Loué':'Libérer le bien'}</button>
-            <button class="btn-outline" style="color:var(--red);" onclick="supprimerBien(${b.id})">Supprimer</button>
+            <button class="btn-outline" style="color:var(--gold); border-color:var(--gold);" onclick="modifierBienExistant(${b.id})"><i class="fas fa-edit"></i> Modifier</button>
         </div>
+        <button class="btn-outline" style="color:var(--red); border-color:var(--red); margin-top:8px; width:100%;" onclick="supprimerBien(${b.id})"><i class="fas fa-trash"></i> Supprimer définitivement</button>
     `;
     document.getElementById('modal-bien').style.display = 'flex';
 }
@@ -311,7 +362,7 @@ async function toggleStatut(id) {
     const b = biens.find(x => x.id === id);
     if(b.statut === 'Disponible') {
         b.locataire = prompt("Nom du locataire :") || "Inconnu";
-        b.locataireTel = prompt("Téléphone du locataire :") || "";
+        b.locataireTel = prompt("Téléphone du locataire (Avec indicatif pays) :") || "";
         b.statut = 'Occupé';
     } else {
         if(confirm("Libérer ce bien ?")) b.statut = 'Disponible';
@@ -347,14 +398,14 @@ function ouvrirPortefeuille(id) {
 function relancerPaiementWhatsApp(id) {
     const b = biens.find(x => x.id === id);
     if(!b.locataireTel) return alert("Pas de numéro enregistré.");
-    const msg = `*RAPPEL SAMA GESTION*\n\nBonjour ${b.locataire}, le terme de votre loyer pour le bien *${b.nom}* est échu. Merci de procéder au règlement.`;
+    const msg = `Bonjour ${b.locataire}, le terme de votre loyer pour le bien *${b.nom}* est échu. Merci de procéder au règlement.`;
     envoyerMessageWhatsApp(b.locataireTel, msg);
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
 
 // ==========================================
-// MODULE NOUVEAU : ÉTAT DES LIEUX (EDL)
+// MODULE : ÉTAT DES LIEUX (EDL)
 // ==========================================
 function ouvrirFormulaireEDL() {
     selectedPhotosEDL = [];
@@ -387,7 +438,7 @@ async function saveEDLCloud() {
     if(!bienNom) return alert("Aucun bien sélectionné.");
 
     const btn = document.getElementById('btn-save-edl');
-    btn.disabled = true; btn.innerText = "⏳ Certification Cloud...";
+    btn.disabled = true; btn.innerText = "⏳ Validation...";
 
     const piecesData = [];
     document.querySelectorAll('.edl-room-select').forEach(s => {
@@ -408,24 +459,22 @@ async function saveEDLCloud() {
     await window.fsSetDoc(window.fsDoc(window.db, "etats_des_lieux", String(structureEDL.id)), structureEDL);
     await chargerDonneesCloud();
 
-    // Construction du document texte propre pour WhatsApp
     let checkSummary = piecesData.map(p => `• ${p.piece} : ${p.etat}`).join('\n');
-    let constructionTexte = `*CERTIFICAT ÉTAT DES LIEUX DE ${type.toUpperCase()}*\n\n` +
-                            `*Immeuble / Bien :* ${bienNom}\n` +
-                            `*Date de signature :* ${structureEDL.date}\n` +
-                            `*Agent Référent :* ${courtierNom}\n\n` +
-                            `*CONSTAT DES PIÈCES :*\n${checkSummary}\n\n` +
-                            `*COMPTEURS ET CLÉS :*\n` +
-                            `💧 Compteur Eau : ${structureEDL.eau} m3\n` +
-                            `⚡ Compteur Élec : ${structureEDL.elec} kWh\n` +
-                            `🔑 Trousseaux : ${structureEDL.cles} remis\n\n` +
-                            `*OBSERVATIONS :*\n${structureEDL.notes}\n\n` +
-                            `_Document officiel enregistré numériquement sur le Cloud._`;
+    let constructionTexte = `*ÉTAT DES LIEUX - ${type.toUpperCase()}*\n\n` +
+                            `*Bien :* ${bienNom}\n` +
+                            `*Date :* ${structureEDL.date}\n` +
+                            `*Agent :* ${courtierNom}\n\n` +
+                            `*CONSTAT PIÈCES :*\n${checkSummary}\n\n` +
+                            `*COMPTEURS & CLÉS :*\n` +
+                            `💧 Eau : ${structureEDL.eau} m3\n` +
+                            `⚡ Électricité : ${structureEDL.elec} kWh\n` +
+                            `🔑 Nombre de clés : ${structureEDL.cles}\n\n` +
+                            `*Observations :*\n${structureEDL.notes}`;
 
     const b = biens.find(x => x.nom === bienNom);
     const destinataireTel = (b && b.locataireTel) ? b.locataireTel : (b ? b.proprioTel : "");
     
-    alert("🎉 Rapport d'État des lieux signé et stocké dans le Cloud !");
+    alert("🎉 Rapport enregistré avec succès !");
     if(destinataireTel) envoyerMessageWhatsApp(destinataireTel, constructionTexte);
 
     showView('etat-lieux');
@@ -443,7 +492,7 @@ function renderEtatsLieuxList() {
                     <strong>${e.bien}</strong><br>
                     <small>${e.type} • ${e.date}</small>
                 </div>
-                <button class="btn-primary" style="width:auto; padding:6px 10px; font-size:0.75rem; background:#2ECC71;" onclick="partagerEDLExistant(${e.id})"><i class="fab fa-whatsapp"></i> Transmettre</button>
+                <button class="btn-primary" style="width:auto; padding:6px 10px; font-size:0.75rem; background:#2ECC71;" onclick="partagerEDLExistant(${e.id})"><i class="fab fa-whatsapp"></i> Envoyer</button>
             </div>
             ${e.photos && e.photos.length > 0 ? `<div style="display:flex; gap:4px; margin-top:8px;">${e.photos.map(p=>`<img src="${p}" style="width:30px; height:30px; object-fit:cover; border-radius:4px;">`).join('')}</div>` : ''}
         </div>
@@ -453,12 +502,12 @@ function renderEtatsLieuxList() {
 function partagerEDLExistant(id) {
     const e = etatsLieux.find(x => x.id === id);
     let checkSummary = e.pieces.map(p => `• ${p.piece} : ${p.etat}`).join('\n');
-    let constructionTexte = `*RAPPEL ÉTAT DES LIEUX DE ${e.type.toUpperCase()}*\n\n*Bien :* ${e.bien}\n*Date :* ${e.date}\n\n*CONSTAT :*\n${checkSummary}\n\n*Notes :* ${e.notes}`;
+    let constructionTexte = `*RAPPEL ÉTAT DES LIEUX - ${e.type.toUpperCase()}*\n\n*Bien :* ${e.bien}\n*Date :* ${e.date}\n\n*CONSTAT :*\n${checkSummary}\n\n*Notes :* ${e.notes}`;
     
     const b = biens.find(x => x.nom === e.bien);
     const num = b ? b.locataireTel : "";
     if(num) envoyerMessageWhatsApp(num, constructionTexte);
-    else alert("Aucun téléphone associé.");
+    else alert("Aucun téléphone associé à ce bien.");
 }
 
 // ==========================================
@@ -496,7 +545,7 @@ async function validerCollecte(cible) {
     await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
     await chargerDonneesCloud();
 
-    let txt = `*REÇU DE PAIEMENT NUMÉRIQUE*\n\n*Bien :* ${b.nom}\n*Versement :* ${mt.toLocaleString()} CFA\n*Nature :* ${type}\n*Mode :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}`;
+    let txt = `*REÇU DE PAIEMENT*\n\n*Bien :* ${b.nom}\n*Versement :* ${mt.toLocaleString()} CFA\n*Nature :* ${type}\n*Mode :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}`;
     envoyerMessageWhatsApp(cible==='locataire'?b.locataireTel:b.proprioTel, txt);
     showView('dashboard');
 }
@@ -509,7 +558,7 @@ async function sauverVisite() {
     const tel = document.getElementById('p-tel').value;
     const bien = document.getElementById('p-bien-select').value;
     const date = document.getElementById('p-date').value;
-    if(!nom || !tel || !date) return alert("Remplir tout.");
+    if(!nom || !tel || !date) return alert("Remplir tous les champs.");
 
     const struct = { id: Date.now(), nom, tel, bien, date, statut: 'En attente', qualification: '', notes: '' };
     await window.fsSetDoc(window.fsDoc(window.db, "visites", String(struct.id)), struct);
@@ -524,7 +573,7 @@ function renderVisites() {
         <div class="form-card">
             <b>👤 ${v.nom}</b> - <small>${v.bien}</small><br>
             <small>📅 ${v.date.replace('T', ' à ')}</small><br>
-            <span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je confirme notre rendez-vous pour le bien ${v.bien}.')" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Contacter Client</span>
+            <span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je confirme notre rendez-vous pour la visite du bien ${v.bien}.')" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Envoyer confirmation</span>
         </div>
     `).reverse().join('');
 }
