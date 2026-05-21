@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sama Gestion Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -22,7 +22,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 75px; font-size: 15px; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 85px; font-size: 15px; }
 
         #login-screen {
             position: fixed; top:0; left:0; width:100%; height:100%; 
@@ -75,13 +75,13 @@
         nav {
             position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card);
             border-top: 1px solid var(--border); display: flex; justify-content: space-around;
-            padding: 10px 0; z-index: 1000; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+            padding: 12px 0; z-index: 1000; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center;
             color: var(--text-light); text-decoration: none; font-size: 0.75rem; font-weight: 500; cursor: pointer;
         }
-        .nav-item i { font-size: 1.25rem; margin-bottom: 4px; }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
         .nav-item.active { color: var(--gold); font-weight: 700; }
 
         .tabs-container { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
@@ -107,7 +107,6 @@
         <div class="login-box">
             <h2 style="color: var(--dark); margin-bottom: 5px;"><i class="fas fa-hotel"></i> Sama Gestion Pro</h2>
             <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 25px;">Espace Cloud Sécurisé</p>
-            
             <div id="standard-login-zone">
                 <input type="email" id="login-username" placeholder="Votre Adresse Email">
                 <input type="password" id="login-password" placeholder="Votre Mot de passe">
@@ -118,9 +117,7 @@
     </div>
 
     <header>
-        <div class="logo-area">
-            <i class="fas fa-building"></i> Sama Gestion Pro
-        </div>
+        <div class="logo-area"><i class="fas fa-building"></i> Sama Gestion Pro</div>
         <div class="user-badge" id="header-user-badge"></div>
     </header>
 
@@ -149,7 +146,6 @@
                 <button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 0.8rem;" onclick="ouvrirFormulaireAjout()"><i class="fas fa-plus"></i> Ajouter</button>
             </div>
             <input type="text" id="search-bien-input" placeholder="🔍 Rechercher un quartier, un nom..." oninput="renderBiens()">
-            
             <div class="tabs-container">
                 <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
                 <button class="tab-btn" onclick="filterBiens('Occupé', event)">Loués</button>
@@ -162,7 +158,6 @@
             <div class="form-card">
                 <label>Nom du bien / Référence</label>
                 <input type="text" id="new-bien-nom" placeholder="Ex: Studio Almadies A3">
-
                 <label>Type de bien</label>
                 <select id="new-bien-type">
                     <option value="Studio">Studio</option>
@@ -170,29 +165,59 @@
                     <option value="Chambre">Chambre</option>
                     <option value="Magasin">Magasin</option>
                 </select>
-
                 <label>Prix Loyer Mensuel (CFA)</label>
                 <input type="number" id="new-bien-loyer" placeholder="Ex: 250000">
-
                 <label>Adresse / Quartier</label>
                 <input type="text" id="new-bien-adresse" placeholder="Ex: Patte d'Oie, Dakar">
-
-                <label>Commission Agence (Fixe ou %)</label>
+                <label>Commission Agence</label>
                 <input type="text" id="new-bien-com" value="10%">
-
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-
                 <label>Nom du Propriétaire</label>
                 <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
-                <label>Téléphone du Propriétaire (Ex: +22177...)</label>
+                <label>Téléphone du Propriétaire</label>
                 <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: 771234567">
-
-                <label>Photos (Max 3 - Compression auto active)</label>
-                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this)" style="background: transparent; padding: 0;">
+                <label>Photos du Bien (Max 3)</label>
+                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')" style="background: transparent; padding: 0;">
                 <div id="previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
-
                 <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer sur le Cloud</button>
-                <button class="btn-outline" style="margin-top: 8px;" onclick="showView('dashboard')">Annuler</button>
+                <button class="btn-outline" style="margin-top: 8px;" onclick="showView('biens')">Annuler</button>
+            </div>
+        </div>
+
+        <div id="view-etat-lieux" class="view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>États des Lieux</h2>
+                <button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 0.8rem;" onclick="ouvrirFormulaireEDL()"><i class="fas fa-file-signature"></i> Nouveau Rapport</button>
+            </div>
+            <div id="edl-list" style="display: grid; gap: 12px;"></div>
+        </div>
+
+        <div id="view-nouveau-edl" class="view">
+            <h2>Nouveau Certificat EDL</h2>
+            <div class="form-card">
+                <label>Bien sélectionné</label>
+                <select id="edl-bien-select"></select>
+                <label>Type d'État des Lieux</label>
+                <select id="edl-type">
+                    <option value="Entrée">📥 Entrée (Remise des clés)</option>
+                    <option value="Sortie">📤 Sortie (Restitution des clés)</option>
+                </select>
+                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+                <div id="edl-rooms-container"></div>
+                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+                <label>🚿 Relevé Compteur Eau (m3)</label>
+                <input type="number" id="edl-eau" placeholder="Ex: 125">
+                <label>⚡ Relevé Compteur Électricité (kWh)</label>
+                <input type="number" id="edl-elec" placeholder="Ex: 4721">
+                <label>🔑 Nombre de trousseaux remis</label>
+                <input type="number" id="edl-cles" placeholder="Ex: 2">
+                <label>📸 Photos de Justificatif EDL (État, Compteurs... Max 3)</label>
+                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'edl')" style="background: transparent; padding: 0;">
+                <div id="edl-previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
+                <label>📝 Remarques particulières</label>
+                <textarea id="edl-notes" rows="3" placeholder="RAS, ou notez une dégradation spécifique..."></textarea>
+                <button id="btn-save-edl" class="btn-primary" onclick="saveEDLCloud()">Générer, Signer & Envoyer</button>
+                <button class="btn-outline" style="margin-top: 8px;" onclick="showView('etat-lieux')">Annuler</button>
             </div>
         </div>
 
@@ -201,24 +226,20 @@
             <div class="form-card">
                 <label>Sélectionner le bien occupé</label>
                 <select id="c-bien-select" onchange="remplirLoyer()"></select>
-
                 <label>Nature du Versement</label>
                 <select id="c-type" onchange="remplirLoyer()">
                     <option value="Loyer">Loyer Mensuel</option>
                     <option value="Caution">Caution de Garantie (3 mois)</option>
                     <option value="Avance">Avance Partielle</option>
                 </select>
-
                 <label>Montant Encaissé (CFA)</label>
                 <input type="number" id="c-montant">
-
                 <label>Mode de paiement</label>
                 <div style="display: flex; gap: 15px; margin-bottom: 20px; font-weight: 500; font-size: 0.9rem;">
                     <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Espèces" checked style="width:auto; margin:0;"> Espèces</label>
                     <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Wave/OM" style="width:auto; margin:0;"> Wave / OM</label>
                     <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Virement" style="width:auto; margin:0;"> Virement</label>
                 </div>
-
                 <button class="btn-primary" style="background: var(--green);" onclick="validerCollecte('locataire')"><i class="fab fa-whatsapp"></i> Valider & Reçu Locataire</button>
                 <button class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Reçu Propriétaire</button>
             </div>
@@ -230,19 +251,14 @@
                 <h3>Planifier un rendez-vous</h3>
                 <label>Nom du Client Prospect</label>
                 <input type="text" id="p-name" placeholder="Ex: Aminata Sarr">
-                
                 <label>Numéro de Téléphone Client</label>
                 <input type="tel" id="p-tel" placeholder="Ex: 771234567">
-
                 <label>Bien à faire visiter</label>
                 <select id="p-bien-select"></select>
-
-                <label>Date et Heure du rendez-vous</label>
+                <label>Date et Heure</label>
                 <input type="datetime-local" id="p-date">
-
                 <button class="btn-primary" onclick="sauverVisite()">Fixer le rendez-vous</button>
             </div>
-
             <h3>Visites programmées</h3>
             <div id="visites-list" style="display: grid; gap: 12px; margin-top: 10px;"></div>
         </div>
@@ -257,24 +273,19 @@
 
             <div id="admin-management-section" class="form-card" style="display: none; margin-top: 20px; border-left: 4px solid var(--gold);">
                 <h3><i class="fas fa-shield-alt"></i> Activer un Compte Partenaire</h3>
-                <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:15px;">Créez et configurez les accès des membres de votre réseau.</p>
-                
+                <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:15px;">Configurez les accès sans déconnexion.</p>
                 <div style="display: grid; gap: 5px;">
-                    <label>Sélectionner le profil / Type d'accès</label>
+                    <label>Type d'accès</label>
                     <select id="admin-new-user-role">
                         <option value="Courtier">Courtier Indépendant (Accès Restreint)</option>
                         <option value="Agence">Agence Partenaire (Accès Restreint)</option>
                     </select>
-
-                    <label>Adresse E-mail de connexion</label>
-                    <input type="email" id="admin-new-user-name" placeholder="Ex: agence.almadies@gmail.com">
-                    
-                    <label>Mot de passe d'accès (6 char. min)</label>
+                    <label>Adresse E-mail</label>
+                    <input type="email" id="admin-new-user-name" placeholder="Ex: partenaire@gmail.com">
+                    <label>Mot de passe (6 char. min)</label>
                     <input type="password" id="admin-new-user-pin" placeholder="Choisir un mot de passe">
-                    
-                    <button class="btn-primary" onclick="adminCreerCompteCourtier()">Créer le compte sans déconnexion</button>
+                    <button class="btn-primary" onclick="adminCreerCompteCourtier()">Créer le compte</button>
                 </div>
-                
                 <h4 style="margin-top: 25px; margin-bottom: 10px; font-size:0.9rem;">Membres du réseau activés</h4>
                 <div id="admin-users-list"></div>
             </div>
@@ -288,17 +299,20 @@
     </div>
 
     <nav>
-        <div class="nav-item active" onclick="showView('dashboard'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
-            <i class="fas fa-chart-pie"></i>Dashboard
+        <div class="nav-item active" onclick="showView('dashboard'); resetNavStyles(this);">
+            <i class="fas fa-chart-pie"></i>Dash
         </div>
-        <div class="nav-item" onclick="showView('biens'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
+        <div class="nav-item" onclick="showView('biens'); resetNavStyles(this);">
             <i class="fas fa-home"></i>Biens
         </div>
-        <div class="nav-item" onclick="showView('planning'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
+        <div class="nav-item" onclick="showView('etat-lieux'); resetNavStyles(this);">
+            <i class="fas fa-file-signature"></i>EDL
+        </div>
+        <div class="nav-item" onclick="showView('planning'); resetNavStyles(this);">
             <i class="fas fa-calendar-alt"></i>Planning
         </div>
-        <div class="nav-item" onclick="showView('profil'); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active');">
-            <i class="fas fa-user-shield"></i>Profil
+        <div class="nav-item" onclick="showView('profil'); resetNavStyles(this);">
+            <i class="fas fa-user-shield"></i>Réseau
         </div>
     </nav>
 
@@ -320,18 +334,10 @@
       const db = getFirestore(app);
       const auth = getAuth(app);
 
-      window.db = db;
-      window.auth = auth;
-      window.fsDoc = doc;
-      window.fsGetDoc = getDoc;
-      window.fsSetDoc = setDoc;
-      window.fsCollection = collection;
-      window.fsGetDocs = getDocs;
-      window.fsUpdateDoc = updateDoc;
-      window.fsDeleteDoc = deleteDoc;
-      window.fbSignIn = signInWithEmailAndPassword;
-      window.fbSignOut = signOut;
-      window.fbOnAuth = onAuthStateChanged;
+      window.db = db; window.auth = auth; window.fsDoc = doc; window.fsGetDoc = getDoc;
+      window.fsSetDoc = setDoc; window.fsCollection = collection; window.fsGetDocs = getDocs;
+      window.fsUpdateDoc = updateDoc; window.fsDeleteDoc = deleteDoc;
+      window.fbSignIn = signInWithEmailAndPassword; window.fbSignOut = signOut; window.fbOnAuth = onAuthStateChanged;
     </script>
     <script src="script.js"></script>
 </body>
