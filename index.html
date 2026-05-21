@@ -98,7 +98,11 @@
             background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none;
             align-items: center; justify-content: center; padding: 20px;
         }
-        .modal-content { background: var(--card); width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; text-align: left; }
+        .modal-content { background: var(--card); width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; text-align: left; max-height: 90vh; overflow-y: auto; }
+        
+        .table-suivi { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+        .table-suivi th, .table-suivi td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); }
+        .table-suivi th { background: #F1F5F9; color: var(--text-light); font-weight: 600; }
     </style>
 </head>
 <body>
@@ -167,30 +171,38 @@
                     <option value="Magasin">Magasin</option>
                 </select>
                 <label>Prix Loyer Mensuel (CFA)</label>
-                <input type="number" id="new-bien-loyer" placeholder="Ex: 250000">
+                <input type="number" id="new-bien-loyer" placeholder="Ex: 250000" oninput="calculerProrataAutomatique()">
                 <label>Adresse / Quartier</label>
                 <input type="text" id="new-bien-adresse" placeholder="Ex: Patte d'Oie, Dakar">
                 <label>Commission Agence</label>
                 <input type="text" id="new-bien-com" value="10%">
+                
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
                 <label>Nom du Propriétaire</label>
                 <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
-                <label>Téléphone du Propriétaire (Mettre l'indicatif, ex: +221... ou +33...)</label>
+                <label>Téléphone du Propriétaire (Ex: +22177... ou +337...)</label>
                 <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: +221771234567">
                 
                 <div id="edit-only-fields" style="display:none;">
                     <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
                     <label>Nom du Locataire</label>
                     <input type="text" id="edit-bien-locataire" placeholder="Nom du locataire actuel">
-                    <label>Téléphone du Locataire (Mettre l'indicatif)</label>
+                    <label>Téléphone du Locataire</label>
                     <input type="tel" id="edit-bien-locataire-tel" placeholder="Ex: +221779876543">
+                    <label>Date d'entrée officielle du locataire</label>
+                    <input type="date" id="edit-bien-date-entree" onchange="calculerProrataAutomatique()">
+                    
+                    <div id="prorata-box" style="background: var(--gold-light); padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; border-left: 4px solid var(--gold);">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--gold);">💡 Aide au calcul (Prorata) :</span>
+                        <p id="prorata-result" style="font-size: 0.9rem; margin-top: 4px; font-weight: 700; color: var(--dark);"></p>
+                    </div>
                 </div>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
                 <label>Photos du Bien (Max 3)</label>
                 <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')" style="background: transparent; padding: 0;">
                 <div id="previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
-                <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer les modifications</button>
+                <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
                 <button class="btn-outline" style="margin-top: 8px;" onclick="showView('biens')">Annuler</button>
             </div>
         </div>
@@ -240,6 +252,7 @@
                 <label>Nature du Versement</label>
                 <select id="c-type" onchange="remplirLoyer()">
                     <option value="Loyer">Loyer Mensuel</option>
+                    <option value="Prorata">Loyer Prorata</option>
                     <option value="Caution">Caution de Garantie (3 mois)</option>
                     <option value="Avance">Avance Partielle</option>
                 </select>
@@ -262,7 +275,7 @@
                 <h3>Planifier un rendez-vous</h3>
                 <label>Nom du Client Prospect</label>
                 <input type="text" id="p-name" placeholder="Ex: Aminata Sarr">
-                <label>Numéro de Téléphone Client (Avec indicatif pays)</label>
+                <label>Numéro de Téléphone Client</label>
                 <input type="tel" id="p-tel" placeholder="Ex: +221771234567">
                 <label>Bien à faire visiter</label>
                 <select id="p-bien-select"></select>
@@ -275,10 +288,16 @@
         </div>
 
         <div id="view-profil" class="view">
-            <h2>Mon Espace</h2>
+            <h2>Mon Espace & Réseau</h2>
             <div class="form-card" style="text-align: center;">
                 <h3 id="profil-statut-actuel">Chargement...</h3>
                 <span id="profil-role-badge" style="background: var(--gold-light); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: var(--gold);"></span>
+                
+                <div style="margin-top: 20px; text-align: left;">
+                    <label>Mon lien de paiement personnel (Wave / OM / K Pay)</label>
+                    <input type="text" id="user-payment-link" placeholder="Ex: https://pay.wave.com/m/your-tag" onchange="sauvegarderLienPaiement(this.value)">
+                </div>
+
                 <button class="btn-outline" style="color: var(--red); border-color: var(--red); margin-top: 15px;" onclick="deconnexion()">Se déconnecter</button>
             </div>
 
@@ -287,8 +306,8 @@
                 <div style="display: grid; gap: 5px;">
                     <label>Type d'accès</label>
                     <select id="admin-new-user-role">
-                        <option value="Courtier">Courtier Indépendant (Accès Restreint)</option>
-                        <option value="Agence">Agence Partenaire (Accès Restreint)</option>
+                        <option value="Courtier">Courtier Indépendant</option>
+                        <option value="Agence">Agence Partenaire</option>
                     </select>
                     <label>Adresse E-mail</label>
                     <input type="email" id="admin-new-user-name" placeholder="Ex: partenaire@gmail.com">
