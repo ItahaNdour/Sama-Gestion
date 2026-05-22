@@ -71,7 +71,7 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 
         /* Barre de navigation basse (Mobile-First) */
-        nav { position: fixed; bottom: 0; inset: 75px 0 0 0; height: 75px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 999; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
+        nav { position: fixed; bottom: 0; inset: 0 0 0 0; height: 75px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 999; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
         .nav-item { color: #94A3B8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; font-weight: 600; gap: 4px; transition: color 0.2s; background: none; border: none; width: auto; padding: 0; }
         .nav-item i { font-size: 1.25rem; }
         .nav-item.active { color: #FFFFFF; }
@@ -409,14 +409,14 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ⚠️ ENTRER VOS VRAIES CLÉS ICI POUR RECONNAÎTRE AMADOU NDOUR
+        // Configuration Firebase avec vos codes réels restaurés
         const firebaseConfig = {
-            apiKey: "VOTRE_VRAIE_API_KEY",
-            authDomain: "VOTRE_AUTH_DOMAIN",
-            projectId: "VOTRE_PROJECT_ID",
-            storageBucket: "VOTRE_STORAGE_BUCKET",
-            messagingSenderId: "VOTRE_SENDER_ID",
-            appId: "VOTRE_APP_ID"
+            apiKey: "AIzaSyDEYgUuD4X8lscK_rE1Lg5mCpxLpBv6I3k",
+            authDomain: "sama-gestion-pro.firebaseapp.com",
+            projectId: "sama-gestion-pro",
+            storageBucket: "sama-gestion-pro.appspot.com",
+            messagingSenderId: "333792610582",
+            appId: "1:333792610582:web:94d50eb7baee93e36e4f3a"
         };
 
         const app = initializeApp(firebaseConfig);
