@@ -1,14 +1,16 @@
-let profilRole = "SuperAdmin"; // En dur pour le test
-let courtierNom = "Direction Générale"; // En dur pour le test
-let courtierEmail = "admin@samagestion.com"; // En dur pour le test
+// 🔐 IDENTIFIANTS EN DUR POUR LE TEST DIAGNOSTIC
+let profilRole = "SuperAdmin"; 
+let courtierNom = "Amadou Ndour"; 
+let courtierEmail = "19amadoundour@gmail.com"; 
 let monAvatar = "👑";
-let monLienPaiement = "https://wave.me/s/test"; // Exemple de lien en dur
+let monLienPaiement = ""; 
 
+// Tableaux de données réels (vides au départ, comme dans ta version)
 let utilisateurs = [];
 let biens = [];
 let visites = [];
 let etatsLieux = [];
-let comTotaleGlobal = 1500000; // Un montant de test pour voir si le KPI s'affiche
+let comTotaleGlobal = 0; 
 
 let currentFilter = 'Disponible';
 let selectedPhotos = [];
@@ -16,44 +18,29 @@ let selectedPhotosEDL = [];
 
 const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
 
-// 🧪 SIMULATION CONNEXION EN DUR (SANS FIREBASE POUR LE MOMENT)
+// 🧪 BYPASS FIREBASE AU CHARGEMENT
 window.onload = () => {
-    console.log("🚀 Mode Diagnostic : Connexion en dur activée.");
+    console.log("🚀 Mode Diagnostic - Connexion en dur pour :", courtierEmail);
     try {
-        // On masque directement l'écran de login
+        // On masque l'écran de connexion directement
         if (document.getElementById('login-screen')) {
             document.getElementById('login-screen').style.display = 'none';
         }
         
-        // On charge l'interface avec nos données locales
+        // On initialise l'interface avec tes vraies infos configurées au-dessus
         majInterfaceProfil();
-        showView('dashboard');
         
-        // On remplit des données fictives pour tester les modules sans le cloud
-        chargerDonneesFictivesTest();
+        // On affiche le dashboard
+        showView('dashboard');
 
     } catch (e) {
         console.error("Erreur lors de l'initialisation locale :", e);
     }
 };
 
-// Fonction temporaire pour simuler les données sans interroger Firestore
-function chargerDonneesFictivesTest() {
-    biens = [
-        { id: 1, nom: "Studio A2 Almadies", loyer: "350000", type: "Studio", superficie: "60 m2", typePapier: "Titre Foncier", adresse: "Almadies", proprio: "M. Diop", proprioTel: "771234567", locataire: "Aucun", locataireTel: "", dateEntree: "", com: "10%", statut: "Disponible", photos: ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"], historiquePaiements: [] },
-        { id: 2, nom: "Appartement 3B Ngor", loyer: "500000", type: "Appartement", superficie: "120 m2", typePapier: "Bail", adresse: "Ngor", proprio: "Mme Ndiaye", proprioTel: "777654321", locataire: "Amadou Diallo", locataireTel: "761112233", dateEntree: "2026-05-01", com: "10%", statut: "Occupé", photos: ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"], historiquePaiements: [] }
-    ];
-    
-    visites = [
-        { id: 101, nom: "Ibrahima Sow", tel: "709998877", bien: "Studio A2 Almadies", date: "2026-05-25T14:00", notesPerso: "Client très intéressé", statutChecking: "Planifié", qualification: "Client Sérieux", verrouille: false }
-    ];
-    
-    verifierAlertesEcheances();
-}
+// 🧪 RESTE DU CODE STRICTEMENT IDENTIQUE À TON APPLICATION INITIALE
 
-// 🧪 SIMULATION DU BOUTON DE LOG IN SI JAMAIS IL REVIENT
-async function verifierConnexion() {
-    // Connexion instantanée sans Firebase
+function verifierConnexion() {
     if (document.getElementById('login-screen')) {
         document.getElementById('login-screen').style.display = 'none';
     }
@@ -61,16 +48,11 @@ async function verifierConnexion() {
     showView('dashboard');
 }
 
-// 🧪 SIMULATION DECONNEXION
 function deconnexion() {
     if (document.getElementById('login-screen')) {
         document.getElementById('login-screen').style.display = 'flex';
     }
 }
-
-// ==========================================
-// RESTE DES MODULES APPLICATIFS SAMA GESTION
-// ==========================================
 
 function majInterfaceProfil() {
     if(document.getElementById('header-user-badge')) document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
