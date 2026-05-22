@@ -1,9 +1,9 @@
 // ==============================================================================
-// SAMA GESTION PRO V9.1 - CORRECTION CONNEXION NETWORK & LOGIQUE MM SIGNATURE
+// SAMA GESTION PRO V9.2 - SÉCURITÉ PLANNING, DOUBLE ENVOI ET POLITESSE
 // ==============================================================================
 
 let profilRole = null;
-let courtierNom = null; // Nom complet ou Agence pour la signature pro
+let courtierNom = null; 
 let monAvatar = "💼";
 let monLienPaiement = "";
 
@@ -28,7 +28,6 @@ window.onload = () => {
 
     window.fbOnAuth(window.auth, async (user) => {
         if (user) {
-            // Connexion via compte admin principal ou existant sur Firebase Auth
             const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
             if (docProfil.exists()) {
                 const data = docProfil.data();
@@ -53,7 +52,6 @@ window.onload = () => {
             }
             showView('dashboard');
         } else {
-            // Si pas de session Firebase Auth directe, on laisse l'écran de login
             profilRole = null;
             courtierNom = null;
             document.getElementById('login-screen').style.display = 'flex';
@@ -83,19 +81,16 @@ async function chargerDonneesCloud() {
     }
 }
 
-// 🔓 SYSTÈME DE CONNEXION HYBRIDE (PREND EN COMPTE LES COMPTES CRÉÉS PAR L'ADMIN)
 async function verifierConnexion() {
     const emailSaisi = document.getElementById('login-username').value.trim().toLowerCase();
     const passSaisi = document.getElementById('login-password').value.trim();
     const errorMsg = document.getElementById('login-error');
     
     try {
-        // 1. On tente d'abord de charger les données locales/cloud pour voir si le compte créé par l'admin existe
         await chargerDonneesCloud();
         const comptePartenaire = utilisateurs.find(u => u.email && u.email.toLowerCase() === emailSaisi && u.password_clear_temp === passSaisi);
 
         if (comptePartenaire) {
-            // Connexion réussie pour le partenaire
             profilRole = comptePartenaire.role;
             courtierNom = comptePartenaire.fullname || comptePartenaire.username;
             monLienPaiement = comptePartenaire.lienPaiement || "";
@@ -110,7 +105,6 @@ async function verifierConnexion() {
             return;
         }
 
-        // 2. Si non trouvé dans les partenaires, on tente la connexion Firebase Auth standard (ex: le compte Admin principal)
         await window.fbSignIn(window.auth, emailSaisi, passSaisi);
         
     } catch (error) {
@@ -141,7 +135,6 @@ function majInterfaceProfil() {
 
 async function sauvegarderLienPaiement(val) {
     monLienPaiement = val.trim();
-    // On cherche si c'est un compte partenaire pour le mettre à jour
     const userTrouve = utilisateurs.find(u => u.fullname === courtierNom);
     const targetUID = userTrouve ? userTrouve.uid : (window.auth.currentUser ? window.auth.currentUser.uid : "temp");
     
@@ -163,7 +156,6 @@ function formaterNumeroWhatsApp(num) {
     return propre;
 }
 
-// 🔔 LOGIQUE DE SIGNATURE NETTOYÉE ET CONDITIONNELLE
 function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
     const numeroPropre = formaterNumeroWhatsApp(telephone);
     if(!numeroPropre || numeroPropre.length < 8) {
@@ -171,10 +163,8 @@ function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
         return;
     }
     
-    // Signature Pro stricte avec le NOM (Jamais l'email)
     let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Gestion Immobilière`;
     
-    // Le numéro Wave/OM est injecté UNIQUEMENT si demandé explicitement (paiements à venir)
     if(inclurePaiement && monLienPaiement) {
         signatureFormatee += `\n\n💵 Pour votre dépôt Mobile Money (Wave/OM) : *${monLienPaiement}*`;
     }
@@ -502,12 +492,12 @@ function ouvrirPortefeuille(id) {
     document.getElementById('modal-bien').style.display = 'flex';
 }
 
-// 💵 LE RAPPEL À VENIR UTILISE LE NUMÉRO DE PAIEMENT
 function relancerPaiementWhatsApp(id) {
     const b = biens.find(x => x.id === id);
     if(!b.locataireTel) return alert("Pas de numéro enregistré.");
-    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé pour ce terme.\n\nNous vous invitons à effectuer le versement à votre convenance.`;
-    envoyerMessageWhatsApp(b.locataireTel, msg, true); // <--- True : On met les infos de paiement
+    const nomLocataire = b.locataire && b.locataire !== "Aucun" && b.locataire !== "Inconnu" ? b.locataire : "Cher Locataire";
+    const msg = `Bonjour et Salam alaykoum ${nomLocataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé pour ce terme.\n\nNous vous invitons à effectuer le versement à votre convenance.`;
+    envoyerMessageWhatsApp(b.locataireTel, msg, true); 
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
@@ -566,8 +556,11 @@ async function saveEDLCloud() {
     await window.fsSetDoc(window.fsDoc(window.db, "etats_des_lieux", String(structureEDL.id)), structureEDL);
     await chargerDonneesCloud();
 
+    const b = biens.find(x => x.nom === bienNom);
+    const nomDestinataire = b && b.locataire && b.locataire !== "Aucun" ? b.locataire : "Cher Partenaire";
+
     let checkSummary = piecesData.map(p => `• ${p.piece} : ${p.etat}`).join('\n');
-    let constructionTexte = `*CONSTAT D'ÉTAT DES LIEUX DE ${type.toUpperCase()}*\n\n` +
+    let constructionTexte = `Bonjour et Salam alaykoum ${nomDestinataire},\n\n*CONSTAT D'ÉTAT DES LIEUX DE ${type.toUpperCase()}*\n\n` +
                             `*Logement concerné :* ${bienNom}\n` +
                             `*Date de validation :* ${structureEDL.date}\n\n` +
                             `*RELEVÉS PAR PIÈCES :*\n${checkSummary}\n\n` +
@@ -577,11 +570,10 @@ async function saveEDLCloud() {
                             `🔑 Trousseaux de clés : ${structureEDL.cles}\n\n` +
                             `*Remarques constatées :* ${structureEDL.notes}`;
 
-    const b = biens.find(x => x.nom === bienNom);
     const destinataireTel = (b && b.locataireTel) ? b.locataireTel : (b ? b.proprioTel : "");
     
     alert("🎉 Rapport validé !");
-    if(destinataireTel) envoyerMessageWhatsApp(destinataireTel, constructionTexte, false); // <--- False : Pas de numéro de paiement sur un EDL
+    if(destinataireTel) envoyerMessageWhatsApp(destinataireTel, constructionTexte, false);
     showView('etat-lieux');
 }
 
@@ -615,15 +607,17 @@ async function supprimerEDLExistant(id) {
 
 function partagerEDLExistant(id) {
     const e = etatsLieux.find(x => x.id === id);
-    let checkSummary = e.pieces.map(p => `• ${p.piece} : ${p.etat}`).join('\n');
-    let constructionTexte = `*RAPPEL ÉTAT DES LIEUX - ${e.type.toUpperCase()}*\n\n*Bien :* ${e.bien}\n*Date :* ${e.date}\n\n*CONSTAT :*\n${checkSummary}\n\n*Notes :* ${e.notes}`;
     const b = biens.find(x => x.nom === e.bien);
+    const nomDestinataire = b && b.locataire && b.locataire !== "Aucun" ? b.locataire : "Cher Locataire";
+
+    let checkSummary = e.pieces.map(p => `• ${p.piece} : ${p.etat}`).join('\n');
+    let constructionTexte = `Bonjour et Salam alaykoum ${nomDestinataire},\n\n*RAPPEL ÉTAT DES LIEUX - ${e.type.toUpperCase()}*\n\n*Bien :* ${e.bien}\n*Date :* ${e.date}\n\n*CONSTAT :*\n${checkSummary}\n\n*Notes :* ${e.notes}`;
     const num = b ? b.locataireTel : "";
     if(num) envoyerMessageWhatsApp(num, constructionTexte, false);
 }
 
 // ==========================================
-// COLLECTE / ENCAISSEMENT
+// COLLECTE / ENCAISSEMENT & DOUBLE ENVOI
 // ==========================================
 function analyserReliquatComptable() {
     const name = document.getElementById('c-bien-select').value;
@@ -707,6 +701,7 @@ function updateSelects() {
     analyserReliquatComptable();
 }
 
+// 🔄 ENCAISSEMENT INTELLIGENT AVEC FLUX DE DOUBLE ENVOI SEQUENTIEL AUTOMATIQUE
 async function validerCollecte(cible) {
     const name = document.getElementById('c-bien-select').value;
     const mt = parseFloat(document.getElementById('c-montant').value);
@@ -733,20 +728,33 @@ async function validerCollecte(cible) {
 
     let chaineReliquat = resteAPayerApres > 0 ? `\n*Reste à payer (Reliquat) :* ${resteAPayerApres.toLocaleString()} CFA` : `\n*Statut :* Terme entièrement soldé ! 🎉`;
 
-    let txt = "";
+    const nomLocataire = b.locataire && b.locataire !== "Aucun" && b.locataire !== "Inconnu" ? b.locataire : "Cher Locataire";
+    const nomProprio = b.proprio && b.proprio !== "Inconnu" ? b.proprio : "Cher Propriétaire";
+
+    let txtLocataire = `Bonjour et Salam alaykoum ${nomLocataire},\n\n*REÇU DE VERSEMENT OFFICIEL*\n\nNous confirmons la bonne réception de votre paiement.\n\n*Désignation :* ${b.nom}\n*Versement perçu :* ${mt.toLocaleString()} CFA\n*Nature du versement :* ${type}\n*Mode de paiement :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}\n\nMerci pour votre confiance.`;
+    
+    let netAReverser = mt - maCom;
+    let txtProprio = `Bonjour et Salam alaykoum ${nomProprio},\n\n*NOTIFICATION DE TRANSFERT FONDS PROPRIÉTAIRE*\n\nNous vous informons qu'un versement a été encaissé au titre de : *${type}* pour votre bien et que les fonds ont été reversés.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net transféré :* *${netAReverser.toLocaleString()} CFA*\n*Canal d'envoi :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
+
     if (cible === 'locataire') {
-        txt = `*REÇU DE VERSEMENT OFFICIEL*\n\nNous confirmons la bonne réception de votre paiement.\n\n*Désignation :* ${b.nom}\n*Versement perçu :* ${mt.toLocaleString()} CFA\n*Nature du versement :* ${type}\n*Mode de paiement :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}\n\nMerci pour votre confiance.`;
-        envoyerMessageWhatsApp(b.locataireTel, txt, false); // <--- False : C'est un reçu, on ne remet pas les infos de paiement
+        // Envoi immédiat au Locataire
+        envoyerMessageWhatsApp(b.locataireTel, txtLocataire, false);
+        
+        // Petit délai de confort pour laisser WhatsApp s'ouvrir, puis proposition de notifier le propriétaire
+        setTimeout(() => {
+            if(confirm(`Reçu envoyé au locataire !\nVoulez-vous maintenant envoyer la notification de versement (${type}) à M./Mme ${nomProprio} ?`)) {
+                envoyerMessageWhatsApp(b.proprioTel, txtProprio, false);
+            }
+        }, 1000);
     } else {
-        let netAReverser = mt - maCom;
-        txt = `*NOTIFICATION DE TRANSFERT FONDS PROPRIÉTAIRE*\n\nBonjour Cher Propriétaire,\n\nNous vous informons qu'un versement a été encaissé pour votre bien et que les fonds ont été transférés sur votre compte.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net transféré :* *${netAReverser.toLocaleString()} CFA*\n*Canal d'envoi :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
-        envoyerMessageWhatsApp(b.proprioTel, txt, false); // <--- False : Notification propriétaire, pas d'infos de paiement
+        // Si l'utilisateur clique directement sur le bouton Propriétaire
+        envoyerMessageWhatsApp(b.proprioTel, txtProprio, false);
     }
     showView('dashboard');
 }
 
 // ==========================================
-// VISITES & PLANNING
+// VISITES & PLANNING (AVEC BLOCAGE DU PASSÉ)
 // ==========================================
 async function sauverVisite() {
     const nom = document.getElementById('p-name').value;
@@ -769,17 +777,26 @@ function renderVisites() {
     if(!conteneur) return;
     
     const filtered = visites.filter(v => profilRole === "SuperAdmin" || biens.some(b => b.nom === v.bien && b.agentCreateur === courtierNom));
+    const maintenant = new Date();
 
-    conteneur.innerHTML = filtered.map(v => `
-        <div class="form-card" style="position:relative;">
-            <b>👤 ${v.nom}</b> - <small>${v.bien}</small><br>
-            <small>📅 ${v.date.replace('T', ' à ')}</small><br>
-            <div style="margin-top:8px; display:flex; gap:10px;">
-                <span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre rendez-vous fixé le ${new Date(v.date).toLocaleString('fr-FR')} pour la visite du bien : ${v.bien}.', true)" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Confirmer (Avec Infos MM)</span>
-                <span onclick="supprimerRendezVous(${v.id})" style="color:var(--red); cursor:pointer; font-size:0.85rem; font-weight:600;"><i class="fas fa-trash-alt"></i> Annuler</span>
+    conteneur.innerHTML = filtered.map(v => {
+        const dateVisite = new Date(v.date);
+        const estPasse = dateVisite < maintenant; // 🔒 Vérification si le RDV est dépassé
+
+        return `
+            <div class="form-card" style="position:relative; opacity: ${estPasse ? '0.6' : '1'}; background: ${estPasse ? '#F1F5F9' : '#FFFFFF'};">
+                <b>👤 ${v.nom}</b> - <small>${v.bien}</small><br>
+                <small>📅 ${dateVisite.toLocaleString('fr-FR')}</small><br>
+                <div style="margin-top:8px; display:flex; gap:10px;">
+                    ${estPasse ? 
+                        `<span style="color:#94A3B8; font-size:0.85rem; font-weight:500;"><i class="fas fa-clock"></i> Visite passée (Grisée)</span>` : 
+                        `<span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour et Salam alaykoum ${v.nom},\n\nJe vous confirme notre rendez-vous fixé le ${dateVisite.toLocaleString('fr-FR')} pour la visite du bien suivant : *${v.bien}*.', true)" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Confirmer (Avec Infos MM)</span>`
+                    }
+                    <span onclick="supprimerRendezVous(${v.id})" style="color:var(--red); cursor:pointer; font-size:0.85rem; font-weight:600; margin-left:auto;"><i class="fas fa-trash-alt"></i> Annuler</span>
+                </div>
             </div>
-        </div>
-    `).reverse().join('');
+        `;
+    }).reverse().join('');
 }
 
 async function supprimerRendezVous(id) {
