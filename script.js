@@ -1,9 +1,9 @@
 // ==============================================================================
-// SAMA GESTION PRO V9.1 - CORRECTION CONNEXION NETWORK & LOGIQUE MM SIGNATURE
+// SAMA GESTION PRO V9.0 - OFFLINE PERSISTENCE & SIGNATURE PAR NOM DE GESTION
 // ==============================================================================
 
 let profilRole = null;
-let courtierNom = null; // Nom complet ou Agence pour la signature pro
+let courtierNom = null; // Contiendra le vrai Nom complet / Agence pour la signature
 let monAvatar = "💼";
 let monLienPaiement = "";
 
@@ -28,14 +28,13 @@ window.onload = () => {
 
     window.fbOnAuth(window.auth, async (user) => {
         if (user) {
-            // Connexion via compte admin principal ou existant sur Firebase Auth
             const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
             if (docProfil.exists()) {
                 const data = docProfil.data();
                 profilRole = data.role;
-                courtierNom = data.fullname || data.username;
+                courtierNom = data.fullname || data.username; // Utilise le nom complet pro s'il existe
                 monLienPaiement = data.lienPaiement || "";
-                monAvatar = data.avatar || "🏢";
+                monAvatar = data.avatar || (data.role === 'SuperAdmin' ? "👑" : "🏢");
             } else {
                 profilRole = "SuperAdmin";
                 courtierNom = "Direction Générale";
@@ -53,7 +52,6 @@ window.onload = () => {
             }
             showView('dashboard');
         } else {
-            // Si pas de session Firebase Auth directe, on laisse l'écran de login
             profilRole = null;
             courtierNom = null;
             document.getElementById('login-screen').style.display = 'flex';
@@ -83,47 +81,21 @@ async function chargerDonneesCloud() {
     }
 }
 
-// 🔓 SYSTÈME DE CONNEXION HYBRIDE (PREND EN COMPTE LES COMPTES CRÉÉS PAR L'ADMIN)
 async function verifierConnexion() {
-    const emailSaisi = document.getElementById('login-username').value.trim().toLowerCase();
+    const emailSaisi = document.getElementById('login-username').value.trim();
     const passSaisi = document.getElementById('login-password').value.trim();
     const errorMsg = document.getElementById('login-error');
-    
     try {
-        // 1. On tente d'abord de charger les données locales/cloud pour voir si le compte créé par l'admin existe
-        await chargerDonneesCloud();
-        const comptePartenaire = utilisateurs.find(u => u.email && u.email.toLowerCase() === emailSaisi && u.password_clear_temp === passSaisi);
-
-        if (comptePartenaire) {
-            // Connexion réussie pour le partenaire
-            profilRole = comptePartenaire.role;
-            courtierNom = comptePartenaire.fullname || comptePartenaire.username;
-            monLienPaiement = comptePartenaire.lienPaiement || "";
-            monAvatar = comptePartenaire.avatar || "💼";
-            
-            document.getElementById('login-screen').style.display = 'none';
-            majInterfaceProfil();
-            if(document.getElementById('user-payment-link')) {
-                document.getElementById('user-payment-link').value = monLienPaiement;
-            }
-            showView('dashboard');
-            return;
-        }
-
-        // 2. Si non trouvé dans les partenaires, on tente la connexion Firebase Auth standard (ex: le compte Admin principal)
         await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-        
     } catch (error) {
-        errorMsg.innerText = "❌ Identifiants invalides ou problème de réseau.";
+        errorMsg.innerText = "❌ Email ou mot de passe incorrect.";
         errorMsg.style.display = 'block';
     }
 }
 
 async function deconnexion() {
-    try { await window.fbSignOut(window.auth); } catch(e){}
-    profilRole = null;
-    courtierNom = null;
-    document.getElementById('login-screen').style.display = 'flex';
+    await window.fbSignOut(window.auth);
+    window.location.href = window.location.pathname;
 }
 
 function majInterfaceProfil() {
@@ -134,18 +106,13 @@ function majInterfaceProfil() {
     if (profilRole === "SuperAdmin") {
         document.getElementById('admin-management-section').style.display = 'block';
         renderAdminAgencesList();
-    } else {
-        document.getElementById('admin-management-section').style.display = 'none';
     }
 }
 
 async function sauvegarderLienPaiement(val) {
+    if(!window.auth.currentUser) return;
     monLienPaiement = val.trim();
-    // On cherche si c'est un compte partenaire pour le mettre à jour
-    const userTrouve = utilisateurs.find(u => u.fullname === courtierNom);
-    const targetUID = userTrouve ? userTrouve.uid : (window.auth.currentUser ? window.auth.currentUser.uid : "temp");
-    
-    await window.fsUpdateDoc(window.fsDoc(window.db, "profils", targetUID), {
+    await window.fsUpdateDoc(window.fsDoc(window.db, "profils", window.auth.currentUser.uid), {
         lienPaiement: monLienPaiement
     });
 }
@@ -163,20 +130,16 @@ function formaterNumeroWhatsApp(num) {
     return propre;
 }
 
-// 🔔 LOGIQUE DE SIGNATURE NETTOYÉE ET CONDITIONNELLE
-function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
+function envoyerMessageWhatsApp(telephone, message) {
     const numeroPropre = formaterNumeroWhatsApp(telephone);
     if(!numeroPropre || numeroPropre.length < 8) {
         alert("⚠️ Le numéro de téléphone est mal formaté ou absent.");
         return;
     }
     
-    // Signature Pro stricte avec le NOM (Jamais l'email)
-    let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Gestion Immobilière`;
-    
-    // Le numéro Wave/OM est injecté UNIQUEMENT si demandé explicitement (paiements à venir)
-    if(inclurePaiement && monLienPaiement) {
-        signatureFormatee += `\n\n💵 Pour votre dépôt Mobile Money (Wave/OM) : *${monLienPaiement}*`;
+    let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Sama Gestion Pro`;
+    if(monLienPaiement) {
+        signatureFormatee += `\n💵 Option Dépôt Mobile Money (Wave/OM) : ${monLienPaiement}`;
     }
     
     let messageComplet = message + signatureFormatee;
@@ -256,7 +219,7 @@ function renderPreviews(containerId, arrayData) {
 }
 
 // ==========================================
-// CREATION DE COMPTE PARTENAIRE
+// CREATION DE COMPTE AVEC NOM DE SIGNATURE
 // ==========================================
 async function adminCreerCompteCourtier() {
     const emailCourtier = document.getElementById('admin-new-user-name').value.trim(); 
@@ -265,7 +228,7 @@ async function adminCreerCompteCourtier() {
     const roleChoisi = document.getElementById('admin-new-user-role').value;
     
     if(!emailCourtier.includes('@') || passCourtier.length < 6 || !fullnameCourtier) {
-        return alert("Veuillez remplir tous les champs (Mot de passe: 6 caractères min).");
+        return alert("Veuillez remplir tous les champs correctement (Mot de passe: 6 caractères min).");
     }
 
     try {
@@ -273,7 +236,7 @@ async function adminCreerCompteCourtier() {
         await window.fsSetDoc(window.fsDoc(window.db, "profils", uidPredictif), {
             uid: uidPredictif, 
             username: emailCourtier.split('@')[0], 
-            fullname: fullnameCourtier, 
+            fullname: fullnameCourtier, // Ce nom sera utilisé pour signer tous les messages WhatsApp
             email: emailCourtier, 
             password_clear_temp: passCourtier, 
             role: roleChoisi, 
@@ -285,7 +248,7 @@ async function adminCreerCompteCourtier() {
         document.getElementById('admin-new-user-fullname').value = '';
         await chargerDonneesCloud();
         renderAdminAgencesList();
-        alert("🎉 Compte Partenaire créé avec succès ! Il peut se connecter immédiatement.");
+        alert("🎉 Compte Partenaire créé avec succès !");
     } catch (e) { alert(e.message); }
 }
 
@@ -296,7 +259,7 @@ function renderAdminAgencesList() {
         <div style="background:white; padding:10px; border-radius:10px; margin-bottom:8px; border:1px solid #e2e8f0; font-size:0.85rem;">
             <div style="display:flex; justify-content:space-between;">
                 <span>${u.avatar || '💼'} <b>${u.fullname || u.username}</b> (${u.role})</span>
-                ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444; cursor:pointer;" onclick="adminSupprimerAgence('${u.uid}')"></i>` : '⭐'}
+                ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444;" onclick="adminSupprimerAgence('${u.uid}')"></i>` : '⭐'}
             </div>
         </div>
     `).join('');
@@ -502,18 +465,17 @@ function ouvrirPortefeuille(id) {
     document.getElementById('modal-bien').style.display = 'flex';
 }
 
-// 💵 LE RAPPEL À VENIR UTILISE LE NUMÉRO DE PAIEMENT
 function relancerPaiementWhatsApp(id) {
     const b = biens.find(x => x.id === id);
     if(!b.locataireTel) return alert("Pas de numéro enregistré.");
-    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé pour ce terme.\n\nNous vous invitons à effectuer le versement à votre convenance.`;
-    envoyerMessageWhatsApp(b.locataireTel, msg, true); // <--- True : On met les infos de paiement
+    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé pour ce terme.\n\nNous vous invitons à effectuer le versement à votre convenance via notre numéro de réception de dépôt.`;
+    envoyerMessageWhatsApp(b.locataireTel, msg);
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
 
 // ==========================================
-// MODULE EDL
+// MODULE : EDL AVEC SUPPRESSION AUTORISÉE
 // ==========================================
 function ouvrirFormulaireEDL() {
     selectedPhotosEDL = [];
@@ -581,7 +543,7 @@ async function saveEDLCloud() {
     const destinataireTel = (b && b.locataireTel) ? b.locataireTel : (b ? b.proprioTel : "");
     
     alert("🎉 Rapport validé !");
-    if(destinataireTel) envoyerMessageWhatsApp(destinataireTel, constructionTexte, false); // <--- False : Pas de numéro de paiement sur un EDL
+    if(destinataireTel) envoyerMessageWhatsApp(destinataireTel, constructionTexte);
     showView('etat-lieux');
 }
 
@@ -619,11 +581,11 @@ function partagerEDLExistant(id) {
     let constructionTexte = `*RAPPEL ÉTAT DES LIEUX - ${e.type.toUpperCase()}*\n\n*Bien :* ${e.bien}\n*Date :* ${e.date}\n\n*CONSTAT :*\n${checkSummary}\n\n*Notes :* ${e.notes}`;
     const b = biens.find(x => x.nom === e.bien);
     const num = b ? b.locataireTel : "";
-    if(num) envoyerMessageWhatsApp(num, constructionTexte, false);
+    if(num) envoyerMessageWhatsApp(num, constructionTexte);
 }
 
 // ==========================================
-// COLLECTE / ENCAISSEMENT
+// MOTEUR DE VÉRIFICATION RELIQUAT
 // ==========================================
 function analyserReliquatComptable() {
     const name = document.getElementById('c-bien-select').value;
@@ -682,7 +644,7 @@ function analyserReliquatComptable() {
         liveBox.style.background = '#FEE2E2';
         liveBox.style.borderColor = 'var(--red)';
         liveBox.style.color = '#991B1B';
-        liveBox.innerHTML = `⚠️ <b>Opération Bloquée :</b> Ce terme (<b>${type}</b>) a déjà été entièrement soldé pour ce bien.`;
+        liveBox.innerHTML = `⚠️ <b>Opération Bloquée :</b> Ce terme/catégorie (<b>${type}</b>) a déjà été entièrement soldé pour ce bien.`;
         
         inputMontant.value = 0;
         btnLocataire.disabled = true;
@@ -736,11 +698,11 @@ async function validerCollecte(cible) {
     let txt = "";
     if (cible === 'locataire') {
         txt = `*REÇU DE VERSEMENT OFFICIEL*\n\nNous confirmons la bonne réception de votre paiement.\n\n*Désignation :* ${b.nom}\n*Versement perçu :* ${mt.toLocaleString()} CFA\n*Nature du versement :* ${type}\n*Mode de paiement :* ${mode}\n*Date :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}\n\nMerci pour votre confiance.`;
-        envoyerMessageWhatsApp(b.locataireTel, txt, false); // <--- False : C'est un reçu, on ne remet pas les infos de paiement
+        envoyerMessageWhatsApp(b.locataireTel, txt);
     } else {
         let netAReverser = mt - maCom;
         txt = `*NOTIFICATION DE TRANSFERT FONDS PROPRIÉTAIRE*\n\nBonjour Cher Propriétaire,\n\nNous vous informons qu'un versement a été encaissé pour votre bien et que les fonds ont été transférés sur votre compte.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net transféré :* *${netAReverser.toLocaleString()} CFA*\n*Canal d'envoi :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
-        envoyerMessageWhatsApp(b.proprioTel, txt, false); // <--- False : Notification propriétaire, pas d'infos de paiement
+        envoyerMessageWhatsApp(b.proprioTel, txt);
     }
     showView('dashboard');
 }
@@ -775,8 +737,8 @@ function renderVisites() {
             <b>👤 ${v.nom}</b> - <small>${v.bien}</small><br>
             <small>📅 ${v.date.replace('T', ' à ')}</small><br>
             <div style="margin-top:8px; display:flex; gap:10px;">
-                <span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre rendez-vous fixé le ${new Date(v.date).toLocaleString('fr-FR')} pour la visite du bien : ${v.bien}.', true)" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Confirmer (Avec Infos MM)</span>
-                <span onclick="supprimerRendezVous(${v.id})" style="color:var(--red); cursor:pointer; font-size:0.85rem; font-weight:600;"><i class="fas fa-trash-alt"></i> Annuler</span>
+                <span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre rendez-vous fixé le ${new Date(v.date).toLocaleString('fr-FR')} pour la visite du bien : ${v.bien}.')" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Confirmer</span>
+                <span onclick="supprimerRendezVous(${v.id})" style="color:var(--red); cursor:pointer; font-size:0.85rem; font-weight:600;"><i class="fas fa-trash-alt"></i> Annuler / Supprimer</span>
             </div>
         </div>
     `).reverse().join('');
