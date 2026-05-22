@@ -29,11 +29,18 @@ window.onload = () => {
                 monLienPaiement = data.lienPaiement || "";
                 monAvatar = data.avatar || (profilRole === "SuperAdmin" ? "👑" : "💼");
             } else {
-                profilRole = "SuperAdmin"; 
-                courtierNom = "Direction"; 
-                monAvatar = "👑";
+                // ATTRIBUTION SÉCURISÉE DU RÔLE SELON L'ADRESSE COMPTE COMPATIBLE
+                if (user.email === "19amadoundour@gmail.com") {
+                    profilRole = "SuperAdmin";
+                    courtierNom = "Amadou ND";
+                    monAvatar = "👑";
+                } else {
+                    profilRole = "Courtier";
+                    courtierNom = user.email.split('@')[0];
+                    monAvatar = "💼";
+                }
                 await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                    uid: user.uid, fullname: "Direction", role: "SuperAdmin", avatar: "👑", lienPaiement: "", email: user.email
+                    uid: user.uid, fullname: courtierNom, role: profilRole, avatar: monAvatar, lienPaiement: "", email: user.email
                 });
             }
             
@@ -100,7 +107,6 @@ function majInterfaceProfil() {
     }
 }
 
-// CRÉATION DE COMPTE DEPUIS L'ESPACE ADMIN : RESTE DISPONIBLE ET SÉCURISÉ
 async function adminCreerCompteCourtier() {
     const fn = document.getElementById('adm-user-fullname').value.trim();
     const em = document.getElementById('adm-user-email').value.trim();
@@ -273,7 +279,7 @@ function voirDetailBien(id) {
     document.getElementById('modal-bien').style.display = 'flex';
 }
 
-function ouvrirModifierBien(id) {
+function abrirModifierBien(id) {
     const b = biens.find(x => x.id === id); fermerModal();
     document.getElementById('edit-bien-id').value = b.id;
     document.getElementById('new-bien-nom').value = b.nom; document.getElementById('new-bien-loyer').value = b.loyer;
