@@ -20,35 +20,22 @@ window.onload = () => {
     window.fbOnAuth(window.auth, async (user) => {
         if (user) {
             courtierEmail = user.email;
-            
-            // Récupération dynamique du profil via l'UID Firebase unique
             const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
             if (docProfil.exists()) {
                 const data = docProfil.data();
-                profilRole = data.role || "Courtier";
-                courtierNom = data.fullname || user.email.split('@')[0];
+                profilRole = data.role;
+                courtierNom = data.fullname || data.username;
                 monLienPaiement = data.lienPaiement || "";
-                monAvatar = data.avatar || (profilRole === "SuperAdmin" ? "👑" : "💼");
+                monAvatar = data.avatar || "🏢";
             } else {
-                // Si c'est le tout premier compte créé sur l'application (le tien), il devient SuperAdmin
-                const queryProfils = await window.fsGetDocs(window.fsCollection(window.db, "profils"));
-                if (queryProfils.empty) {
-                    profilRole = "SuperAdmin";
-                    courtierNom = "Direction";
-                    monAvatar = "👑";
-                } else {
-                    profilRole = "Courtier";
-                    courtierNom = user.email.split('@')[0];
-                    monAvatar = "💼";
-                }
-                
+                profilRole = "SuperAdmin"; courtierNom = "Direction Générale"; monAvatar = "👑";
                 await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                    uid: user.uid, fullname: courtierNom, role: profilRole, avatar: monAvatar, lienPaiement: "", email: user.email
+                    uid: user.uid, username: user.email.split('@')[0], fullname: "Direction Générale", role: "SuperAdmin", avatar: "👑", lienPaiement: "", email: user.email
                 });
             }
             
             await chargerDonneesCloud();
-            document.getElementById('login-screen').style.display = 'none'; 
+            document.getElementById('login-screen').style.display = 'none';
             majInterfaceProfil();
             showView('dashboard');
         } else {
@@ -75,23 +62,21 @@ async function chargerDonneesCloud() {
         if(docCom.exists()) comTotaleGlobal = docCom.data().comTotaleGlobal || 0;
         
         verifierAlertesEcheances();
-    } catch (e) { console.error("Erreur de chargement: ", e); }
+    } catch (e) { console.error(e); }
 }
 
 async function verifierConnexion() {
-    const emailSaisi = document.getElementById('login-username').value.trim();
+    const emailSaisi = document.getElementById('login-username').value.trim().toLowerCase();
     const passSaisi = document.getElementById('login-password').value.trim();
-    
-    if(!emailSaisi || !passSaisi) {
-        alert("Veuillez remplir tous les champs.");
-        return;
-    }
     try {
+        const comptePartenaire = utilisateurs.find(u => u.email && u.email.toLowerCase() === emailSaisi && u.password_clear_temp === passSaisi);
+        if (comptePartenaire) {
+            profilRole = comptePartenaire.role; courtierNom = comptePartenaire.fullname; courtierEmail = comptePartenaire.email;
+            document.getElementById('login-screen').style.display = 'none';
+            majInterfaceProfil(); showView('dashboard'); return;
+        }
         await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-    } catch (error) { 
-        console.error(error);
-        alert("Erreur d'accès : Identifiants incorrects ou non reconnus."); 
-    }
+    } catch (error) { alert("Erreur d'accès, veuillez vérifier vos identifiants."); }
 }
 
 function deconnexion() { window.fbSignOut(window.auth); document.getElementById('login-screen').style.display = 'flex'; }
@@ -103,39 +88,15 @@ function majInterfaceProfil() {
     document.getElementById('profil-role-badge').innerText = profilRole;
     if(document.getElementById('user-payment-link-champ')) document.getElementById('user-payment-link-champ').value = monLienPaiement;
 
-    if(profilRole === "SuperAdmin") {
-        document.getElementById('superadmin-section-management').style.display = 'block';
-    } else {
-        document.getElementById('superadmin-section-management').style.display = 'none';
+    if (profilRole === "SuperAdmin") {
+        document.getElementById('admin-management-section').style.display = 'block';
     }
-}
-
-async function adminCreerCompteCourtier() {
-    const fn = document.getElementById('adm-user-fullname').value.trim();
-    const em = document.getElementById('adm-user-email').value.trim();
-    const rl = document.getElementById('adm-user-role').value;
-
-    if(!fn || !em) { alert("Champs invalides !"); return; }
-
-    const fictiveUid = "user_" + Date.now();
-    const nouveauProfil = {
-        uid: fictiveUid, fullname: fn, email: em, role: rl,
-        avatar: rl === "SuperAdmin" ? "👑" : "💼", lienPaiement: ""
-    };
-
-    await window.fsSetDoc(window.fsDoc(window.db, "profils", fictiveUid), nouveauProfil);
-    alert(`Courtier ${fn} ajouté avec succès dans la base de données.`);
-    
-    document.getElementById('adm-user-fullname').value = "";
-    document.getElementById('adm-user-email').value = "";
-    await chargerDonneesCloud();
 }
 
 async function sauvegarderLienPaiement(val) {
     monLienPaiement = val;
-    if(window.auth.currentUser) {
-        await window.fsUpdateDoc(window.fsDoc(window.db, "profils", window.auth.currentUser.uid), { lienPaiement: val });
-    }
+    const userTrouve = utilisateurs.find(u => u.fullname === courtierNom);
+    if(userTrouve) await window.fsUpdateDoc(window.fsDoc(window.db, "profils", userTrouve.uid), { lienPaiement: val });
 }
 
 function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
@@ -147,13 +108,18 @@ function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
     window.location.href = `https://api.whatsapp.com/send?phone=${propre}&text=${encodeURIComponent(message + signature)}`;
 }
 
+// ==========================================
+// ÉTAPE 5 : SCAN DES ALERTES DU MATIN EN LOCAL
+// ==========================================
 function verifierAlertesEcheances() {
     const conteneurBox = document.getElementById('morning-alerts-box');
     const conteneurListe = document.getElementById('morning-alerts-list');
     if(!conteneurBox || !conteneurListe) return;
     
-    let alertesHtml = ""; const aujourdhui = new Date();
+    let alertesHtml = ""; 
+    const aujourdhui = new Date();
 
+    // 1. Alertes visites imminentes
     visites.forEach(v => {
         if(v.verrouille) return;
         const diff = new Date(v.date) - aujourdhui;
@@ -163,11 +129,12 @@ function verifierAlertesEcheances() {
             alertesHtml += `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; border-radius:6px; font-size:0.75rem; border:1px solid #FEB2B2;">
                     <span>⏳ Visite avec <b>${v.nom}</b> ${txtJour} (${v.bien}).</span>
-                    <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:var(--gold); color:white;" onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre RDV pour la visite du bien ${v.bien}. Merci de confirmer.')">💬 Rappel</button>
+                    <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:#2ECC71; color:white;" onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre RDV pour la visite du bien ${v.bien}. Merci de confirmer.')">💬 Rappel</button>
                 </div>`;
         }
     });
 
+    // 2. Alertes loyers à encaisser sous 3 jours
     biens.forEach(b => {
         if(b.statut === 'Occupé' && b.dateEntree) {
             const jourFacture = new Date(b.dateEntree).getDate();
@@ -228,7 +195,7 @@ async function saveBienPro() {
     const snap = idExist ? biens.find(x => x.id === currentId) : null;
 
     const obj = {
-        id: currentId, agentCreateur: courtierNom,
+        id: currentId, agentCreateur: snap ? snap.agentCreateur : courtierNom,
         nom: document.getElementById('new-bien-nom').value, loyer: document.getElementById('new-bien-loyer').value,
         type: document.getElementById('new-bien-type').value, superficie: document.getElementById('new-bien-superficie').value,
         typePapier: document.getElementById('new-bien-papier').value, adresse: document.getElementById('new-bien-adresse').value,
@@ -254,7 +221,7 @@ function renderBiens() {
             <div style="position:relative; margin-top:4px;">
                 <b>${b.nom}</b> ${b.superficie ? `[📐 ${b.superficie}]` : ''}<br>
                 <span style="color:var(--gold); font-weight:700;">${parseInt(b.loyer).toLocaleString()} CFA</span>
-                <button onclick="event.stopPropagation(); partagerBienWhatsApp(${b.id})" style="position:absolute; right:0; bottom:0; width:auto; background:var(--gold); color:white; padding:4px 8px; font-size:0.7rem; border-radius:4px;"><i class="fab fa-whatsapp"></i> Partager</button>
+                <button onclick="event.stopPropagation(); partagerBienWhatsApp(${b.id})" style="position:absolute; right:0; bottom:0; width:auto; background:#2ECC71; color:white; padding:4px 8px; font-size:0.7rem; border-radius:4px;"><i class="fab fa-whatsapp"></i> Partager</button>
             </div>
         </div>
     `).reverse().join('');
@@ -262,7 +229,7 @@ function renderBiens() {
 
 function partagerBienWhatsApp(id) {
     const b = biens.find(x => x.id === id);
-    const texte = `🔥 *BIEN DISPONIBLE* : ${b.nom}\n📍 *Quartier* : ${b.adresse}\n📐 *Superficie* : ${b.superficie || 'N/A'}\n📄 *Papier* : ${b.typePapier}\n💰 *Loyer* : ${parseInt(b.loyer).toLocaleString()} CFA\n\nContactez-moi pour visiter !`;
+    const texte = `🔥 *BIEN DISPONIBLE* : ${b.nom}\n📍 *Quartier* : ${b.adresse}\n📐 *Superficie* : ${b.superficie || 'N/A'}\n📄 *Papier* : ${b.typePapier}\n💰 *Loyer/Prix* : ${parseInt(b.loyer).toLocaleString()} CFA\n\nContactez-moi pour visiter !`;
     envoyerMessageWhatsApp("", texte);
 }
 
@@ -297,12 +264,12 @@ function ouvrirModifierBien(id) {
 async function toggleStatut(id) {
     const b = biens.find(x => x.id === id);
     b.statut = b.statut === 'Disponible' ? 'Occupé' : 'Disponible';
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(id)), b);
-    fermerModal(); await chargerDonneesCloud(); renderBiens();
+    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(id)), b); fermerModal(); await chargerDonneesCloud(); renderBiens();
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
 
+// ETATS DES LIEUX MODULE (ETL)
 function ouvrirFormulaireEDL() {
     document.getElementById('edl-bien-select').innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
     document.getElementById('edl-rooms-container').innerHTML = ROOMS_CONFIG.map(r => `
@@ -330,11 +297,12 @@ function renderEtatsLieuxList() {
         <div class="form-card">
             <b>${e.bien} (${e.type})</b> - ${e.date}<br>
             <small>${e.details}</small><br>
-            <button style="width:auto; margin-top:6px; padding:4px 8px; background:var(--gold); color:white; font-size:0.7rem;" onclick="envoyerMessageWhatsApp('', 'ETL ${e.bien}: ${e.details}')"><i class="fab fa-whatsapp"></i> Renvoyer</button>
+            <button style="width:auto; margin-top:6px; padding:4px 8px; background:#2ECC71; color:white; font-size:0.7rem;" onclick="envoyerMessageWhatsApp('', 'ETL ${e.bien}: ${e.details}')"><i class="fab fa-whatsapp"></i> Renvoyer</button>
         </div>
     `).reverse().join('');
 }
 
+// CAISSE / FLUX
 function analyserReliquatComptable() {
     const n = document.getElementById('c-bien-select').value; const b = biens.find(x => x.nom === n);
     if(!b) return; document.getElementById('c-montant').value = b.loyer;
@@ -357,21 +325,33 @@ async function validerCollecte() {
     await window.fsSetDoc(window.fsDoc(window.db, "biens", String(b.id)), b);
     await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
     await chargerDonneesCloud();
-    envoyerMessageWhatsApp(b.locataireTel, `Reçu : ${mt} CFA encaissé pour le ${type} du bien ${b.nom}. Merci !`, true);
+    envoyerMessageWhatsApp(b.locataireTel, `Reçu de paiement : ${mt} CFA encaissé pour le ${type} du bien ${b.nom}. Merci !`, true);
     showView('dashboard');
 }
 
+// ==========================================
+// CONFIGURATION COMPLÈTE MODULE : VISITES
+// ==========================================
 async function sauverVisite() {
     const struct = {
-        id: Date.now(), nom: document.getElementById('p-name').value, tel: document.getElementById('p-tel').value,
-        bien: document.getElementById('p-bien-select').value, date: document.getElementById('p-date').value,
+        id: Date.now(), 
+        nom: document.getElementById('p-name').value, 
+        tel: document.getElementById('p-tel').value,
+        bien: document.getElementById('p-bien-select').value, 
+        date: document.getElementById('p-date').value,
         notesPerso: document.getElementById('p-notes-libre') ? document.getElementById('p-notes-libre').value : "",
-        statutChecking: "Planifié", qualification: "Non qualifié", verrouille: false
+        statutChecking: "Planifié", 
+        qualification: "Non qualifié", 
+        verrouille: false
     };
     await window.fsSetDoc(window.fsDoc(window.db, "visites", String(struct.id)), struct);
-    document.getElementById('p-name').value = ""; document.getElementById('p-tel').value = "";
+    
+    document.getElementById('p-name').value = "";
+    document.getElementById('p-tel').value = "";
     if(document.getElementById('p-notes-libre')) document.getElementById('p-notes-libre').value = "";
-    await chargerDonneesCloud(); renderVisites();
+    
+    await chargerDonneesCloud(); 
+    renderVisites();
 }
 
 function renderVisites() {
@@ -382,9 +362,12 @@ function renderVisites() {
             <button onclick="supprimerVisiteCloud(${v.id})" style="position:absolute; right:10px; top:10px; width:auto; background:transparent; color:var(--red); padding:0; font-size:0.9rem;">
                 <i class="fas fa-trash-alt"></i>
             </button>
+
             <b>${v.nom}</b> - ${v.bien}<br>
             <small>📅 ${new Date(v.date).toLocaleString('fr-FR', {dateStyle: 'short', timeStyle: 'short'})}</small>
+            
             ${v.notesPerso ? `<div style="background:var(--bg); padding:4px; border-radius:4px; font-size:0.7rem; margin:4px 0; color:var(--text-light);">📝 <i>${v.notesPerso}</i></div>` : ''}
+
             <div style="margin-top:6px; display:flex; gap:4px; align-items:center;">
                 <select id="chk-${v.id}" ${estVerrouille ? 'disabled' : ''} style="margin:0; padding:4px; font-size:0.7rem; width:auto;">
                     <option ${v.statutChecking==='Planifié'?'selected':''}>Planifié</option>
@@ -395,7 +378,7 @@ function renderVisites() {
                     <option ${v.qualification==='Non qualifié'?'selected':''}>Non qualifié</option>
                     <option ${v.qualification==='Client Sérieux'?'selected':''}>Client Sérieux</option>
                 </select>
-                ${estVerrouille ? '🔒' : `<button style="width:auto; padding:4px 8px; background:var(--gold); color:white; font-size:0.7rem;" onclick="validerPointageVisite(${v.id})">OK</button>`}
+                ${estVerrouille ? '🔒' : `<button style="width:auto; padding:4px 8px; background:var(--dark); color:white; font-size:0.7rem;" onclick="validerPointageVisite(${v.id})">OK</button>`}
             </div>
         </div>`;
     }).reverse().join('');
@@ -404,7 +387,8 @@ function renderVisites() {
 async function supprimerVisiteCloud(id) {
     if(confirm("Supprimer définitivement ce rendez-vous ?")) {
         await window.fsDeleteDoc(window.fsDoc(window.db, "visites", String(id)));
-        await chargerDonneesCloud(); renderVisites();
+        await chargerDonneesCloud();
+        renderVisites();
     }
 }
 
@@ -427,3 +411,4 @@ function showView(id) {
 }
 
 function resetNavStyles(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
+function adminCreerCompteCourtier() {}
