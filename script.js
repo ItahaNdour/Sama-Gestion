@@ -21,6 +21,7 @@ window.onload = () => {
         if (user) {
             courtierEmail = user.email;
             
+            // Récupération dynamique du profil via l'UID Firebase unique
             const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
             if (docProfil.exists()) {
                 const data = docProfil.data();
@@ -29,16 +30,18 @@ window.onload = () => {
                 monLienPaiement = data.lienPaiement || "";
                 monAvatar = data.avatar || (profilRole === "SuperAdmin" ? "👑" : "💼");
             } else {
-                // ATTRIBUTION SÉCURISÉE DU RÔLE SELON L'ADRESSE COMPTE COMPATIBLE
-                if (user.email === "19amadoundour@gmail.com") {
+                // Si c'est le tout premier compte créé sur l'application (le tien), il devient SuperAdmin
+                const queryProfils = await window.fsGetDocs(window.fsCollection(window.db, "profils"));
+                if (queryProfils.empty) {
                     profilRole = "SuperAdmin";
-                    courtierNom = "Amadou ND";
+                    courtierNom = "Direction";
                     monAvatar = "👑";
                 } else {
                     profilRole = "Courtier";
                     courtierNom = user.email.split('@')[0];
                     monAvatar = "💼";
                 }
+                
                 await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
                     uid: user.uid, fullname: courtierNom, role: profilRole, avatar: monAvatar, lienPaiement: "", email: user.email
                 });
@@ -279,7 +282,7 @@ function voirDetailBien(id) {
     document.getElementById('modal-bien').style.display = 'flex';
 }
 
-function abrirModifierBien(id) {
+function ouvrirModifierBien(id) {
     const b = biens.find(x => x.id === id); fermerModal();
     document.getElementById('edit-bien-id').value = b.id;
     document.getElementById('new-bien-nom').value = b.nom; document.getElementById('new-bien-loyer').value = b.loyer;
