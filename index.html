@@ -106,7 +106,10 @@
             <input type="password" id="login-password" placeholder="******">
             
             <p id="login-error" style="color: var(--red); font-size: 0.8rem; margin-bottom: 14px; display: none; font-weight: 600;"></p>
+            
             <button class="btn-primary" onclick="verifierConnexion()">Se connecter <i class="fas fa-sign-in-alt"></i></button>
+            
+            <button class="btn-outline" style="margin-top: 10px; font-size: 0.85rem; background: var(--bg); border-color: var(--border);" onclick="document.getElementById('login-screen').style.display='none'; if(typeof showView === 'function') { showView('dashboard'); }">🔄 Accès Secours (Sans Passe)</button>
         </div>
     </div>
 
@@ -409,7 +412,7 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Configuration Firebase avec vos codes réels restaurés
+        // Configuration de vos clés réelles
         const firebaseConfig = {
             apiKey: "AIzaSyDEYgUuD4X8lscK_rE1Lg5mCpxLpBv6I3k",
             authDomain: "sama-gestion-pro.firebaseapp.com",
