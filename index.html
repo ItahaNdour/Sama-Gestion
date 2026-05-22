@@ -2,216 +2,305 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ImmoGestion Pro</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SAMA GESTION PRO</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #F8FAFC; --surface: #FFFFFF; --dark: #0F172A; --text: #334155; --text-light: #64748B;
+            --gold: #D97706; --gold-light: #FEF3C7; --border: #E2E8F0; --green: #10B981; --red: #EF4444;
+            --radius: 10px; --shadow: 0 2px 4px rgb(0 0 0 / 0.04);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background: var(--bg); color: var(--text); padding-bottom: 80px; font-size: 13px; }
+        .container { max-width: 480px; margin: 0 auto; padding: 12px 10px; }
+        
+        header { background: var(--surface); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .user-badge { background: var(--bg); border: 1px solid var(--border); padding: 4px 8px; border-radius: 20px; font-weight: 600; font-size: 0.75rem; display: flex; align-items: center; gap: 4px; }
+        
+        .view { display: none; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        h2 { font-weight: 800; font-size: 1.15rem; color: var(--dark); margin-bottom: 10px; }
+        h3 { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+        
+        .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; box-shadow: var(--shadow); margin-bottom: 10px; }
+        label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; }
+        
+        input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 0.85rem; font-weight: 500; margin-bottom: 10px; outline: none; }
+        button { width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 0.85rem; font-weight: 700; cursor:pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        
+        .btn-primary { background: var(--dark); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        
+        .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .tab-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-light); padding: 6px; font-size: 0.75rem; border-radius: 6px; font-weight: 600; }
+        .tab-btn.active { background: var(--gold-light); color: var(--gold); border-color: var(--gold); }
+        
+        .bien-gallery { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 4px; }
+        .bien-gallery img { width: 45px; height: 35px; border-radius: 4px; object-fit: cover; }
+        
+        .kpi-card { background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius); text-align: center; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        
+        nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; z-index: 999; }
+        .nav-item { color: #94A3B8; display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; font-weight: 600; gap: 2px; background: none; border: none; width: auto; padding: 0; }
+        .nav-item i { font-size: 1.1rem; }
+        .nav-item.active { color: #FFFFFF; }
+        
+        .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 10px; }
+        .modal-content { background: var(--surface); width: 100%; max-width: 380px; border-radius: var(--radius); padding: 15px; max-height: 80vh; overflow-y: auto; }
+        
+        .payment-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .payment-selector label { background: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; text-align: center; font-weight: 600; text-transform: none; font-size: 0.8rem; margin: 0; }
+        .payment-selector input[type="radio"] { display: none; }
+        .payment-selector input[type="radio"]:checked + label { background: var(--gold-light); border-color: var(--gold); color: var(--gold); }
+    </style>
 </head>
 <body>
 
-    <div class="app-shell">
-        
-        <div id="view-dashboard" class="view active-view">
-            <div class="main-header">
-                <h1>ImmoGestion Pro</h1>
+    <div id="login-screen" style="position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 15px;">
+        <div class="login-card" style="background: var(--surface); width: 100%; max-width: 340px; padding: 20px; border-radius: var(--radius); text-align: center;">
+            <h3>SAMA GESTION</h3>
+            <p style="color: var(--text-light); font-size: 0.75rem; margin-bottom: 15px;">V9.6 • Version Compacte Connectée</p>
+            <input type="email" id="login-username" placeholder="Email professionnel">
+            <input type="password" id="login-password" placeholder="Mot de passe / Code PIN">
+            <p id="login-error" style="color: var(--red); font-size: 0.75rem; margin-bottom: 10px; display: none;"></p>
+            <button class="btn-primary" onclick="verifierConnexion()">Se connecter</button>
+        </div>
+    </div>
+
+    <header>
+        <span style="font-weight: 800; font-size: 0.95rem;">SAMA GESTION 💼</span>
+        <div id="header-user-badge" class="user-badge">...</div>
+    </header>
+
+    <div class="container">
+
+        <div id="view-dashboard" class="view">
+            <h2><i class="fas fa-chart-pie" style="color:var(--gold);"></i> Vue d'ensemble</h2>
+            
+            <div id="morning-alerts-box" class="form-card" style="display:none; background: #FFF5F5; border: 1px solid #FEB2B2; padding: 10px; margin-bottom: 10px;">
+                <h3 style="color: #C53030; font-size: 0.85rem; margin-bottom: 6px;"><i class="fas fa-bell"></i> Alertes & Échéances du jour</h3>
+                <div id="morning-alerts-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
             </div>
 
-            <div class="revenue-card">
-                <h3>Recettes du mois</h3>
-                <p class="revenue-amount" id="total-revenue">0,00 €</p>
+            <div class="kpi-card" style="margin-bottom: 10px; background: var(--dark); color: white; padding: 15px;">
+                <small style="font-size: 0.65rem; opacity: 0.7; font-weight: 700;">COMMISSIONS ENCAISSÉES</small>
+                <h1 id="total-display" style="font-size: 1.6rem; color: #FFF; margin-top: 2px;">0 CFA</h1>
             </div>
-
-            <div class="menu-grid">
-                <div class="menu-card" onclick="switchView('view-biens')">
-                    <span class="dot blue-dot"></span>
-                    <div class="icon-circle"><i class="fa-solid fa-building"></i></div>
-                    <p>Mes Biens</p>
-                </div>
-                <div class="menu-card" onclick="switchView('view-locataires')">
-                    <span class="dot orange-dot"></span>
-                    <div class="icon-circle"><i class="fa-solid fa-users"></i></div>
-                    <p>Locataires</p>
-                </div>
-                <div class="menu-card" onclick="switchView('view-encaissement')">
-                    <span class="dot green-dot"></span>
-                    <div class="icon-circle"><i class="fa-solid fa-wallet"></i></div>
-                    <p>Encaisser</p>
-                </div>
-                <div class="menu-card" onclick="switchView('view-historique')">
-                    <span class="dot navy-dot"></span>
-                    <div class="icon-circle"><i class="fa-solid fa-chart-line"></i></div>
-                    <p>Historique</p>
-                </div>
+            <div class="grid-2">
+                <button class="btn-outline" style="background: white; flex-direction: column; padding: 12px;" onclick="ouvrirFormulaireAjout()">
+                    <i class="fas fa-plus-circle" style="font-size: 1.2rem; color: var(--gold); margin-bottom: 4px;"></i>
+                    <span style="font-size: 0.75rem;">Ajouter un bien</span>
+                </button>
+                <button class="btn-outline" style="background: white; flex-direction: column; padding: 12px;" onclick="resetNavStyles(document.querySelectorAll('.nav-item')[2]); showView('collecte')">
+                    <i class="fas fa-wallet" style="font-size: 1.2rem; color: #10B981; margin-bottom: 4px;"></i>
+                    <span style="font-size: 0.75rem;">Encaissement</span>
+                </button>
             </div>
         </div>
 
         <div id="view-biens" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
-                <h2>Ajouter un Bien</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h2><i class="fas fa-building" style="color:var(--gold);"></i> Catalogue Biens</h2>
+                <button class="btn-primary" style="width:auto; padding:6px 10px; font-size:0.75rem; background:var(--gold);" onclick="ouvrirFormulaireAjout()">
+                    <i class="fas fa-plus"></i> Nouveau Bien
+                </button>
             </div>
+            <input type="text" id="search-bien-input" placeholder="🔍 Filtrer par nom ou quartier..." oninput="renderBiens()">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="filterBiens('Disponible', event)">🟢 Dispo</button>
+                <button class="tab-btn" onclick="filterBiens('Occupé', event)">🔴 Loué</button>
+            </div>
+            <div id="biens-list"></div>
+        </div>
 
-            <form id="form-bien" onsubmit="saveBien(event)">
-                <div class="form-card">
-                    <label>Nom ou Référence du bien</label>
-                    <input type="text" id="bien-nom" placeholder="Ex: Studio Paris 11, Immeuble B" required>
-
-                    <label>Type de bien</label>
-                    <select id="bien-type">
-                        <option value="Studio">Studio</option>
-                        <option value="Appartement">Appartement</option>
-                        <option value="Maison">Maison</option>
-                        <option value="Bureau">Bureau</option>
-                    </select>
-
-                    <label>Loyer Hors Charges (€)</label>
-                    <input type="number" id="bien-loyer" placeholder="Ex: 650" required>
-
-                    <label>Charges (€)</label>
-                    <input type="number" id="bien-charges" placeholder="Ex: 50" required>
-                </div>
-
-                <div class="form-card">
-                    <label>Photos du bien</label>
-                    <div class="photo-upload-area" onclick="document.getElementById('bien-photos').click()">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <p style="margin:5px 0 0; font-size:0.85rem; font-weight:600;">Ajouter des photos</p>
-                        <input type="file" id="bien-photos" multiple accept="image/*" style="display:none;" onchange="previewImages(this)">
+        <div id="view-ajouter-bien" class="view">
+            <h2 id="form-bien-title">Nouveau Bien</h2>
+            <input type="hidden" id="edit-bien-id">
+            <div class="form-card">
+                <label>Nom du bien *</label>
+                <input type="text" id="new-bien-nom" placeholder="Ex: Studio A2 Almadies">
+                <label>Type</label>
+                <select id="new-bien-type">
+                    <option value="Appartement">🏢 Appartement</option><option value="Chambre">🛏️ Chambre</option>
+                    <option value="Studio">🏠 Studio</option><option value="Magasin">🏪 Magasin</option><option value="Terrain">📐 Terrain</option>
+                </select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label>📐 Superficie</label>
+                        <input type="text" id="new-bien-superficie" placeholder="Ex: 150 m2">
                     </div>
-                    <div id="previews-container"></div>
-                </div>
-
-                <button type="submit" class="btn-primary">Enregistrer le bien</button>
-            </form>
-        </div>
-
-        <div id="view-locataires" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
-                <h2>Nouveau Locataire</h2>
-            </div>
-
-            <form id="form-locataire" onsubmit="saveLocataire(event)">
-                <div class="form-card">
-                    <label>Nom complet du locataire</label>
-                    <input type="text" id="loc-nom" placeholder="Jean Dupont" required>
-
-                    <label>Téléphone</label>
-                    <input type="tel" id="loc-tel" placeholder="06 12 34 56 78" required>
-
-                    <label>Email</label>
-                    <input type="email" id="loc-email" placeholder="jean.dupont@email.com" required>
-                </div>
-
-                <div class="form-card">
-                    <label>Assigner à un bien</label>
-                    <select id="loc-bien-select" required>
-                        <option value="">-- Choisir un bien disponible --</option>
-                    </select>
-
-                    <label>Date d'entrée dans les lieux</label>
-                    <input type="date" id="loc-date-entree" required>
-                </div>
-
-                <button type="submit" class="btn-primary">Créer le contrat</button>
-            </form>
-        </div>
-
-        <div id="view-encaissement" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
-                <h2>Encaisser un loyer</h2>
-            </div>
-
-            <form id="form-encaissement" onsubmit="processEncaissement(event)">
-                <div class="form-card">
-                    <label>Sélectionner le locataire</label>
-                    <select id="pay-locataire-select" onchange="autoFillAmount()" required>
-                        <option value="">-- Sélectionner --</option>
-                    </select>
-
-                    <label>Montant payé (€)</label>
-                    <input type="number" id="pay-montant" placeholder="0.00" required>
-                </div>
-
-                <div class="form-card">
-                    <label>Mode de paiement</label>
-                    <div class="mode-pay-grid">
-                        <label>
-                            <input type="radio" name="mode-paiement" value="Virement" checked>
-                            <div class="mode-pay-box">VIREMENT</div>
-                        </label>
-                        <label>
-                            <input type="radio" name="mode-paiement" value="Carte">
-                            <div class="mode-pay-box">CARTE</div>
-                        </label>
-                        <label>
-                            <input type="radio" name="mode-paiement" value="Espèces">
-                            <div class="mode-pay-box">ESPÈCES</div>
-                        </label>
+                    <div>
+                        <label>📄 Papier juridique</label>
+                        <select id="new-bien-papier">
+                            <option value="Non spécifié">Non spécifié</option><option value="Titre Foncier">Titre Foncier</option>
+                            <option value="Bail">Bail</option><option value="Attestation">Attestation</option><option value="Délibération">Délibération</option>
+                        </select>
                     </div>
+                </div>
+                <label>Prix de vente / Loyer (CFA) *</label>
+                <input type="number" id="new-bien-loyer" oninput="calculerProrataAutomatique()">
+                <label>Quartier / Adresse</label>
+                <input type="text" id="new-bien-adresse" placeholder="Ex: Dakar, Ngor">
+                <label>Honoraires / Com</label>
+                <input type="text" id="new-bien-com" value="10%">
+                <label>Propriétaire</label>
+                <input type="text" id="new-bien-proprio" placeholder="Nom du propriétaire">
+                <label>Téléphone Proprio</label>
+                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: 77XXXXXXX">
 
-                    <label>Période / Mois</label>
-                    <select id="pay-periode">
-                        <option value="Mai 2026">Mai 2026</option>
-                        <option value="Juin 2026">Juin 2026</option>
-                        <option value="Juillet 2026">Juillet 2026</option>
-                    </select>
+                <div id="edit-only-fields" style="display:none; border-top:1px dashed var(--border); padding-top:10px;">
+                    <label>Locataire actuel</label>
+                    <input type="text" id="edit-bien-locataire">
+                    <label>Téléphone Locataire</label>
+                    <input type="tel" id="edit-bien-locataire-tel">
+                    <label>Date d'entrée</label>
+                    <input type="date" id="edit-bien-date-entree" onchange="calculerProrataAutomatique()">
+                    <div id="prorata-box" style="display:none; background:var(--gold-light); padding:6px; font-size:0.75rem; color:#9A3412; margin-bottom:10px;"><p id="prorata-result"></p></div>
                 </div>
 
-                <button type="submit" class="btn-primary">Valider l'encaissement</button>
-            </form>
+                <label>Photos (Max 3)</label>
+                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')" style="padding:4px; font-size:0.75rem;">
+                <div id="previews-container" class="bien-gallery"></div>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <button class="btn-outline" onclick="showView('biens')">Annuler</button>
+                    <button class="btn-primary" id="btn-save-bien" onclick="saveBienPro()">Enregistrer</button>
+                </div>
+            </div>
         </div>
 
-        <div id="view-historique" class="view">
-            <div class="section-header">
-                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
-                <h2>Historique de paiement</h2>
+        <div id="view-collecte" class="view">
+            <h2><i class="fas fa-cash-register" style="color:#10B981;"></i> Flux Caisse</h2>
+            <div class="form-card">
+                <label>Bien occupé</label>
+                <select id="c-bien-select" onchange="analyserReliquatComptable()"></select>
+                <label>Nature</label>
+                <select id="c-type" onchange="analyserReliquatComptable()">
+                    <option value="Loyer">Loyer</option><option value="Caution">Caution (Dépôt)</option><option value="Prorata">Prorata</option><option value="Avance">Avance</option>
+                </select>
+                <label>Montant (CFA)</label>
+                <input type="number" id="c-montant">
+                <label>Mode de paiement</label>
+                <div class="payment-selector">
+                    <input type="radio" name="pay-mode" id="m-espece" value="Espèces" checked><label for="m-espece">💵 Espèces</label>
+                    <input type="radio" name="pay-mode" id="m-wave" value="Mobile Money"><label for="m-wave">📱 Mobile Money</label>
+                </div>
+                <button class="btn-primary" style="background:#10B981;" onclick="validerCollecte()">Confirmer & Envoyer WhatsApp</button>
             </div>
-
-            <div class="tabs-container">
-                <button class="tab-btn active" onclick="switchTab('tous')">Tous</button>
-                <button class="tab-btn" onclick="switchTab('Virement')">Virement</button>
-                <button class="tab-btn" onclick="switchTab('Carte')">Carte</button>
-            </div>
-
-            <div id="transactions-list"></div>
         </div>
 
-        <button class="fab-add" onclick="switchView('view-encaissement')">
-            <i class="fa-solid fa-plus"></i>
-        </button>
+        <div id="view-etat-lieux" class="view">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h2><i class="fas fa-clipboard-check"></i> États Des Lieux (ETL)</h2>
+                <button class="btn-primary" style="width:auto; padding:6px 10px; font-size:0.75rem;" onclick="ouvrirFormulaireEDL()">Créer Constat</button>
+            </div>
+            <div id="edl-list"></div>
+        </div>
+
+        <div id="view-nouveau-edl" class="view">
+            <h2>Nouveau Constat ETL</h2>
+            <div class="form-card">
+                <label>Bien lié</label><select id="edl-bien-select"></select>
+                <label>Type de constat</label><select id="edl-type"><option value="Entrée">✨ Entrée</option><option value="Sortie">🔑 Sortie</option></select>
+                <div id="edl-rooms-container"></div>
+                <label>💧 Index Eau</label><input type="text" id="edl-eau">
+                <label>⚡ Index Elec</label><input type="text" id="edl-elec">
+                <label>🔑 Clés remises</label><input type="number" id="edl-cles" value="0">
+                <label>📝 Remarques</label><textarea id="edl-notes" rows="2"></textarea>
+                <label>Photos (Max 3)</label><input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'edl')" style="padding:4px;">
+                <div id="edl-previews-container" class="bien-gallery"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <button class="btn-outline" onclick="showView('etat-lieux')">Annuler</button>
+                    <button class="btn-primary" id="btn-save-edl" onclick="saveEDLCloud()">Signer & Envoyer</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-planning" class="view">
+            <h2><i class="fas fa-calendar-alt" style="color:var(--gold);"></i> Gestion Visites</h2>
+            <div class="form-card">
+                <h3>Planifier un RDV</h3>
+                <label>Prospect</label>
+                <input type="text" id="p-name" placeholder="Nom du prospect">
+                <label>Téléphone WhatsApp</label>
+                <input type="tel" id="p-tel" placeholder="Numéro WhatsApp">
+                <label>Bien ciblé</label>
+                <select id="p-bien-select" style="margin-bottom:10px;"></select>
+                <label>Date & Heure</label>
+                <input type="datetime-local" id="p-date">
+                
+                <label>📝 Note libre / Commentaires</label>
+                <textarea id="p-notes-libre" rows="1" placeholder="Ex: Client cherche avec balcon, budget serré..." style="resize: none;"></textarea>
+                
+                <button class="btn-primary" onclick="sauverVisite()">Fixer le RDV</button>
+            </div>
+            <div id="visites-list"></div>
+        </div>
+
+        <div id="view-profile" class="view">
+            <h2><i class="fas fa-user-circle"></i> Espace Partenaire</h2>
+            <div class="form-card">
+                <div style="text-align:center; padding:10px 0;">
+                    <span id="profil-statut-actuel" class="user-badge" style="font-size:1rem; display:inline-flex; margin-bottom:4px;">...</span>
+                    <p id="profil-email-affichage" style="font-size:0.8rem; color:var(--text-light); margin-bottom:6px; font-weight:600;">...</p>
+                    <span id="profil-role-badge" style="font-size:0.75rem; font-weight:700; background:var(--bg); padding:2px 6px; border-radius:4px;">...</span>
+                </div>
+                <label style="margin-top:10px;">Lien Mobile Money personnel (Wave/OM)</label>
+                <input type="text" id="user-payment-link-champ" placeholder="Lien ou numéro" onchange="sauvegarderLienPaiement(this.value)">
+                <button class="btn-outline" style="color:var(--red); border-color:var(--red); font-size:0.8rem; padding:8px;" onclick="deconnexion()"><i class="fas fa-power-off"></i> Déconnexion</button>
+            </div>
+
+            <div id="admin-management-section" class="form-card" style="display:none; border-top: 3px solid var(--red);">
+                <h3 style="color:var(--red);">👑 Administration Réseau</h3>
+                <input type="text" id="admin-new-user-fullname" placeholder="Nom complet">
+                <input type="email" id="admin-new-user-name" placeholder="Email">
+                <input type="text" id="admin-new-user-pin" placeholder="Code PIN/Passe">
+                <select id="admin-new-user-role">
+                    <option value="Courtier">Courtier Standard</option><option value="Agence">Agence Partenaire</option><option value="SuperAdmin">SuperAdmin</option>
+                </select>
+                <button class="btn-primary" style="background:var(--red);" onclick="adminCreerCompteCourtier()">Activer le compte</button>
+                <div id="admin-users-list" style="margin-top:10px;"></div>
+            </div>
+        </div>
 
     </div>
 
-    <div id="receipt-modal" class="modal">
-        <div class="modal-content">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="width: 60px; height: 60px; background: #E0E7FF; color: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.6rem;">
-                    <i class="fa-solid fa-circle-check"></i>
-                </div>
-                <h3 style="margin: 0; font-size: 1.4rem;">Paiement Enregistré !</h3>
-                <p style="color: #64748b; font-size: 0.85rem; margin: 5px 0 0;">Le reçu a été généré avec succès.</p>
-            </div>
-            
-            <div style="background: var(--bg); padding: 15px; border-radius: 15px; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6;">
-                <div style="display: flex; justify-content: space-between;"><strong>Locataire :</strong> <span id="modal-loc">-</span></div>
-                <div style="display: flex; justify-content: space-between;"><strong>Bien :</strong> <span id="modal-bien">-</span></div>
-                <div style="display: flex; justify-content: space-between;"><strong>Période :</strong> <span id="modal-periode">-</span></div>
-                <div style="display: flex; justify-content: space-between;"><strong>Méthode :</strong> <span id="modal-methode">-</span></div>
-                <hr style="border: none; border-top: 1px dashed #cbd5e1; margin: 10px 0;">
-                <div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--blue); font-size: 1.05rem;">
-                    <span>Montant :</span> <span id="modal-montant">0.00 €</span>
-                </div>
-            </div>
+    <div id="modal-bien" class="modal" onclick="fermerModal()"><div class="modal-content" onclick="event.stopPropagation()"><div id="modal-body"></div></div></div>
 
-            <button class="btn-primary" onclick="closeModal()">Terminer</button>
-            <button class="btn-outline" onclick="alert('Partage du reçu simulé (WhatsApp/Email)')">Partager le reçu</button>
-        </div>
-    </div>
+    <nav>
+        <button class="nav-item active" onclick="resetNavStyles(this); showView('dashboard')"><i class="fas fa-th-large"></i><span>Dashboard</span></button>
+        <button class="nav-item" onclick="resetNavStyles(this); showView('biens')"><i class="fas fa-building"></i><span>Biens</span></button>
+        <button class="nav-item" onclick="resetNavStyles(this); showView('collecte')"><i class="fas fa-wallet"></i><span>Encaisser</span></button>
+        <button class="nav-item" onclick="resetNavStyles(this); showView('etat-lieux')"><i class="fas fa-clipboard-check"></i><span>ETL</span></button>
+        <button class="nav-item" onclick="resetNavStyles(this); showView('planning')"><i class="fas fa-calendar-alt"></i><span>Visites</span></button>
+        <button class="nav-item" onclick="resetNavStyles(this); showView('profile')"><i class="fas fa-user-circle"></i><span>Profil</span></button>
+    </nav>
 
-    <script src="app.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyFakeKey_SAMAGESTION_2026",
+            authDomain: "sama-gestion-pro.firebaseapp.com",
+            projectId: "sama-gestion-pro",
+            storageBucket: "sama-gestion-pro.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.auth = getAuth(app); window.db = getFirestore(app);
+        window.fbOnAuth = onAuthStateChanged; window.fbSignIn = signInWithEmailAndPassword; window.fbSignOut = signOut;
+        window.fsCollection = collection; window.fsDoc = doc; window.fsGetDoc = getDoc; window.fsGetDocs = getDocs; window.fsSetDoc = setDoc; window.fsUpdateDoc = updateDoc; window.fsDeleteDoc = deleteDoc;
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>
