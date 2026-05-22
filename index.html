@@ -25,7 +25,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 90px; font-size: 15px; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 100px; font-size: 15px; }
 
         /* Écran de Connexion */
         #login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
@@ -70,21 +70,15 @@
         .kpi-card { background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: var(--radius); text-align: center; box-shadow: var(--shadow); position: relative; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 
-        /* Barre de navigation basse (Mobile-First) */
-        nav { position: fixed; bottom: 0; inset: 0 0 0 0; height: 75px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 999; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
-        .nav-item { color: #94A3B8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: 600; gap: 4px; transition: color 0.2s; background: none; border: none; width: auto; padding: 0; }
+        /* BARRE DE NAVIGATION BASSE (MOBILE ET PC FIXE EN BAS) */
+        nav { position: fixed; bottom: 0; left: 0; right: 0; height: 75px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 9999; box-shadow: 0 -4px 15px rgba(0,0,0,0.15); }
+        .nav-item { color: #94A3B8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: 600; gap: 5px; transition: color 0.2s; background: none; border: none; width: auto; padding: 10px; width: 100%; max-width: 90px; }
         .nav-item i { font-size: 1.3rem; }
         .nav-item.active { color: #FFFFFF; }
 
         /* Modal custom */
         .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; }
         .modal-content { background: var(--surface); width: 100%; max-width: 400px; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); max-height: 85vh; overflow-y: auto; }
-
-        /* Styles Mode de Paiement (Radio) */
-        .payment-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-        .payment-selector label { background: white; border: 1px solid var(--border); padding: 12px; border-radius: 10px; text-align: center; cursor: pointer; display: block; font-weight: 600; text-transform: none; font-size: 0.9rem; margin: 0; transition: all 0.2s; }
-        .payment-selector input[type="radio"] { display: none; }
-        .payment-selector input[type="radio"]:checked + label { background: var(--gold-light); border-color: var(--gold); color: var(--gold); }
 
         /* Tableaux Suivi Comptable */
         .table-suivi { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
@@ -139,18 +133,7 @@
                 </button>
             </div>
 
-            <div class="form-card">
-                <h3>Mon Espace Partenaire</h3>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                    <span id="profil-statut-actuel" class="user-badge" style="font-size:0.8rem;">...</span>
-                    <span id="profil-role-badge" style="font-size:0.75rem; font-weight:700; color:var(--text-light);">...</span>
-                </div>
-                <label>Mon Lien de dépôt Mobile Money (Wave/OM)</label>
-                <input type="text" id="user-payment-link" placeholder="Ex: https://w.me/qr/... ou numéro direct" onchange="sauvegarderLienPaiement(this.value)">
-                <button class="btn-outline" style="font-size:0.8rem; padding:8px;" onclick="deconnexion()"><i class="fas fa-power-off" style="color:var(--red);"></i> Déconnexion sécurisée</button>
-            </div>
-
-            <div id="admin-management-section" class="form-card" style="display:none; border-top: 4px solid var(--dark);">
+            <div id="admin-management-section" class="form-card" style="display:none; border-top: 4px solid var(--dark); margin-top: 20px;">
                 <h3 style="color:var(--red);"><i class="fas fa-lock"></i> Administration Réseau</h3>
                 <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:12px;">Créez des comptes d'accès pour vos courtiers affiliés ou agences partenaires.</p>
                 
@@ -237,8 +220,8 @@
                 <label>Téléphone du Propriétaire</label>
                 <input type="tel" id="new-bien-proprio-tel" placeholder="77XXXXXXX">
 
-                <div id="edit-only-fields" style="display:none; border-top:2px dashed var(--border); padding-top:14px; margin-top:10px;">
-                    <h4 style="font-size:0.85rem; margin-bottom:10px; color:var(--gold);">🔐 Informations d'Occupation</h4>
+                <div id="edit-only-fields" style="border-top:2px dashed var(--border); padding-top:14px; margin-top:10px;">
+                    <h4 style="font-size:0.85rem; margin-bottom:10px; color:var(--gold);">🔐 Informations d'Occupation & Suivi</h4>
                     
                     <label>Nom du Locataire / Acquéreur</label>
                     <input type="text" id="edit-bien-locataire">
@@ -266,6 +249,30 @@
             </div>
         </div>
 
+        <div id="view-planning" class="view">
+            <h2><i class="fas fa-calendar-alt" style="color:var(--gold);"></i> Visites & Prospects</h2>
+            
+            <div class="form-card">
+                <h3>Planifier un rendez-vous</h3>
+                <label>Nom complet du visiteur</label>
+                <input type="text" id="p-name" placeholder="Ex: Amadou DIALLO">
+                
+                <label>Numéro WhatsApp prospect</label>
+                <input type="tel" id="p-tel" placeholder="77XXXXXXX">
+
+                <label>Bien à faire visiter</label>
+                <select id="p-bien-select"></select>
+
+                <label>Date et Heure du rendez-vous</label>
+                <input type="datetime-local" id="p-date">
+
+                <button class="btn-primary" onclick="sauverVisite()"><i class="fas fa-calendar-plus"></i> Fixer la visite</button>
+            </div>
+
+            <h3 style="margin-top:20px; margin-bottom:10px;">🗓️ Agenda des visites du réseau</h3>
+            <div id="visites-list"></div>
+        </div>
+
         <div id="view-collecte" class="view">
             <h2><i class="fas fa-cash-register" style="color:#10B981;"></i> Facturation / Flux</h2>
             
@@ -285,14 +292,6 @@
 
                 <label>Montant encaissé (CFA)</label>
                 <input type="number" id="c-montant" placeholder="Montant perçu">
-
-                <label>Mode de règlement</label>
-                <div class="payment-selector">
-                    <input type="radio" name="pay-mode" id="m-espece" value="Espèces" checked>
-                    <label for="m-espece">💵 Espèces</label>
-                    <input type="radio" name="pay-mode" id="m-wave" value="Mobile Money">
-                    <label for="m-wave">📱 Wave / OM</label>
-                </div>
 
                 <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px;">
                     <button class="btn-primary" id="btn-collecte-locataire" style="background:#10B981;" onclick="validerCollecte('locataire')">
@@ -351,30 +350,6 @@
             </div>
         </div>
 
-        <div id="view-planning" class="view">
-            <h2><i class="fas fa-calendar-alt" style="color:var(--gold);"></i> Visites & Prospects</h2>
-            
-            <div class="form-card">
-                <h3>Planifier un rendez-vous</h3>
-                <label>Nom complet du visiteur</label>
-                <input type="text" id="p-name" placeholder="Ex: Amadou DIALLO">
-                
-                <label>Numéro WhatsApp prospect</label>
-                <input type="tel" id="p-tel" placeholder="77XXXXXXX">
-
-                <label>Bien à faire visiter</label>
-                <select id="p-bien-select"></select>
-
-                <label>Date et Heure du rendez-vous</label>
-                <input type="datetime-local" id="p-date">
-
-                <button class="btn-primary" onclick="sauverVisite()"><i class="fas fa-calendar-plus"></i> Fixer la visite</button>
-            </div>
-
-            <h3 style="margin-top:20px; margin-bottom:10px;">🗓️ Agenda des visites du réseau</h3>
-            <div id="visites-list"></div>
-        </div>
-
     </div> 
 
     <div id="modal-bien" class="modal" onclick="fermerModal()">
@@ -389,7 +364,7 @@
     <nav>
         <button class="nav-item active" onclick="resetNavStyles(this); showView('dashboard')">
             <i class="fas fa-th-large"></i>
-            <span>Dispo</span>
+            <span>Dashboard</span>
         </button>
         <button class="nav-item" onclick="resetNavStyles(this); showView('biens')">
             <i class="fas fa-building"></i>
@@ -397,7 +372,7 @@
         </button>
         <button class="nav-item" onclick="resetNavStyles(this); showView('planning')">
             <i class="fas fa-calendar-alt"></i>
-            <span>Planning</span>
+            <span>Visite</span>
         </button>
         <button class="nav-item" onclick="resetNavStyles(this); showView('collecte')">
             <i class="fas fa-wallet"></i>
