@@ -16,28 +16,46 @@ let selectedPhotosEDL = [];
 
 const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
 
+// ✅ AUTH FIX SAFE (TA CORRECTION)
 window.onload = () => {
     window.fbOnAuth(window.auth, async (user) => {
         if (user) {
-            courtierEmail = user.email;
-            const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
-            if (docProfil.exists()) {
-                const data = docProfil.data();
-                profilRole = data.role;
-                courtierNom = data.fullname || data.username;
-                monLienPaiement = data.lienPaiement || "";
-                monAvatar = data.avatar || "🏢";
-            } else {
-                profilRole = "SuperAdmin"; courtierNom = "Direction Générale"; monAvatar = "👑";
-                await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                    uid: user.uid, username: user.email.split('@')[0], fullname: "Direction Générale", role: "SuperAdmin", avatar: "👑", lienPaiement: "", email: user.email
-                });
+            try {
+                courtierEmail = user.email;
+
+                const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
+
+                if (docProfil.exists()) {
+                    const data = docProfil.data();
+                    profilRole = data.role;
+                    courtierNom = data.fullname || data.username;
+                    monLienPaiement = data.lienPaiement || "";
+                    monAvatar = data.avatar || "🏢";
+                } else {
+                    await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
+                        uid: user.uid,
+                        username: user.email.split('@')[0],
+                        fullname: "Direction Générale",
+                        role: "SuperAdmin",
+                        avatar: "👑",
+                        lienPaiement: "",
+                        email: user.email
+                    });
+
+                    profilRole = "SuperAdmin";
+                    courtierNom = "Direction Générale";
+                    monAvatar = "👑";
+                }
+
+                await chargerDonneesCloud();
+
+                document.getElementById('login-screen').style.display = 'none';
+                majInterfaceProfil();
+                showView('dashboard');
+
+            } catch (e) {
+                console.error("Erreur auth:", e);
             }
-            
-            await chargerDonneesCloud();
-            document.getElementById('login-screen').style.display = 'none';
-            majInterfaceProfil();
-            showView('dashboard');
         } else {
             document.getElementById('login-screen').style.display = 'flex';
         }
@@ -65,21 +83,45 @@ async function chargerDonneesCloud() {
     } catch (e) { console.error(e); }
 }
 
+// ✅ ✅ CORRECTION LOGIN (TA CORRECTION)
 async function verifierConnexion() {
-    const emailSaisi = document.getElementById('login-username').value.trim().toLowerCase();
+    const emailSaisi = document.getElementById('login-username').value.trim();
     const passSaisi = document.getElementById('login-password').value.trim();
+
+    if (!emailSaisi || !passSaisi) {
+        alert("Veuillez remplir tous les champs.");
+        return;
+    }
+
     try {
-        const comptePartenaire = utilisateurs.find(u => u.email && u.email.toLowerCase() === emailSaisi && u.password_clear_temp === passSaisi);
-        if (comptePartenaire) {
-            profilRole = comptePartenaire.role; courtierNom = comptePartenaire.fullname; courtierEmail = comptePartenaire.email;
-            document.getElementById('login-screen').style.display = 'none';
-            majInterfaceProfil(); showView('dashboard'); return;
-        }
+        // ✅ ON SUPPRIME LE LOGIN LOCAL
         await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-    } catch (error) { alert("Erreur d'accès, veuillez vérifier vos identifiants."); }
+
+    } catch (error) {
+        console.error("Erreur Firebase:", error.code, error.message);
+
+        if (error.code === "auth/user-not-found") {
+            alert("Utilisateur introuvable");
+        } else if (error.code === "auth/wrong-password") {
+            alert("Mot de passe incorrect");
+        } else if (error.code === "auth/invalid-credential") {
+            alert("Identifiants incorrects");
+        } else {
+            alert("Erreur de connexion");
+        }
+    }
 }
 
-function deconnexion() { window.fbSignOut(window.auth); document.getElementById('login-screen').style.display = 'flex'; }
+// ✅ LOGOUT SAFE (TA CORRECTION)
+function deconnexion() {
+    window.fbSignOut(window.auth).then(() => {
+        document.getElementById('login-screen').style.display = 'flex';
+    });
+}
+
+// ==========================================
+// RESTE DES MODULES APPLICATIFS SAMA GESTION
+// ==========================================
 
 function majInterfaceProfil() {
     document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
@@ -108,9 +150,6 @@ function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
     window.location.href = `https://api.whatsapp.com/send?phone=${propre}&text=${encodeURIComponent(message + signature)}`;
 }
 
-// ==========================================
-// ÉTAPE 5 : SCAN DES ALERTES DU MATIN EN LOCAL
-// ==========================================
 function verifierAlertesEcheances() {
     const conteneurBox = document.getElementById('morning-alerts-box');
     const conteneurListe = document.getElementById('morning-alerts-list');
@@ -269,7 +308,6 @@ async function toggleStatut(id) {
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
 
-// ETATS DES LIEUX MODULE (ETL)
 function ouvrirFormulaireEDL() {
     document.getElementById('edl-bien-select').innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
     document.getElementById('edl-rooms-container').innerHTML = ROOMS_CONFIG.map(r => `
@@ -302,7 +340,6 @@ function renderEtatsLieuxList() {
     `).reverse().join('');
 }
 
-// CAISSE / FLUX
 function analyserReliquatComptable() {
     const n = document.getElementById('c-bien-select').value; const b = biens.find(x => x.nom === n);
     if(!b) return; document.getElementById('c-montant').value = b.loyer;
@@ -329,9 +366,6 @@ async function validerCollecte() {
     showView('dashboard');
 }
 
-// ==========================================
-// CONFIGURATION COMPLÈTE MODULE : VISITES
-// ==========================================
 async function sauverVisite() {
     const struct = {
         id: Date.now(), 
