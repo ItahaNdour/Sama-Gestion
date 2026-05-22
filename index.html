@@ -1,432 +1,269 @@
-let profilRole = null;
-let courtierNom = null; 
-let courtierEmail = null;
-let monAvatar = "💼";
-let monLienPaiement = "";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sama Gestion Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-let utilisateurs = [];
-let biens = [];
-let visites = [];
-let etatsLieux = [];
-let comTotaleGlobal = 0;
-
-let currentFilter = 'Disponible';
-let selectedPhotos = [];
-let selectedPhotosEDL = [];
-
-const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
-
-window.onload = () => {
-    window.fbOnAuth(window.auth, async (user) => {
-        if (user) {
-            courtierEmail = user.email;
-            
-            // SÉCURITÉ ABSOLUE : Si c'est ton mail, tu es SuperAdmin d'office
-            if (user.email === "19amadoundour@gmail.com") {
-                profilRole = "SuperAdmin";
-                courtierNom = "Amadou ND";
-                monAvatar = "👑";
-                
-                // On met à jour ou on crée ton profil directement dans Firestore pour être raccord
-                await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                    uid: user.uid, fullname: courtierNom, role: profilRole, avatar: monAvatar, lienPaiement: monLienPaiement, email: user.email
-                }, { merge: true });
-            } else {
-                // Pour les autres utilisateurs (courtiers)
-                const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
-                if (docProfil.exists()) {
-                    const data = docProfil.data();
-                    profilRole = data.role || "Courtier";
-                    courtierNom = data.fullname || user.email.split('@')[0];
-                    monLienPaiement = data.lienPaiement || "";
-                    monAvatar = data.avatar || "💼";
-                } else {
-                    profilRole = "Courtier";
-                    courtierNom = user.email.split('@')[0];
-                    monAvatar = "💼";
-                    await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                        uid: user.uid, fullname: courtierNom, role: profilRole, avatar: monAvatar, lienPaiement: "", email: user.email
-                    });
-                }
-            }
-            
-            await chargerDonneesCloud();
-            document.getElementById('login-screen').style.display = 'none'; 
-            majInterfaceProfil();
-            showView('dashboard');
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
-        }
-    });
-};
-
-async function chargerDonneesCloud() {
-    try {
-        const queryUsers = await window.fsGetDocs(window.fsCollection(window.db, "profils"));
-        utilisateurs = []; queryUsers.forEach(doc => utilisateurs.push(doc.data()));
-
-        const queryBiens = await window.fsGetDocs(window.fsCollection(window.db, "biens"));
-        biens = []; queryBiens.forEach(doc => biens.push(doc.data()));
-
-        const queryVisites = await window.fsGetDocs(window.fsCollection(window.db, "visites"));
-        visites = []; queryVisites.forEach(doc => visites.push(doc.data()));
-
-        const queryEDL = await window.fsGetDocs(window.fsCollection(window.db, "etats_des_lieux"));
-        etatsLieux = []; queryEDL.forEach(doc => etatsLieux.push(doc.data()));
-
-        const docCom = await window.fsGetDoc(window.fsDoc(window.db, "config", "finance"));
-        if(docCom.exists()) comTotaleGlobal = docCom.data().comTotaleGlobal || 0;
-        
-        verifierAlertesEcheances();
-    } catch (e) { console.error("Erreur de chargement: ", e); }
-}
-
-async function verifierConnexion() {
-    const emailSaisi = document.getElementById('login-username').value.trim();
-    const passSaisi = document.getElementById('login-password').value.trim();
-    
-    if(!emailSaisi || !passSaisi) {
-        alert("Veuillez remplir tous les champs.");
-        return;
-    }
-    try {
-        await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-    } catch (error) { 
-        console.error(error);
-        alert("Erreur d'accès : Identifiants incorrects ou non reconnus."); 
-    }
-}
-
-function deconnexion() { window.fbSignOut(window.auth); document.getElementById('login-screen').style.display = 'flex'; }
-
-function majInterfaceProfil() {
-    document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
-    document.getElementById('profil-statut-actuel').innerHTML = `${monAvatar} ${courtierNom}`;
-    document.getElementById('profil-email-affichage').innerText = courtierEmail || "";
-    document.getElementById('profil-role-badge').innerText = profilRole;
-    if(document.getElementById('user-payment-link-champ')) document.getElementById('user-payment-link-champ').value = monLienPaiement;
-
-    if(profilRole === "SuperAdmin") {
-        document.getElementById('superadmin-section-management').style.display = 'block';
-    } else {
-        document.getElementById('superadmin-section-management').style.display = 'none';
-    }
-}
-
-async function adminCreerCompteCourtier() {
-    const fn = document.getElementById('adm-user-fullname').value.trim();
-    const em = document.getElementById('adm-user-email').value.trim();
-    const rl = document.getElementById('adm-user-role').value;
-
-    if(!fn || !em) { alert("Champs invalides !"); return; }
-
-    const fictiveUid = "user_" + Date.now();
-    const nouveauProfil = {
-        uid: fictiveUid, fullname: fn, email: em, role: rl,
-        avatar: rl === "SuperAdmin" ? "👑" : "💼", lienPaiement: ""
-    };
-
-    await window.fsSetDoc(window.fsDoc(window.db, "profils", fictiveUid), nouveauProfil);
-    alert(`Courtier ${fn} ajouté avec succès dans la base de données.`);
-    
-    document.getElementById('adm-user-fullname').value = "";
-    document.getElementById('adm-user-email').value = "";
-    await chargerDonneesCloud();
-}
-
-async function sauvegarderLienPaiement(val) {
-    monLienPaiement = val;
-    if(window.auth.currentUser) {
-        await window.fsUpdateDoc(window.fsDoc(window.db, "profils", window.auth.currentUser.uid), { lienPaiement: val });
-    }
-}
-
-function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
-    if(!telephone) telephone = "";
-    let propre = telephone.replace(/\s+/g, '').replace(/[-+]/g, '');
-    if (propre.length === 9 && propre.startsWith('7')) propre = '221' + propre;
-    let signature = `\n\nCordiales salutations,\n*${courtierNom}*`;
-    if(inclurePaiement && monLienPaiement) signature += `\n\nPaiement direct : ${monLienPaiement}`;
-    window.location.href = `https://api.whatsapp.com/send?phone=${propre}&text=${encodeURIComponent(message + signature)}`;
-}
-
-function verifierAlertesEcheances() {
-    const conteneurBox = document.getElementById('morning-alerts-box');
-    const conteneurListe = document.getElementById('morning-alerts-list');
-    if(!conteneurBox || !conteneurListe) return;
-    
-    let alertesHtml = ""; const aujourdhui = new Date();
-
-    visites.forEach(v => {
-        if(v.verrouille) return;
-        const diff = new Date(v.date) - aujourdhui;
-        const jours = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        if(jours === 0 || jours === 1) {
-            const txtJour = jours === 0 ? "aujourd'hui" : "demain";
-            alertesHtml += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; border-radius:6px; font-size:0.75rem; border:1px solid #FEB2B2;">
-                    <span>⏳ Visite avec <b>${v.nom}</b> ${txtJour} (${v.bien}).</span>
-                    <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:var(--gold); color:white;" onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre RDV pour la visite du bien ${v.bien}. Merci de confirmer.')">💬 Rappel</button>
-                </div>`;
-        }
-    });
-
-    biens.forEach(b => {
-        if(b.statut === 'Occupé' && b.dateEntree) {
-            const jourFacture = new Date(b.dateEntree).getDate();
-            const jourActuel = aujourdhui.getDate();
-            if(jourFacture - jourActuel <= 3 && jourFacture - jourActuel >= 0) {
-                alertesHtml += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; border-radius:6px; font-size:0.75rem; border:1px solid #FEB2B2;">
-                        <span>📅 Échéance Loyer dû le <b>${jourFacture} du mois</b> pour ${b.nom} (${b.locataire}).</span>
-                        <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:var(--gold); color:white;" onclick="envoyerMessageWhatsApp('${b.locataireTel}', 'Bonjour ${b.locataire}, nous vous rappelons que le loyer du bien ${b.nom} arrive à échéance.')">💵 Relancer</button>
-                    </div>`;
-            }
-        }
-    });
-
-    if(alertesHtml !== "") { conteneurListe.innerHTML = alertesHtml; conteneurBox.style.display = 'block'; }
-    else { conteneurBox.style.display = 'none'; }
-}
-
-function calculerProrataAutomatique() {
-    const loyer = parseFloat(document.getElementById('new-bien-loyer').value);
-    const dateStr = document.getElementById('edit-bien-date-entree').value;
-    const box = document.getElementById('prorata-box');
-    if(!loyer || !dateStr) return;
-    const d = new Date(dateStr); const j = d.getDate(); const totalJours = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    if(j === 1) { box.style.display = 'none'; return; }
-    const dus = (totalJours - j) + 1; const montant = Math.round((loyer / totalJours) * dus);
-    document.getElementById('prorata-result').innerHTML = `Prorata (${dus} jours) : <b>${montant.toLocaleString()} CFA</b>`;
-    box.style.display = 'block';
-}
-
-function previewAndCompressImage(input, target) {
-    if (input.files) {
-        Array.from(input.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                if(target === 'bien') { selectedPhotos.push(e.target.result); document.getElementById('previews-container').innerHTML = selectedPhotos.map(p => `<img src="${p}">`).join(''); }
-                else { selectedPhotosEDL.push(e.target.result); document.getElementById('edl-previews-container').innerHTML = selectedPhotosEDL.map(p => `<img src="${p}">`).join(''); }
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-}
-
-function ouvrirFormulaireAjout() {
-    selectedPhotos = []; document.getElementById('edit-bien-id').value = '';
-    document.getElementById('edit-only-fields').style.display = 'none';
-    document.getElementById('prorata-box').style.display = 'none';
-    document.getElementById('previews-container').innerHTML = '';
-    document.getElementById('new-bien-nom').value = ''; document.getElementById('new-bien-loyer').value = '';
-    document.getElementById('new-bien-superficie').value = ''; document.getElementById('new-bien-adresse').value = '';
-    document.getElementById('form-bien-title').innerText = "Nouveau Bien";
-    showView('ajouter-bien');
-}
-
-async function saveBienPro() {
-    const idExist = document.getElementById('edit-bien-id').value;
-    const currentId = idExist ? parseInt(idExist) : Date.now();
-    const snap = idExist ? biens.find(x => x.id === currentId) : null;
-
-    const obj = {
-        id: currentId, agentCreateur: courtierNom,
-        nom: document.getElementById('new-bien-nom').value, loyer: document.getElementById('new-bien-loyer').value,
-        type: document.getElementById('new-bien-type').value, superficie: document.getElementById('new-bien-superficie').value,
-        typePapier: document.getElementById('new-bien-papier').value, adresse: document.getElementById('new-bien-adresse').value,
-        proprio: document.getElementById('new-bien-proprio').value, proprioTel: document.getElementById('new-bien-proprio-tel').value,
-        locataire: idExist ? document.getElementById('edit-bien-locataire').value : 'Aucun',
-        locataireTel: idExist ? document.getElementById('edit-bien-locataire-tel').value : '',
-        dateEntree: idExist ? document.getElementById('edit-bien-date-entree').value : '',
-        com: document.getElementById('new-bien-com').value,
-        statut: snap ? snap.statut : 'Disponible', photos: selectedPhotos.length > 0 ? selectedPhotos : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"],
-        historiquePaiements: snap ? (snap.historiquePaiements || []) : []
-    };
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(currentId)), obj);
-    await chargerDonneesCloud(); showView('biens');
-}
-
-function renderBiens() {
-    const txt = document.getElementById('search-bien-input').value.toLowerCase();
-    const target = biens.filter(b => b.statut === currentFilter && b.nom.toLowerCase().includes(txt));
-    
-    document.getElementById('biens-list').innerHTML = target.map(b => `
-        <div class="form-card" onclick="voirDetailBien(${b.id})">
-            <div class="bien-gallery">${b.photos.map(p => `<img src="${p}">`).join('')}</div>
-            <div style="position:relative; margin-top:4px;">
-                <b>${b.nom}</b> ${b.superficie ? `[📐 ${b.superficie}]` : ''}<br>
-                <span style="color:var(--gold); font-weight:700;">${parseInt(b.loyer).toLocaleString()} CFA</span>
-                <button onclick="event.stopPropagation(); partagerBienWhatsApp(${b.id})" style="position:absolute; right:0; bottom:0; width:auto; background:var(--gold); color:white; padding:4px 8px; font-size:0.7rem; border-radius:4px;"><i class="fab fa-whatsapp"></i> Partager</button>
+    <div id="login-screen" class="login-container" style="display: flex;">
+        <div class="login-card">
+            <div class="login-logo">👑 Sama Gestion Pro</div>
+            <p style="text-align: center; color: var(--text-light); margin-bottom: 20px; font-size: 0.85rem;">
+                Entrez vos identifiants pour accéder au tableau de bord.
+            </p>
+            <div class="form-group">
+                <label>Adresse Email</label>
+                <input type="email" id="login-username" placeholder="exemple@mail.com" required>
             </div>
-        </div>
-    `).reverse().join('');
-}
-
-function partagerBienWhatsApp(id) {
-    const b = biens.find(x => x.id === id);
-    const texte = `🔥 *BIEN DISPONIBLE* : ${b.nom}\n📍 *Quartier* : ${b.adresse}\n📐 *Superficie* : ${b.superficie || 'N/A'}\n📄 *Papier* : ${b.typePapier}\n💰 *Loyer* : ${parseInt(b.loyer).toLocaleString()} CFA\n\nContactez-moi pour visiter !`;
-    envoyerMessageWhatsApp("", texte);
-}
-
-function filterBiens(s, e) { currentFilter = s; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); renderBiens(); }
-
-function voirDetailBien(id) {
-    const b = biens.find(x => x.id === id);
-    document.getElementById('modal-body').innerHTML = `
-        <h3>${b.nom}</h3>
-        <p><b>Proprio:</b> ${b.proprio} (${b.proprioTel})</p>
-        <p><b>Locataire:</b> ${b.locataire} (${b.locataireTel})</p>
-        <div style="display:flex; gap:6px; margin-top:10px;">
-            <button class="btn-primary" onclick="toggleStatut(${b.id})">Changer Statut</button>
-            <button class="btn-outline" onclick="ouvrirModifierBien(${b.id})">Modifier</button>
-        </div>
-    `;
-    document.getElementById('modal-bien').style.display = 'flex';
-}
-
-function ouvrirModifierBien(id) {
-    const b = biens.find(x => x.id === id); fermerModal();
-    document.getElementById('edit-bien-id').value = b.id;
-    document.getElementById('new-bien-nom').value = b.nom; document.getElementById('new-bien-loyer').value = b.loyer;
-    document.getElementById('new-bien-superficie').value = b.superficie || ''; document.getElementById('new-bien-papier').value = b.typePapier || 'Non spécifié';
-    document.getElementById('new-bien-adresse').value = b.adresse; document.getElementById('new-bien-proprio').value = b.proprio; document.getElementById('new-bien-proprio-tel').value = b.proprioTel;
-    document.getElementById('edit-only-fields').style.display = 'block';
-    document.getElementById('edit-bien-locataire').value = b.locataire; document.getElementById('edit-bien-locataire-tel').value = b.locataireTel; document.getElementById('edit-bien-date-entree').value = b.dateEntree;
-    document.getElementById('form-bien-title').innerText = "Modifier le Bien";
-    showView('ajouter-bien');
-}
-
-async function toggleStatut(id) {
-    const b = biens.find(x => x.id === id);
-    b.statut = b.statut === 'Disponible' ? 'Occupé' : 'Disponible';
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(id)), b);
-    fermerModal(); await chargerDonneesCloud(); renderBiens();
-}
-
-function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
-
-function ouvrirFormulaireEDL() {
-    document.getElementById('edl-bien-select').innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    document.getElementById('edl-rooms-container').innerHTML = ROOMS_CONFIG.map(r => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span>${r}</span><select class="room-state" data-r="${r}" style="width:auto; margin:0;"><option>✨ Neuf</option><option>✅ Bon</option><option>❌ Mauvais</option></select>
-        </div>`).join('');
-    showView('nouveau-edl');
-}
-
-async function saveEDLCloud() {
-    const pieces = []; document.querySelectorAll('.room-state').forEach(s => pieces.push(`${s.getAttribute('data-r')}: ${s.value}`));
-    const docEtl = {
-        id: Date.now(), date: new Date().toLocaleDateString('fr-FR'), agent: courtierNom,
-        bien: document.getElementById('edl-bien-select').value, type: document.getElementById('edl-type').value,
-        details: pieces.join(' | '), eau: document.getElementById('edl-eau').value, elec: document.getElementById('edl-elec').value, notes: document.getElementById('edl-notes').value
-    };
-    await window.fsSetDoc(window.fsDoc(window.db, "etats_des_lieux", String(docEtl.id)), docEtl);
-    await chargerDonneesCloud();
-    envoyerMessageWhatsApp("", `*CONSTAT ETL (${docEtl.type})*\nBien: ${docEtl.bien}\nEau: ${docEtl.eau} | Elec: ${docEtl.elec}\nEtat: ${docEtl.details}`);
-    showView('etat-lieux');
-}
-
-function renderEtatsLieuxList() {
-    document.getElementById('edl-list').innerHTML = etatsLieux.map(e => `
-        <div class="form-card">
-            <b>${e.bien} (${e.type})</b> - ${e.date}<br>
-            <small>${e.details}</small><br>
-            <button style="width:auto; margin-top:6px; padding:4px 8px; background:var(--gold); color:white; font-size:0.7rem;" onclick="envoyerMessageWhatsApp('', 'ETL ${e.bien}: ${e.details}')"><i class="fab fa-whatsapp"></i> Renvoyer</button>
-        </div>
-    `).reverse().join('');
-}
-
-function analyserReliquatComptable() {
-    const n = document.getElementById('c-bien-select').value; const b = biens.find(x => x.nom === n);
-    if(!b) return; document.getElementById('c-montant').value = b.loyer;
-}
-
-function updateSelects() {
-    document.getElementById('c-bien-select').innerHTML = biens.filter(x => x.statut==='Occupé').map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    document.getElementById('p-bien-select').innerHTML = biens.filter(x => x.statut==='Disponible').map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    analyserReliquatComptable();
-}
-
-async function validerCollecte() {
-    const n = document.getElementById('c-bien-select').value; const b = biens.find(x => x.nom === n); const mt = parseFloat(document.getElementById('c-montant').value);
-    const type = document.getElementById('c-type').value;
-    b.historiquePaiements.push({ montant: mt, type: type, date: new Date().toLocaleDateString('fr-FR') });
-    
-    if(type === 'Caution') comTotaleGlobal += parseFloat(b.loyer);
-    else comTotaleGlobal += (parseFloat(b.loyer) * 0.1);
-
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(b.id)), b);
-    await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
-    await chargerDonneesCloud();
-    envoyerMessageWhatsApp(b.locataireTel, `Reçu : ${mt} CFA encaissé pour le ${type} du bien ${b.nom}. Merci !`, true);
-    showView('dashboard');
-}
-
-async function sauverVisite() {
-    const struct = {
-        id: Date.now(), nom: document.getElementById('p-name').value, tel: document.getElementById('p-tel').value,
-        bien: document.getElementById('p-bien-select').value, date: document.getElementById('p-date').value,
-        notesPerso: document.getElementById('p-notes-libre') ? document.getElementById('p-notes-libre').value : "",
-        statutChecking: "Planifié", qualification: "Non qualifié", verrouille: false
-    };
-    await window.fsSetDoc(window.fsDoc(window.db, "visites", String(struct.id)), struct);
-    document.getElementById('p-name').value = ""; document.getElementById('p-tel').value = "";
-    if(document.getElementById('p-notes-libre')) document.getElementById('p-notes-libre').value = "";
-    await chargerDonneesCloud(); renderVisites();
-}
-
-function renderVisites() {
-    document.getElementById('visites-list').innerHTML = visites.map(v => {
-        const estVerrouille = v.verrouille === true;
-        return `
-        <div class="form-card" style="position:relative;">
-            <button onclick="supprimerVisiteCloud(${v.id})" style="position:absolute; right:10px; top:10px; width:auto; background:transparent; color:var(--red); padding:0; font-size:0.9rem;">
-                <i class="fas fa-trash-alt"></i>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="login-password" placeholder="••••••••" required>
+            </div>
+            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="verifierConnexion()">
+                <i class="fas fa-sign-in-alt"></i> Se connecter
             </button>
-            <b>${v.nom}</b> - ${v.bien}<br>
-            <small>📅 ${new Date(v.date).toLocaleString('fr-FR', {dateStyle: 'short', timeStyle: 'short'})}</small>
-            ${v.notesPerso ? `<div style="background:var(--bg); padding:4px; border-radius:4px; font-size:0.7rem; margin:4px 0; color:var(--text-light);">📝 <i>${v.notesPerso}</i></div>` : ''}
-            <div style="margin-top:6px; display:flex; gap:4px; align-items:center;">
-                <select id="chk-${v.id}" ${estVerrouille ? 'disabled' : ''} style="margin:0; padding:4px; font-size:0.7rem; width:auto;">
-                    <option ${v.statutChecking==='Planifié'?'selected':''}>Planifié</option>
-                    <option ${v.statutChecking==='Honoré'?'selected':''}>Honoré</option>
-                    <option ${v.statutChecking==='Absent'?'selected':''}>Absent</option>
-                </select>
-                <select id="qalf-${v.id}" ${estVerrouille ? 'disabled' : ''} style="margin:0; padding:4px; font-size:0.7rem; width:auto;">
-                    <option ${v.qualification==='Non qualifié'?'selected':''}>Non qualifié</option>
-                    <option ${v.qualification==='Client Sérieux'?'selected':''}>Client Sérieux</option>
-                </select>
-                ${estVerrouille ? '🔒' : `<button style="width:auto; padding:4px 8px; background:var(--gold); color:white; font-size:0.7rem;" onclick="validerPointageVisite(${v.id})">OK</button>`}
+        </div>
+    </div>
+
+    <div id="app-header" class="header">
+        <span class="logo" onclick="showView('dashboard')">Sama Pro</span>
+        <div id="header-user-badge" class="user-badge" onclick="showView('mon-profil')">💼 Courtier</div>
+    </div>
+
+    <div class="container">
+        <div id="morning-alerts-box" class="form-card alert-box" style="display:none; background: #FFF5F5; border: 1px solid #FEB2B2;">
+            <h4 style="margin:0 0 8px 0; color:#C53030; font-size:0.85rem;"><i class="fas fa-bell"></i> Rappels Échéances & Visites</h4>
+            <div id="morning-alerts-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+
+        <div id="view-dashboard" class="view" style="display:none;">
+            <div class="kpi-card">
+                <h3>Commissions Globales</h3>
+                <div class="value" id="total-display">0 CFA</div>
             </div>
-        </div>`;
-    }).reverse().join('');
-}
+            <div class="grid-menu">
+                <div class="menu-item" onclick="ouvrirFormulaireAjout()"><i class="fas fa-plus-circle"></i><span>Ajouter Bien</span></div>
+                <div class="menu-item" onclick="showView('collecte')"><i class="fas fa-hand-holding-usd"></i><span>Encaisser</span></div>
+                <div class="menu-item" onclick="ouvrirFormulaireEDL()"><i class="fas fa-clipboard-list"></i><span>Constat EDL</span></div>
+                <div class="menu-item" onclick="showView('planning')"><i class="fas fa-calendar-alt"></i><span>Planning RDV</span></div>
+            </div>
+        </div>
 
-async function supprimerVisiteCloud(id) {
-    if(confirm("Supprimer définitivement ce rendez-vous ?")) {
-        await window.fsDeleteDoc(window.fsDoc(window.db, "visites", String(id)));
-        await chargerDonneesCloud(); renderVisites();
-    }
-}
+        <div id="view-biens" class="view" style="display:none;">
+            <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <input type="text" id="search-bien-input" placeholder="🔍 Rechercher un bien..." oninput="renderBiens()" style="margin:0;">
+            </div>
+            <div class="tab-container">
+                <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Dispo</button>
+                <button class="tab-btn" onclick="filterBiens('Occupé', event)">Occupés</button>
+            </div>
+            <div id="biens-list" class="grid-biens"></div>
+        </div>
 
-async function validerPointageVisite(id) {
-    const v = visites.find(x => x.id === id);
-    v.statutChecking = document.getElementById(`chk-${id}`).value;
-    v.qualification = document.getElementById(`qalf-${id}`).value;
-    v.verrouille = true;
-    await window.fsSetDoc(window.fsDoc(window.db, "visites", String(id)), v); await chargerDonneesCloud(); renderVisites();
-}
+        <div id="view-ajouter-bien" class="view" style="display:none;">
+            <div class="form-card">
+                <h3 id="form-bien-title" style="margin-top:0;">Nouveau Bien</h3>
+                <input type="hidden" id="edit-bien-id">
+                
+                <div class="form-group"><label>Nom / Code du bien</label><input type="text" id="new-bien-nom" placeholder="Ex: Studio A9 Mermoz"></div>
+                <div class="form-group"><label>Prix Loyer Mensuel (CFA)</label><input type="number" id="new-bien-loyer" placeholder="Ex: 250000" oninput="calculerProrataAutomatique()"></div>
+                
+                <div class="form-group">
+                    <label>Type de bien</label>
+                    <select id="new-bien-type">
+                        <option>Appartement F3</option><option>Appartement F4</option>
+                        <option>Chambre meublée</option><option>Studio</option><option>Bureau</option>
+                    </select>
+                </div>
 
-function showView(id) {
-    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.getElementById('view-' + id).style.display = 'block';
-    if(id === 'dashboard') document.getElementById('total-display').innerText = comTotaleGlobal.toLocaleString() + " CFA";
-    if(id === 'biens') renderBiens();
-    if(id === 'etat-lieux') renderEtatsLieuxList();
-    if(id === 'collecte') updateSelects();
-    if(id === 'planning') { updateSelects(); renderVisites(); }
-}
+                <div id="edit-only-fields" style="display:none; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:12px;">
+                    <h4 style="margin:0 0 8px 0; font-size:0.8rem; color:var(--gold);">🔐 Gestion Locataire Actuel</h4>
+                    <div class="form-group"><label>Nom complet du Locataire</label><input type="text" id="edit-bien-locataire" value="Aucun"></div>
+                    <div class="form-group"><label>Téléphone Locataire</label><input type="text" id="edit-bien-locataire-tel"></div>
+                    <div class="form-group"><label>Date d'entrée / Signature</label><input type="date" id="edit-bien-date-entree" onchange="calculerProrataAutomatique()"></div>
+                    <div id="prorata-box" style="display:none; padding:6px; background:#FEFCBF; border:1px solid #ECC94B; border-radius:4px; font-size:0.75rem; margin-top:4px; color:#744210;">
+                        <span id="prorata-result"></span>
+                    </div>
+                </div>
 
-function resetNavStyles(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
+                <div class="form-group"><label>Superficie (m²)</label><input type="text" id="new-bien-superficie" placeholder="Ex: 65"></div>
+                <div class="form-group">
+                    <label>Type de Papier</label>
+                    <select id="new-bien-papier">
+                        <option>Titre Foncier</option><option>Bail</option><option>Attestation de propriété</option><option>Non spécifié</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Adresse / Quartier</label><input type="text" id="new-bien-adresse" placeholder="Ex: Dakar, Mermoz"></div>
+                <div class="form-group"><label>Nom Propriétaire</label><input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop"></div>
+                <div class="form-group"><label>Tel Propriétaire</label><input type="text" id="new-bien-proprio-tel" placeholder="Ex: 77XXXXXXX"></div>
+                <div class="form-group"><label>Commission Agence (CFA)</label><input type="number" id="new-bien-com" placeholder="Ex: 125000"></div>
+                
+                <div class="form-group">
+                    <label>Photos du bien</label>
+                    <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')">
+                    <div id="previews-container" class="bien-gallery" style="margin-top:8px;"></div>
+                </div>
+
+                <div style="display:flex; gap:6px; margin-top:15px;">
+                    <button class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
+                    <button class="btn-outline" onclick="showView('biens')">Annuler</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-collecte" class="view" style="display:none;">
+            <div class="form-card">
+                <h3 style="margin-top:0;">Encaisser un Paiement</h3>
+                <div class="form-group">
+                    <label>Sélectionner le Bien Occupé</label>
+                    <select id="c-bien-select" onchange="analyserReliquatComptable()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Type de Flux</label>
+                    <select id="c-type">
+                        <option>Loyer Mensuel</option><option>Caution</option><option>Frais d'agence</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Montant Encaissé (CFA)</label>
+                    <input type="number" id="c-montant">
+                </div>
+                <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="validerCollecte()">Valider & Générer Reçu</button>
+            </div>
+        </div>
+
+        <div id="view-etat-lieux" class="view" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">États des lieux</h3>
+                <button class="btn-primary" style="width:auto; padding:6px 12px;" onclick="ouvrirFormulaireEDL()">+ Nouveau</button>
+            </div>
+            <div id="edl-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <div id="view-nouveau-edl" class="view" style="display:none;">
+            <div class="form-card">
+                <h3 style="margin-top:0;">Nouveau Constat EDL</h3>
+                <div class="form-group"><label>Bien concerné</label><select id="edl-bien-select"></select></div>
+                <div class="form-group"><label>Type d'état des lieux</label><select id="edl-type"><option>Entrée Locataire</option><option>Sortie Locataire</option></select></div>
+                
+                <div id="edl-rooms-container" style="background:var(--bg); padding:10px; border-radius:6px; margin-bottom:12px;"></div>
+                
+                <div class="form-group"><label>Index Compteur Eau (Index ou RAS)</label><input type="text" id="edl-eau" value="RAS"></div>
+                <div class="form-group"><label>Index Compteur Électricité</label><input type="text" id="edl-elec" value="RAS"></div>
+                <div class="form-group"><label>Notes / Remarques Libres</label><textarea id="edl-notes" rows="2" placeholder="Ex: Clé boîte aux lettres manquante..."></textarea></div>
+                
+                <div class="form-group">
+                    <label>Photos Preuves EDL</label>
+                    <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'edl')">
+                    <div id="edl-previews-container" class="bien-gallery" style="margin-top:8px;"></div>
+                </div>
+
+                <div style="display:flex; gap:6px; margin-top:15px;">
+                    <button class="btn-primary" onclick="saveEDLCloud()">Signer & Sauvegarder</button>
+                    <button class="btn-outline" onclick="showView('etat-lieux')">Retour</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-planning" class="view" style="display:none;">
+            <div class="form-card" style="margin-bottom:12px;">
+                <h4 style="margin-top:0; color:var(--gold);">Planifier un Rendez-vous</h4>
+                <div class="form-group"><label>Nom du Prospect / Client</label><input type="text" id="p-name" placeholder="Ex: Amadou Fall"></div>
+                <div class="form-group"><label>Numéro de Téléphone</label><input type="text" id="p-tel" placeholder="Ex: 771234567"></div>
+                <div class="form-group"><label>Bien à visiter</label><select id="p-bien-select"></select></div>
+                <div class="form-group"><label>Date & Heure du RDV</label><input type="datetime-local" id="p-date"></div>
+                <div class="form-group"><label>Note secrète / Critères de recherche</label><input type="text" id="p-notes-libre" placeholder="Ex: Cherche F3 cuisine américaine maximum 300k"></div>
+                <button class="btn-primary" style="width:100%;" onclick="sauverVisite()">Ajouter au Planning</button>
+            </div>
+            <h3 style="margin:15px 0 8px 0;">Visites & RDV au programme</h3>
+            <div id="visites-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <div id="view-mon-profil" class="view" style="display:none;">
+            <div class="form-card" style="text-align:center;">
+                <div style="font-size:3rem;" id="profil-statut-actuel">💼</div>
+                <h3 style="margin:8px 0 2px 0;" id="profil-email-affichage">-</h3>
+                <span class="badge" id="profil-role-badge" style="background:var(--gold); color:white; padding:2px 8px; border-radius:12px; font-size:0.7rem;">Courtier</span>
+                <hr style="margin:15px 0; border:0; border-top:1px solid #E2E8F0;">
+                
+                <div class="form-group" style="text-align:left;">
+                    <label>Mon lien de paiement direct (Wave / OrangeMoney)</label>
+                    <input type="text" id="user-payment-link-champ" placeholder="https://pay.wave.com/..." oninput="sauvegarderLienPaiement(this.value)">
+                </div>
+
+                <div id="superadmin-section-management" style="display:none; background:#F7FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px; margin-top:15px; text-align:left;">
+                    <h4 style="margin:0 0 10px 0; color:var(--text); font-size:0.8rem;"><i class="fas fa-users-cog"></i> Recrutement & Gestion Équipe (Admin)</h4>
+                    <div class="form-group"><label>Nom Complet du nouveau courtier</label><input type="text" id="adm-user-fullname" placeholder="Ex: Ibrahima Diallo"></div>
+                    <div class="form-group"><label>Adresse Email Pro</label><input type="email" id="adm-user-email" placeholder="ibra@samagestion.com"></div>
+                    <div class="form-group">
+                        <label>Attribuer un Rôle</label>
+                        <select id="adm-user-role">
+                            <option value="Courtier">Courtier Standard</option>
+                            <option value="SuperAdmin">SuperAdmin (Direction)</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" style="width:100%; background:var(--text); color:white;" onclick="adminCreerCompteCourtier()">Créer le compte Courtier</button>
+                </div>
+
+                <button class="btn-outline" style="width:100%; color:var(--red); border-color:var(--red); margin-top:15px;" onclick="deconnexion()"><i class="fas fa-power-off"></i> Se déconnecter</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-bien" class="modal-overlay" style="display:none;" onclick="fermerModal()">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="fermerModal()">×</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="resetNavStyles(this); showView('dashboard')"><i class="fas fa-chart-pie"></i><span>Accueil</span></div>
+        <div class="nav-item" onclick="resetNavStyles(this); showView('biens')"><i class="fas fa-home"></i><span>Biens</span></div>
+        <div class="nav-item" onclick="resetNavStyles(this); showView('etat-lieux')"><i class="fas fa-file-contract"></i><span>EDL</span></div>
+        <div class="nav-item" onclick="resetNavStyles(this); showView('planning')"><i class="fas fa-calendar-alt"></i><span>Planning</span></div>
+        <div class="nav-item" onclick="resetNavStyles(this); showView('mon-profil')"><i class="fas fa-user-circle"></i><span>Profil</span></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIGURATION EXCLUSIVEMENT SYNCHRONISÉE SAMA-GESTION-PRO
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs7_XJ_K7Z4hYm18LpX9wM2vR_Example", 
+            authDomain: "sama-gestion-pro.firebaseapp.com",
+            projectId: "sama-gestion-pro",
+            storageBucket: "sama-gestion-pro.appspot.com",
+            messagingSenderId: "365829471025",
+            appId: "1:365829471025:web:a6f8bc94d7e10b25"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Exportation globale pour script.js
+        window.auth = auth;
+        window.db = db;
+        window.fbOnAuth = onAuthStateChanged;
+        window.fbSignIn = signInWithEmailAndPassword;
+        window.fbSignOut = signOut;
+        window.fsDoc = doc;
+        window.fsCollection = collection;
+        window.fsGetDoc = getDoc;
+        window.fsGetDocs = getDocs;
+        window.fsSetDoc = setDoc;
+        window.fsUpdateDoc = updateDoc;
+        window.fsDeleteDoc = deleteDoc;
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
