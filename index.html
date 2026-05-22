@@ -186,7 +186,7 @@
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
                 <label>Nom du Propriétaire</label>
                 <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
-                <label>Téléphone du Propriétaire (Ex: +22177... ou +337...)</label>
+                <label>Téléphone du Propriétaire</label>
                 <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: +221771234567">
                 
                 <div id="edit-only-fields" style="display:none;">
@@ -274,7 +274,7 @@
                     <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Virement" style="width:auto; margin:0;"> Virement</label>
                 </div>
                 <button id="btn-collecte-locataire" class="btn-primary" style="background: var(--green);" onclick="validerCollecte('locataire')"><i class="fab fa-whatsapp"></i> Valider & Reçu Locataire</button>
-                <button id="btn-collecte-proprio" class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Reçu Propriétaire</button>
+                <button id="btn-collecte-proprio" class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Notification Transfert Propriétaire</button>
             </div>
         </div>
 
@@ -303,8 +303,8 @@
                 <span id="profil-role-badge" style="background: var(--gold-light); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: var(--gold);"></span>
                 
                 <div style="margin-top: 20px; text-align: left;">
-                    <label>Mon lien de paiement personnel (Wave / OM / K Pay)</label>
-                    <input type="text" id="user-payment-link" placeholder="Ex: https://pay.wave.com/m/your-tag" onchange="sauvegarderLienPaiement(this.value)">
+                    <label>Mon Numéro de Réception Mobile Money (Wave / Orange Money / Compte)</label>
+                    <input type="text" id="user-payment-link" placeholder="Ex: 77 123 45 67" onchange="sauvegarderLienPaiement(this.value)">
                 </div>
 
                 <button class="btn-outline" style="color: var(--red); border-color: var(--red); margin-top: 15px;" onclick="deconnexion()">Se déconnecter</button>
@@ -318,7 +318,9 @@
                         <option value="Courtier">Courtier Indépendant</option>
                         <option value="Agence">Agence Partenaire</option>
                     </select>
-                    <label>Adresse E-mail</label>
+                    <label>Nom complet ou Nom de l'Agence (Pour Signature)</label>
+                    <input type="text" id="admin-new-user-fullname" placeholder="Ex: Agence Immo Diop ou M. Sarr">
+                    <label>Adresse E-mail (Identifiant de connexion)</label>
                     <input type="email" id="admin-new-user-name" placeholder="Ex: partenaire@gmail.com">
                     <label>Mot de passe (6 char. min)</label>
                     <input type="password" id="admin-new-user-pin" placeholder="Choisir un mot de passe">
@@ -356,7 +358,7 @@
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+      import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
       import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
       const firebaseConfig = {
@@ -369,7 +371,12 @@
       };
 
       const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+      
+      // 🛠️ ACTIVATION DU MOTEUR OFFLINE AUTOMATIQUE NATIF
+      const db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      });
+      
       const auth = getAuth(app);
 
       window.db = db; window.auth = auth; window.fsDoc = doc; window.fsGetDoc = getDoc;
