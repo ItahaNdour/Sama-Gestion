@@ -1,9 +1,9 @@
 // ==============================================================================
-// SAMA GESTION PRO V8.5 - SYSTÈME DE CONTRÔLE DE RELIQUAT COMPTABLE ANTI-DOUBLONS
+// SAMA GESTION PRO V9.0 - OFFLINE PERSISTENCE & SIGNATURE PAR NOM DE GESTION
 // ==============================================================================
 
 let profilRole = null;
-let courtierNom = null;
+let courtierNom = null; // Contiendra le vrai Nom complet / Agence pour la signature
 let monAvatar = "💼";
 let monLienPaiement = "";
 
@@ -32,15 +32,15 @@ window.onload = () => {
             if (docProfil.exists()) {
                 const data = docProfil.data();
                 profilRole = data.role;
-                courtierNom = data.username;
+                courtierNom = data.fullname || data.username; // Utilise le nom complet pro s'il existe
                 monLienPaiement = data.lienPaiement || "";
                 monAvatar = data.avatar || (data.role === 'SuperAdmin' ? "👑" : "🏢");
             } else {
                 profilRole = "SuperAdmin";
-                courtierNom = user.email.split('@')[0];
+                courtierNom = "Direction Générale";
                 monAvatar = "👑";
                 await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                    uid: user.uid, username: courtierNom, role: "SuperAdmin", avatar: "👑", lienPaiement: ""
+                    uid: user.uid, username: user.email.split('@')[0], fullname: "Direction Générale", role: "SuperAdmin", avatar: "👑", lienPaiement: ""
                 });
             }
             
@@ -77,7 +77,7 @@ async function chargerDonneesCloud() {
         if(docCom.exists()) comTotaleGlobal = docCom.data().comTotaleGlobal || 0;
         
     } catch (error) {
-        console.error("Erreur de synchronisation :", error);
+        console.error("Mode Offline actif - Lecture du cache local.", error);
     }
 }
 
@@ -117,13 +117,9 @@ async function sauvegarderLienPaiement(val) {
     });
 }
 
-// ==========================================
-// FIX WHATSAPP : ZÉRO POPUP BLOQUÉE
-// ==========================================
 function formaterNumeroWhatsApp(num) {
     if(!num) return "";
     let propre = num.replace(/\s+/g, '').replace(/[-+]/g, ''); 
-    
     if ((propre.startsWith('06') || propre.startsWith('07')) && propre.length === 10) {
         propre = '33' + propre.substring(1); 
     }
@@ -143,7 +139,7 @@ function envoyerMessageWhatsApp(telephone, message) {
     
     let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Sama Gestion Pro`;
     if(monLienPaiement) {
-        signatureFormatee += `\n💳 Lien de paiement sécurisé : ${monLienPaiement}`;
+        signatureFormatee += `\n💵 Option Dépôt Mobile Money (Wave/OM) : ${monLienPaiement}`;
     }
     
     let messageComplet = message + signatureFormatee;
@@ -152,9 +148,6 @@ function envoyerMessageWhatsApp(telephone, message) {
     window.location.href = `https://api.whatsapp.com/send?phone=${numeroPropre}&text=${messageEncode}`;
 }
 
-// ==========================================
-// CALCULATEUR DE PRORATA AUTOMATIQUE
-// ==========================================
 function calculerProrataAutomatique() {
     const loyerTotal = parseFloat(document.getElementById('new-bien-loyer').value);
     const dateEntreeStr = document.getElementById('edit-bien-date-entree').value;
@@ -184,9 +177,6 @@ function calculerProrataAutomatique() {
     box.style.display = 'block';
 }
 
-// ==========================================
-// COMPRESSEUR PHOTO
-// ==========================================
 function previewAndCompressImage(input, target) {
     if (input.files) {
         Array.from(input.files).forEach(file => {
@@ -229,26 +219,36 @@ function renderPreviews(containerId, arrayData) {
 }
 
 // ==========================================
-// GESTION DES COLLABORATEURS
+// CREATION DE COMPTE AVEC NOM DE SIGNATURE
 // ==========================================
 async function adminCreerCompteCourtier() {
     const emailCourtier = document.getElementById('admin-new-user-name').value.trim(); 
     const passCourtier = document.getElementById('admin-new-user-pin').value.trim();
+    const fullnameCourtier = document.getElementById('admin-new-user-fullname').value.trim();
     const roleChoisi = document.getElementById('admin-new-user-role').value;
     
-    if(!emailCourtier.includes('@') || passCourtier.length < 6) return alert("Données invalides.");
+    if(!emailCourtier.includes('@') || passCourtier.length < 6 || !fullnameCourtier) {
+        return alert("Veuillez remplir tous les champs correctement (Mot de passe: 6 caractères min).");
+    }
 
     try {
         const uidPredictif = "user_" + Date.now();
-        const nameNode = emailCourtier.split('@')[0];
         await window.fsSetDoc(window.fsDoc(window.db, "profils", uidPredictif), {
-            uid: uidPredictif, username: nameNode, email: emailCourtier, password_clear_temp: passCourtier, role: roleChoisi, avatar: roleChoisi === 'Agence' ? "🏢" : "💼", lienPaiement: ""
+            uid: uidPredictif, 
+            username: emailCourtier.split('@')[0], 
+            fullname: fullnameCourtier, // Ce nom sera utilisé pour signer tous les messages WhatsApp
+            email: emailCourtier, 
+            password_clear_temp: passCourtier, 
+            role: roleChoisi, 
+            avatar: roleChoisi === 'Agence' ? "🏢" : "💼", 
+            lienPaiement: ""
         });
         document.getElementById('admin-new-user-name').value = '';
         document.getElementById('admin-new-user-pin').value = '';
+        document.getElementById('admin-new-user-fullname').value = '';
         await chargerDonneesCloud();
         renderAdminAgencesList();
-        alert("🎉 Compte configuré !");
+        alert("🎉 Compte Partenaire créé avec succès !");
     } catch (e) { alert(e.message); }
 }
 
@@ -258,7 +258,7 @@ function renderAdminAgencesList() {
     conteneur.innerHTML = utilisateurs.map(u => `
         <div style="background:white; padding:10px; border-radius:10px; margin-bottom:8px; border:1px solid #e2e8f0; font-size:0.85rem;">
             <div style="display:flex; justify-content:space-between;">
-                <span>${u.avatar || '💼'} <b>${u.username}</b> (${u.role})</span>
+                <span>${u.avatar || '💼'} <b>${u.fullname || u.username}</b> (${u.role})</span>
                 ${u.role !== 'SuperAdmin' ? `<i class="fas fa-trash-alt" style="color:#EF4444;" onclick="adminSupprimerAgence('${u.uid}')"></i>` : '⭐'}
             </div>
         </div>
@@ -386,10 +386,10 @@ function voirDetailBien(id) {
     const b = biens.find(x => x.id === id);
     document.getElementById('modal-body').innerHTML = `
         <h3>${b.nom}</h3>
-        <p style="margin-top:5px;"><b>Loyer Mensuel :</b> ${parseInt(b.loyer).toLocaleString()} CFA</p>
+        <p style="margin-top:5px;"><b>Loyer :</b> ${parseInt(b.loyer).toLocaleString()} CFA</p>
         <p><b>Propriétaire :</b> ${b.proprio} (${b.proprioTel || 'Pas de numéro'})</p>
         <p><b>Locataire :</b> ${b.locataire || 'Aucun'} (${b.locataireTel || 'Pas de numéro'})</p>
-        <p><b>Date d'entrée :</b> ${b.dateEntree ? new Date(b.dateEntree).toLocaleDateString('fr-FR') : 'Non renseignée'}</p>
+        <p><b>Entrée :</b> ${b.dateEntree ? new Date(b.dateEntree).toLocaleDateString('fr-FR') : 'Non renseignée'}</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:15px;">
             <button class="btn-primary" onclick="toggleStatut(${b.id})">${b.statut==='Disponible'?'Marquer Loué':'Libérer le bien'}</button>
             <button class="btn-outline" style="color:var(--gold); border-color:var(--gold);" onclick="modifierBienExistant(${b.id})"><i class="fas fa-edit"></i> Modifier / Prorata</button>
@@ -424,9 +424,6 @@ async function supprimerBien(id) {
     }
 }
 
-// ==========================================
-// FICHE PORTFOLIO
-// ==========================================
 function ouvrirPortefeuille(id) {
     const b = biens.find(x => x.id === id);
     const paiements = b.historiquePaiements || [];
@@ -442,7 +439,7 @@ function ouvrirPortefeuille(id) {
     `).reverse().join('');
 
     if(paiements.length === 0) {
-        lignesTableau = `<tr><td colspan="4" style="text-align:center; color:var(--text-light);">Aucune transaction enregistrée</td></tr>`;
+        lignesTableau = `<tr><td colspan="4" style="text-align:center; color:var(--text-light);">Aucune transaction</td></tr>`;
     }
 
     document.getElementById('modal-body').innerHTML = `
@@ -471,14 +468,14 @@ function ouvrirPortefeuille(id) {
 function relancerPaiementWhatsApp(id) {
     const b = biens.find(x => x.id === id);
     if(!b.locataireTel) return alert("Pas de numéro enregistré.");
-    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé dans nos registres pour ce terme.\n\nWe vous invitons à effectuer le versement à votre convenance. Si cela a déjà été fait, merci de ne pas tenir compte de ce rappel.`;
+    const msg = `Chère/Cher ${b.locataire},\n\nSauf erreur de notre part, le règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé pour ce terme.\n\nNous vous invitons à effectuer le versement à votre convenance via notre numéro de réception de dépôt.`;
     envoyerMessageWhatsApp(b.locataireTel, msg);
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
 
 // ==========================================
-// MODULE : ÉTAT DES LIEUX (EDL)
+// MODULE : EDL AVEC SUPPRESSION AUTORISÉE
 // ==========================================
 function ouvrirFormulaireEDL() {
     selectedPhotosEDL = [];
@@ -547,7 +544,6 @@ async function saveEDLCloud() {
     
     alert("🎉 Rapport validé !");
     if(destinataireTel) envoyerMessageWhatsApp(destinataireTel, constructionTexte);
-
     showView('etat-lieux');
 }
 
@@ -557,16 +553,26 @@ function renderEtatsLieuxList() {
     const filtered = etatsLieux.filter(e => profilRole === "SuperAdmin" || e.agent === courtierNom);
 
     listContainer.innerHTML = filtered.map(e => `
-        <div class="form-card" style="border-left: 4px solid ${e.type==='Entrée'?'var(--green)':'var(--red)'};">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="form-card" style="border-left: 4px solid ${e.type==='Entrée'?'var(--green)':'var(--red)'}; position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-right:30px;">
                 <div>
                     <strong>${e.bien}</strong><br>
-                    <small>${e.type} • ${e.date}</small>
+                    <small>${e.type} • ${e.date}</small><br>
+                    <small style="color:var(--text-light);">Par : ${e.agent}</small>
                 </div>
                 <button class="btn-primary" style="width:auto; padding:6px 10px; font-size:0.75rem; background:#2ECC71;" onclick="partagerEDLExistant(${e.id})"><i class="fab fa-whatsapp"></i> Envoyer</button>
             </div>
+            <i class="fas fa-trash-alt" style="position:absolute; right:15px; top:15px; color:var(--red); cursor:pointer;" onclick="supprimerEDLExistant(${e.id})"></i>
         </div>
     `).reverse().join('');
+}
+
+async function supprimerEDLExistant(id) {
+    if(confirm("⚠️ Supprimer définitivement ce certificat d'état des lieux ?")) {
+        await window.fsDeleteDoc(window.fsDoc(window.db, "etats_des_lieux", String(id)));
+        await chargerDonneesCloud();
+        renderEtatsLieuxList();
+    }
 }
 
 function partagerEDLExistant(id) {
@@ -578,9 +584,9 @@ function partagerEDLExistant(id) {
     if(num) envoyerMessageWhatsApp(num, constructionTexte);
 }
 
-// ==============================================================================
-// 🧠 MOTEUR DE VÉRIFICATION & ANALYSE DE RELIQUAT COMPTABLE (ANTI-DOUBLONS)
-// ==============================================================================
+// ==========================================
+// MOTEUR DE VÉRIFICATION RELIQUAT
+// ==========================================
 function analyserReliquatComptable() {
     const name = document.getElementById('c-bien-select').value;
     const type = document.getElementById('c-type').value;
@@ -598,7 +604,6 @@ function analyserReliquatComptable() {
     const b = biens.find(x => x.nom === name);
     const paiements = b.historiquePaiements || [];
     
-    // Obtenir le mois et l'année en cours (format local ex: "05/2026")
     const dateAujourdhui = new Date();
     const moisCourant = String(dateAujourdhui.getMonth() + 1).padStart(2, '0');
     const anneeCourante = dateAujourdhui.getFullYear();
@@ -607,10 +612,8 @@ function analyserReliquatComptable() {
     let totalDu = 0;
     let dejaPayeCeMois = 0;
 
-    // 1. Calcul du montant théorique exigé selon la nature
     if (type === 'Loyer' || type === 'Avance') {
         totalDu = parseFloat(b.loyer);
-        // On cumule ce que le locataire a déjà payé comme "Loyer" ou "Avance" CE MOIS-CI
         dejaPayeCeMois = paiements
             .filter(p => p.date.endsWith(filtreMois) && (p.type === 'Loyer' || p.type === 'Avance'))
             .reduce((sum, p) => sum + p.montant, 0);
@@ -626,25 +629,22 @@ function analyserReliquatComptable() {
             .reduce((sum, p) => sum + p.montant, 0);
     } 
     else if (type === 'Caution') {
-        totalDu = parseFloat(b.loyer) * 3; // Modèle standard de 3 mois de caution
-        // La caution est globale sur toute la durée du contrat, pas seulement sur le mois en cours
+        totalDu = parseFloat(b.loyer) * 3; 
         dejaPayeCeMois = paiements
             .filter(p => p.type === 'Caution')
             .reduce((sum, p) => sum + p.montant, 0);
     }
 
-    // 2. Calcul du reste à percevoir (Reliquat)
     let reliquat = totalDu - dejaPayeCeMois;
     if (reliquat < 0) reliquat = 0;
 
-    // 3. Mise à jour de l'affichage UI et verrouillage intelligent
     liveBox.style.display = 'block';
     
     if (reliquat === 0) {
         liveBox.style.background = '#FEE2E2';
         liveBox.style.borderColor = 'var(--red)';
         liveBox.style.color = '#991B1B';
-        liveBox.innerHTML = `⚠️ <b>Opération Bloquée :</b> Le montant total pour la catégorie <b>${type}</b> a déjà été entièrement perçu et soldé.`;
+        liveBox.innerHTML = `⚠️ <b>Opération Bloquée :</b> Ce terme/catégorie (<b>${type}</b>) a déjà été entièrement soldé pour ce bien.`;
         
         inputMontant.value = 0;
         btnLocataire.disabled = true;
@@ -653,7 +653,7 @@ function analyserReliquatComptable() {
         liveBox.style.background = 'var(--gold-light)';
         liveBox.style.borderColor = 'var(--gold)';
         liveBox.style.color = '#9A3412';
-        liveBox.innerHTML = `📊 <b>Statut Financier :</b> Total Dû : ${totalDu.toLocaleString()} CFA | Déjà perçu : ${dejaPayeCeMois.toLocaleString()} CFA<br>🎯 <b>Reste à payer (Reliquat) : ${reliquat.toLocaleString()} CFA</b>`;
+        liveBox.innerHTML = `📊 <b>Statut :</b> Total Attendu : ${totalDu.toLocaleString()} CFA | Déjà perçu : ${dejaPayeCeMois.toLocaleString()} CFA<br>🎯 <b>Reste à percevoir : ${reliquat.toLocaleString()} CFA</b>`;
         
         inputMontant.value = reliquat;
         btnLocataire.disabled = false;
@@ -676,11 +676,9 @@ async function validerCollecte(cible) {
     const mode = document.querySelector('input[name="pay-mode"]:checked').value;
     const b = biens.find(x => x.nom === name);
 
-    if (mt <= 0 || isNaN(mt)) return alert("⚠️ Veuillez saisir un montant supérieur à 0.");
+    if (mt <= 0 || isNaN(mt)) return alert("⚠️ Veuillez saisir un montant valide.");
 
     if(!b.historiquePaiements) b.historiquePaiements = [];
-    
-    // Enregistrement de la transaction
     b.historiquePaiements.push({ id: Date.now(), type: type, montant: mt, mode: mode, date: new Date().toLocaleDateString('fr-FR') });
 
     let maCom = type==='Caution' ? parseFloat(b.loyer) : (b.com.includes('%') ? (parseFloat(b.com)/100)*mt : parseFloat(b.com));
@@ -690,10 +688,8 @@ async function validerCollecte(cible) {
     await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
     await chargerDonneesCloud();
 
-    // Re-calcul immédiat après validation pour connaître le nouveau reliquat à envoyer par message
-    let paiementsMois = b.historiquePaiements;
     let totalExige = (type === 'Caution') ? (parseFloat(b.loyer)*3) : parseFloat(b.loyer);
-    let totalPercuApres = paiementsMois.filter(p => p.type === type).reduce((s,p) => s + p.montant, 0);
+    let totalPercuApres = b.historiquePaiements.filter(p => p.type === type).reduce((s,p) => s + p.montant, 0);
     let resteAPayerApres = totalExige - totalPercuApres;
     if(resteAPayerApres < 0) resteAPayerApres = 0;
 
@@ -705,7 +701,7 @@ async function validerCollecte(cible) {
         envoyerMessageWhatsApp(b.locataireTel, txt);
     } else {
         let netAReverser = mt - maCom;
-        txt = `*RAPPORT DE RECOUVREMENT DE LOYER*\n\nBonjour Cher Propriétaire, nous avons procédé à l'encaissement d'un versement pour votre bien.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion agence (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net à vous reverser :* ${netAReverser.toLocaleString()} CFA\n*Mode d'encaissement :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
+        txt = `*NOTIFICATION DE TRANSFERT FONDS PROPRIÉTAIRE*\n\nBonjour Cher Propriétaire,\n\nNous vous informons qu'un versement a été encaissé pour votre bien et que les fonds ont été transférés sur votre compte.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net transféré :* *${netAReverser.toLocaleString()} CFA*\n*Canal d'envoi :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
         envoyerMessageWhatsApp(b.proprioTel, txt);
     }
     showView('dashboard');
