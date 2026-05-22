@@ -5,7 +5,7 @@ let courtierEmail = "19amadoundour@gmail.com";
 let monAvatar = "👑";
 let monLienPaiement = ""; 
 
-// Tableaux de données réels (vides au départ, comme dans ta version)
+// Tableaux de données réels (vides au départ pour tes tests)
 let utilisateurs = [];
 let biens = [];
 let visites = [];
@@ -18,41 +18,46 @@ let selectedPhotosEDL = [];
 
 const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
 
-// 🧪 BYPASS FIREBASE AU CHARGEMENT
-window.onload = () => {
-    console.log("🚀 Mode Diagnostic - Connexion en dur pour :", courtierEmail);
-    try {
-        // On masque l'écran de connexion directement
-        if (document.getElementById('login-screen')) {
-            document.getElementById('login-screen').style.display = 'none';
-        }
-        
-        // On initialise l'interface avec tes vraies infos configurées au-dessus
-        majInterfaceProfil();
-        
-        // On affiche le dashboard
-        showView('dashboard');
-
-    } catch (e) {
-        console.error("Erreur lors de l'initialisation locale :", e);
+// 🚀 TOUT AU DÉBUT : ON FORCE LA CONNEXION SANS ATTENDRE LE CHARGEMENT TOTAL
+function forcerConnexionDiagnostic() {
+    console.log("🧪 Mode Diagnostic : Forçage de l'interface pour", courtierEmail);
+    
+    // 1. On cherche l'écran de login par son ID ou sa classe et on le fait disparaître
+    const loginScreen = document.getElementById('login-screen') || document.querySelector('.login-screen') || document.querySelector('.login-container');
+    if (loginScreen) {
+        loginScreen.style.setProperty('display', 'none', 'important');
     }
-};
-
-// 🧪 RESTE DU CODE STRICTEMENT IDENTIQUE À TON APPLICATION INITIALE
-
-function verifierConnexion() {
-    if (document.getElementById('login-screen')) {
-        document.getElementById('login-screen').style.display = 'none';
+    
+    // 2. On s'assure que le conteneur principal de l'application est bien visible
+    const mainApp = document.getElementById('app-container') || document.getElementById('main-app') || document.querySelector('.app-container') || document.querySelector('.app');
+    if (mainApp) {
+        mainApp.style.setProperty('display', 'block', 'important');
     }
+
+    // 3. On met à jour le profil et on bascule sur le dashboard
     majInterfaceProfil();
     showView('dashboard');
 }
 
-function deconnexion() {
-    if (document.getElementById('login-screen')) {
-        document.getElementById('login-screen').style.display = 'flex';
-    }
+// Exécution immédiate + au chargement pour parer à toute éventualité
+forcerConnexionDiagnostic();
+window.onload = () => {
+    forcerConnexionDiagnostic();
+};
+
+// 🧪 SIMULATION DES BOUTONS DE CONNEXION SI TU CLIQUES QUAND MÊME
+function verifierConnexion() {
+    forcerConnexionDiagnostic();
 }
+
+function deconnexion() {
+    const loginScreen = document.getElementById('login-screen') || document.querySelector('.login-screen');
+    if (loginScreen) loginScreen.style.display = 'flex';
+}
+
+// ==========================================
+// LOGIQUE APPLICATIVE REPRISE À 100%
+// ==========================================
 
 function majInterfaceProfil() {
     if(document.getElementById('header-user-badge')) document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
@@ -274,8 +279,12 @@ function analyserReliquatComptable() {
 }
 
 function updateSelects() {
-    document.getElementById('c-bien-select').innerHTML = biens.filter(x => x.statut==='Occupé').map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    document.getElementById('p-bien-select').innerHTML = biens.filter(x => x.statut==='Disponible').map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+    if(document.getElementById('c-bien-select')) {
+        document.getElementById('c-bien-select').innerHTML = biens.filter(x => x.statut==='Occupé').map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+    }
+    if(document.getElementById('p-bien-select')) {
+        document.getElementById('p-bien-select').innerHTML = biens.filter(x => x.statut==='Disponible').map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
+    }
     analyserReliquatComptable();
 }
 
