@@ -2,372 +2,841 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sama Gestion Pro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImmoGestion Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        :root {
-            --gold: #D97706;
-            --gold-light: #FEF3C7;
-            --dark: #0F172A;
-            --bg: #F8FAFC;
-            --card: #FFFFFF;
-            --text: #1E293B;
-            --text-light: #64748B;
-            --green: #10B981;
-            --red: #EF4444;
-            --border: #E2E8F0;
+        /* ==========================================
+           1. VARIABLES & RESET
+           ========================================== */
+        :root { 
+            --blue: #4A69FF; 
+            --bg: #F4F7FE; 
+            --navy: #1A2B49; 
+            --red: #FF4A4A;
+            --green: #2ECC71;
+        }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #C0C9D3; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            color: var(--navy); 
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 85px; font-size: 15px; }
-
-        #login-screen {
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background: linear-gradient(135deg, var(--dark) 0%, #1E293B 100%);
-            z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .login-box {
-            background: var(--card); width: 100%; max-width: 400px; 
-            padding: 30px; border-radius: 24px; text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
-            border-top: 5px solid var(--gold);
+        /* structure globale type "App Mobile" */
+        .app-shell { 
+            width: 100%; 
+            max-width: 450px; 
+            background: var(--bg); 
+            min-height: 100vh; 
+            position: relative; 
+            overflow-x: hidden; 
+            padding-bottom: 80px; 
         }
 
-        header {
-            background: var(--card); padding: 15px 20px; display: flex; 
-            justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+        /* ==========================================
+           2. HEADER & REVENUE CARD
+           ========================================== */
+        .main-header { 
+            background: var(--blue); 
+            padding: 40px 20px 80px; 
+            border-radius: 0 0 40px 40px; 
+            color: white; 
+            text-align: center; 
         }
-        .logo-area { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--dark); font-size: 1.1rem; }
-        .logo-area i { color: var(--gold); }
-        .user-badge { background: var(--gold-light); color: var(--gold); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .main-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .revenue-card { 
+            background: white; 
+            color: var(--navy); 
+            padding: 25px; 
+            border-radius: 25px; 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1); 
+            margin: -60px auto 20px; 
+            width: 85%; 
+            text-align: center; 
+        }
+        .revenue-card h3 { 
+            margin: 0 0 5px 0; 
+            color: #64748b; 
+            font-size: 0.9rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        .revenue-amount { 
+            font-size: 1.8rem; 
+            font-weight: bold; 
+            color: var(--navy); 
+            margin: 0;
+        }
 
-        main { padding: 20px; max-width: 600px; margin: 0 auto; }
-        .view { display: none; }
+        /* ==========================================
+           3. DASHBOARD GRID (ACCUEIL)
+           ========================================== */
+        .menu-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            padding: 20px; 
+        }
+        .menu-card { 
+            background: white; 
+            padding: 25px 10px; 
+            border-radius: 25px; 
+            text-align: center; 
+            position: relative; 
+            cursor: pointer; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+            transition: transform 0.2s;
+        }
+        .menu-card:active {
+            transform: scale(0.95);
+        }
+        .menu-card p {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .icon-circle { 
+            width: 50px; 
+            height: 50px; 
+            border-radius: 15px; 
+            background: #F8F9FF; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto 10px; 
+            font-size: 1.2rem; 
+            color: var(--blue);
+        }
+        .dot { 
+            width: 8px; 
+            height: 8px; 
+            border-radius: 50%; 
+            position: absolute; 
+            top: 12px; 
+            right: 12px; 
+        }
+        .blue-dot { background: var(--blue); } 
+        .orange-dot { background: #F39C12; } 
+        .green-dot { background: #2ECC71; } 
+        .navy-dot { background: var(--navy); }
+
+        /* ==========================================
+           4. VUES & FORMULAIRES (NAVIGATION)
+           ========================================== */
+        .view { 
+            padding: 15px; 
+            display: none; /* Masqué par défaut, géré par le JS */
+            animation: fadeIn 0.3s ease; 
+        }
+        .view.active-view {
+            display: block;
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
         
-        .form-card {
-            background: var(--card); padding: 20px; border-radius: 16px;
-            border: 1px solid var(--border); margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        .section-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin-bottom: 20px; 
         }
-        h2, h3 { margin-bottom: 15px; font-weight: 700; color: var(--dark); }
-        label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); }
-        input, select, textarea {
-            width: 100%; padding: 12px; border: 1px solid var(--border);
-            border-radius: 10px; margin-bottom: 15px; font-size: 0.95rem; background: #F1F5F9; outline: none;
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
         }
-        input:focus, select:focus { border-color: var(--gold); background: var(--card); }
-        
-        .btn-primary {
-            width: 100%; background: var(--gold); color: white; border: none;
-            padding: 14px; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .btn-primary:hover { background: #B45309; }
-        .btn-outline {
-            width: 100%; background: transparent; color: var(--text); border: 1px solid var(--border);
-            padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer;
+        .back-btn { 
+            background: #E0E7FF; 
+            border: none; 
+            width: 35px; 
+            height: 35px; 
+            border-radius: 50%; 
+            color: var(--blue); 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1rem;
         }
 
-        nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card);
-            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
-            padding: 12px 0; z-index: 1000; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+        .form-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 25px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 5px 10px rgba(0,0,0,0.02); 
         }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: var(--text-light); text-decoration: none; font-size: 0.75rem; font-weight: 500; cursor: pointer;
+        input, select, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border: 1.5px solid #f1f5f9; 
+            border-radius: 12px; 
+            background: #f8fafc; 
+            font-size: 14px; 
+            outline: none; 
+            font-family: inherit;
         }
-        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
-        .nav-item.active { color: var(--gold); font-weight: 700; }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--blue);
+            background: white;
+        }
+        label { 
+            font-size: 0.8rem; 
+            color: #64748b; 
+            margin-left: 5px; 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600; 
+        }
 
-        .tabs-container { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .tab-btn {
-            background: var(--card); border: 1px solid var(--border); padding: 8px 16px;
-            border-radius: 20px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; cursor: pointer;
+        /* ==========================================
+           5. TABS & GALERIE
+           ========================================== */
+        .tabs-container { 
+            display: flex; 
+            background: #e2e8f0; 
+            padding: 5px; 
+            border-radius: 15px; 
+            margin-bottom: 20px; 
         }
-        .tab-btn.active { background: var(--gold); color: white; border-color: var(--gold); }
-        .bien-gallery { display: flex; gap: 5px; overflow-x: auto; border-radius: 12px; }
-        .bien-gallery img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+        .tab-btn { 
+            flex: 1; 
+            border: none; 
+            padding: 10px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            color: #64748b; 
+            background: transparent; 
+            cursor: pointer; 
+            font-size: 0.9rem;
+        }
+        .tab-btn.active { 
+            background: white; 
+            color: var(--blue); 
+        }
 
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.6); z-index: 2000; display: none;
-            align-items: center; justify-content: center; padding: 20px;
+        .bien-gallery { 
+            display: flex; 
+            gap: 10px; 
+            overflow-x: auto; 
+            scrollbar-width: none; 
+            padding-bottom: 5px; 
+            margin-top: 10px;
         }
-        .modal-content { background: var(--card); width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; text-align: left; max-height: 90vh; overflow-y: auto; }
-        
-        .table-suivi { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
-        .table-suivi th, .table-suivi td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); }
-        .table-suivi th { background: #F1F5F9; color: var(--text-light); font-weight: 600; }
+        .bien-gallery::-webkit-scrollbar { 
+            display: none; 
+        }
+        .bien-gallery img { 
+            width: 120px; 
+            height: 120px; 
+            object-fit: cover; 
+            border-radius: 15px; 
+            flex-shrink: 0; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+
+        /* ==========================================
+           6. UPLOAD AREA
+           ========================================== */
+        .photo-upload-area { 
+            border: 2px dashed #cbd5e1; 
+            border-radius: 20px; 
+            padding: 25px; 
+            text-align: center; 
+            color: #64748b; 
+            cursor: pointer; 
+            margin-bottom: 15px; 
+            transition: background 0.2s;
+        }
+        .photo-upload-area:hover {
+            background: #f1f5f9;
+        }
+        .photo-upload-area i {
+            font-size: 1.8rem;
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+        #previews-container { 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 10px; 
+            flex-wrap: wrap; 
+        }
+        .preview-img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* ==========================================
+           7. ENCAISSEMENT GRID
+           ========================================== */
+        .mode-pay-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px; 
+            margin-bottom: 15px; 
+        }
+        .mode-pay-box { 
+            text-align: center; 
+            background: #f1f5f9; 
+            padding: 12px 5px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            transition: all 0.2s;
+        }
+        input[type="radio"] { 
+            display: none; 
+        }
+        input[type="radio"]:checked + .mode-pay-box { 
+            border-color: var(--blue); 
+            background: #E0E7FF; 
+            color: var(--blue); 
+        }
+
+        /* ==========================================
+           8. BOUTONS
+           ========================================== */
+        .btn-primary { 
+            background: var(--blue); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 15px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            display: block; 
+            text-align: center; 
+            font-size: 1rem;
+            text-decoration: none;
+        }
+        .btn-primary:active { 
+            transform: scale(0.98); 
+            opacity: 0.9; 
+        }
+        .btn-outline { 
+            background: #f1f5f9; 
+            color: #475569; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            width: 100%; 
+            font-weight: 600; 
+            margin-top: 5px;
+        }
+        .fab-add { 
+            position: fixed; 
+            bottom: 25px; 
+            right: calc(50% - 200px); /* Ajusté pour rester calé sur le shell mobile */
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            background: var(--blue); 
+            color: white; 
+            border: none; 
+            font-size: 24px; 
+            box-shadow: 0 10px 20px rgba(74, 105, 255, 0.3); 
+            z-index: 100; 
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @media (max-width: 450px) {
+            .fab-add { right: 25px; }
+        }
+
+        /* ==========================================
+           9. MODALS
+           ========================================== */
+        .modal { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.6); 
+            display: none; /* Masqué par défaut */
+            align-items: center; 
+            justify-content: center; 
+            z-index: 2000; 
+            padding: 20px; 
+        }
+        .modal-content { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 30px; 
+            width: 100%; 
+            max-width: 380px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            animation: slideUp 0.3s ease-out; 
+        }
+        @keyframes slideUp { 
+            from { transform: translateY(20px); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2 style="color: var(--dark); margin-bottom: 5px;"><i class="fas fa-hotel"></i> Sama Gestion Pro</h2>
-            <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 25px;">Espace Sécurisé</p>
-            <div id="standard-login-zone">
-                <input type="email" id="login-username" placeholder="Adresse Email">
-                <input type="password" id="login-password" placeholder="Mot de passe">
-                <button class="btn-primary" onclick="verifierConnexion()">Se connecter</button>
-                <p id="login-error" style="color: var(--red); font-size: 0.85rem; margin-top: 10px; display: none;"></p>
-            </div>
-        </div>
-    </div>
-
-    <header>
-        <div class="logo-area"><i class="fas fa-building"></i> Sama Gestion Pro</div>
-        <div class="user-badge" id="header-user-badge"></div>
-    </header>
-
-    <main>
-        <div id="view-dashboard" class="view" style="display: block;">
-            <div class="form-card" style="background: linear-gradient(135deg, var(--dark) 0%, #1E293B 100%); color: white; border: none; text-align: center; padding: 30px 20px; border-bottom: 4px solid var(--gold);">
-                <p style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; font-weight: 500; color: var(--gold-light);">Commissions Générées</p>
-                <h1 id="total-display" style="font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; color:#FFFFFF;">0 CFA</h1>
+    <div class="app-shell">
+        
+        <div id="view-dashboard" class="view active-view">
+            <div class="main-header">
+                <h1>ImmoGestion Pro</h1>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px;">
-                <button class="form-card" style="text-align: center; cursor: pointer; background: var(--card);" onclick="ouvrirFormulaireAjout()">
-                    <i class="fas fa-plus-circle" style="color: var(--gold); font-size: 1.8rem; margin-bottom: 8px;"></i><br>
-                    <span style="font-weight: 600; font-size: 0.85rem;">Nouveau Bien</span>
-                </button>
-                <button class="form-card" style="text-align: center; cursor: pointer; background: var(--card);" onclick="showView('collecte')">
-                    <i class="fas fa-wallet" style="color: var(--green); font-size: 1.8rem; margin-bottom: 8px;"></i><br>
-                    <span style="font-weight: 600; font-size: 0.85rem;">Encaisser / Suivi</span>
-                </button>
+            <div class="revenue-card">
+                <h3>Recettes du mois</h3>
+                <p class="revenue-amount" id="total-revenue">0,00 €</p>
+            </div>
+
+            <div class="menu-grid">
+                <div class="menu-card" onclick="switchView('view-biens')">
+                    <span class="dot blue-dot"></span>
+                    <div class="icon-circle"><i class="fa-solid fa-building"></i></div>
+                    <p>Mes Biens</p>
+                </div>
+                <div class="menu-card" onclick="switchView('view-locataires')">
+                    <span class="dot orange-dot"></span>
+                    <div class="icon-circle"><i class="fa-solid fa-users"></i></div>
+                    <p>Locataires</p>
+                </div>
+                <div class="menu-card" onclick="switchView('view-encaissement')">
+                    <span class="dot green-dot"></span>
+                    <div class="icon-circle"><i class="fa-solid fa-wallet"></i></div>
+                    <p>Encaisser</p>
+                </div>
+                <div class="menu-card" onclick="switchView('view-historique')">
+                    <span class="dot navy-dot"></span>
+                    <div class="icon-circle"><i class="fa-solid fa-chart-line"></i></div>
+                    <p>Historique</p>
+                </div>
             </div>
         </div>
 
         <div id="view-biens" class="view">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2>Catalogue Immobilier</h2>
-                <button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 0.8rem;" onclick="ouvrirFormulaireAjout()"><i class="fas fa-plus"></i> Ajouter</button>
-            </div>
-            <input type="text" id="search-bien-input" placeholder="🔍 Rechercher un quartier, un nom..." oninput="renderBiens()">
-            <div class="tabs-container">
-                <button class="tab-btn active" onclick="filterBiens('Disponible', event)">Disponibles</button>
-                <button class="tab-btn" onclick="filterBiens('Occupé', event)">Loués</button>
-            </div>
-            <div id="biens-list" style="display: grid; gap: 15px;"></div>
-        </div>
-
-        <div id="view-ajouter-bien" class="view">
-            <h2 id="form-bien-title">Nouveau Bien</h2>
-            <div class="form-card">
-                <input type="hidden" id="edit-bien-id">
-                <label>Nom du bien / Référence</label>
-                <input type="text" id="new-bien-nom" placeholder="Ex: Studio Almadies A3">
-                <label>Type de bien</label>
-                <select id="new-bien-type">
-                    <option value="Studio">Studio</option>
-                    <option value="Appartement">Appartement</option>
-                    <option value="Chambre">Chambre</option>
-                    <option value="Magasin">Magasin</option>
-                </select>
-                <label>Prix Loyer Mensuel (CFA)</label>
-                <input type="number" id="new-bien-loyer" placeholder="Ex: 250000" oninput="calculerProrataAutomatique()">
-                <label>Adresse / Quartier</label>
-                <input type="text" id="new-bien-adresse" placeholder="Ex: Patte d'Oie, Dakar">
-                <label>Commission Agence</label>
-                <input type="text" id="new-bien-com" value="10%">
-                
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-                <label>Nom du Propriétaire</label>
-                <input type="text" id="new-bien-proprio" placeholder="Ex: M. Diop">
-                <label>Téléphone du Propriétaire (Ex: +22177... ou +337...)</label>
-                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: +221771234567">
-                
-                <div id="edit-only-fields" style="display:none;">
-                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-                    <label>Nom du Locataire</label>
-                    <input type="text" id="edit-bien-locataire" placeholder="Nom du locataire actuel">
-                    <label>Téléphone du Locataire</label>
-                    <input type="tel" id="edit-bien-locataire-tel" placeholder="Ex: +221779876543">
-                    <label>Date d'entrée officielle du locataire</label>
-                    <input type="date" id="edit-bien-date-entree" onchange="calculerProrataAutomatique()">
-                    
-                    <div id="prorata-box" style="background: var(--gold-light); padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; border-left: 4px solid var(--gold);">
-                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--gold);">💡 Aide au calcul (Prorata) :</span>
-                        <p id="prorata-result" style="font-size: 0.9rem; margin-top: 4px; font-weight: 700; color: var(--dark);"></p>
-                    </div>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-                <label>Photos du Bien (Max 3)</label>
-                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')" style="background: transparent; padding: 0;">
-                <div id="previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
-                <button id="btn-save-bien" class="btn-primary" onclick="saveBienPro()">Enregistrer</button>
-                <button class="btn-outline" style="margin-top: 8px;" onclick="showView('biens')">Annuler</button>
-            </div>
-        </div>
-
-        <div id="view-etat-lieux" class="view">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2>États des Lieux</h2>
-                <button class="btn-primary" style="width: auto; padding: 8px 14px; font-size: 0.8rem;" onclick="ouvrirFormulaireEDL()"><i class="fas fa-file-signature"></i> Nouveau Rapport</button>
-            </div>
-            <div id="edl-list" style="display: grid; gap: 12px;"></div>
-        </div>
-
-        <div id="view-nouveau-edl" class="view">
-            <h2>Nouveau Certificat EDL</h2>
-            <div class="form-card">
-                <label>Bien sélectionné</label>
-                <select id="edl-bien-select"></select>
-                <label>Type d'État des Lieux</label>
-                <select id="edl-type">
-                    <option value="Entrée">📥 Entrée (Remise des clés)</option>
-                    <option value="Sortie">📤 Sortie (Restitution des clés)</option>
-                </select>
-                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-                <div id="edl-rooms-container"></div>
-                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-                <label>🚿 Relevé Compteur Eau (m3)</label>
-                <input type="number" id="edl-eau" placeholder="Ex: 125">
-                <label>⚡ Relevé Compteur Électricité (kWh)</label>
-                <input type="number" id="edl-elec" placeholder="Ex: 4721">
-                <label>🔑 Nombre de trousseaux remis</label>
-                <input type="number" id="edl-cles" placeholder="Ex: 2">
-                <label>📸 Photos de Justificatif (Max 3)</label>
-                <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'edl')" style="background: transparent; padding: 0;">
-                <div id="edl-previews-container" style="display: flex; gap: 8px; margin-bottom: 15px;"></div>
-                <label>📝 Remarques particulières</label>
-                <textarea id="edl-notes" rows="3" placeholder="Notez une dégradation spécifique..."></textarea>
-                <button id="btn-save-edl" class="btn-primary" onclick="saveEDLCloud()">Valider et Envoyer</button>
-                <button class="btn-outline" style="margin-top: 8px;" onclick="showView('etat-lieux')">Annuler</button>
-            </div>
-        </div>
-
-        <div id="view-collecte" class="view">
-            <h2>Encaisser un versement</h2>
-            <div class="form-card">
-                <label>Sélectionner le bien occupé</label>
-                <select id="c-bien-select" onchange="remplirLoyer()"></select>
-                <label>Nature du Versement</label>
-                <select id="c-type" onchange="remplirLoyer()">
-                    <option value="Loyer">Loyer Mensuel</option>
-                    <option value="Prorata">Loyer Prorata</option>
-                    <option value="Caution">Caution de Garantie (3 mois)</option>
-                    <option value="Avance">Avance Partielle</option>
-                </select>
-                <label>Montant Encaissé (CFA)</label>
-                <input type="number" id="c-montant">
-                <label>Mode de paiement</label>
-                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-weight: 500; font-size: 0.9rem;">
-                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Espèces" checked style="width:auto; margin:0;"> Espèces</label>
-                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Wave/OM" style="width:auto; margin:0;"> Wave / OM</label>
-                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="pay-mode" value="Virement" style="width:auto; margin:0;"> Virement</label>
-                </div>
-                <button class="btn-primary" style="background: var(--green);" onclick="validerCollecte('locataire')"><i class="fab fa-whatsapp"></i> Valider & Reçu Locataire</button>
-                <button class="btn-outline" style="margin-top: 8px; border-color: var(--green); color: var(--green);" onclick="validerCollecte('proprietaire')">Valider & Reçu Propriétaire</button>
-            </div>
-        </div>
-
-        <div id="view-planning" class="view">
-            <h2>Planning des Visites</h2>
-            <div class="form-card">
-                <h3>Planifier un rendez-vous</h3>
-                <label>Nom du Client Prospect</label>
-                <input type="text" id="p-name" placeholder="Ex: Aminata Sarr">
-                <label>Numéro de Téléphone Client</label>
-                <input type="tel" id="p-tel" placeholder="Ex: +221771234567">
-                <label>Bien à faire visiter</label>
-                <select id="p-bien-select"></select>
-                <label>Date et Heure</label>
-                <input type="datetime-local" id="p-date">
-                <button class="btn-primary" onclick="sauverVisite()">Fixer le rendez-vous</button>
-            </div>
-            <h3>Visites programmées</h3>
-            <div id="visites-list" style="display: grid; gap: 12px; margin-top: 10px;"></div>
-        </div>
-
-        <div id="view-profil" class="view">
-            <h2>Mon Espace & Réseau</h2>
-            <div class="form-card" style="text-align: center;">
-                <h3 id="profil-statut-actuel">Chargement...</h3>
-                <span id="profil-role-badge" style="background: var(--gold-light); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: var(--gold);"></span>
-                
-                <div style="margin-top: 20px; text-align: left;">
-                    <label>Mon lien de paiement personnel (Wave / OM / K Pay)</label>
-                    <input type="text" id="user-payment-link" placeholder="Ex: https://pay.wave.com/m/your-tag" onchange="sauvegarderLienPaiement(this.value)">
-                </div>
-
-                <button class="btn-outline" style="color: var(--red); border-color: var(--red); margin-top: 15px;" onclick="deconnexion()">Se déconnecter</button>
+            <div class="section-header">
+                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2>Ajouter un Bien</h2>
             </div>
 
-            <div id="admin-management-section" class="form-card" style="display: none; margin-top: 20px; border-left: 4px solid var(--gold);">
-                <h3><i class="fas fa-shield-alt"></i> Activer un Compte Partenaire</h3>
-                <div style="display: grid; gap: 5px;">
-                    <label>Type d'accès</label>
-                    <select id="admin-new-user-role">
-                        <option value="Courtier">Courtier Indépendant</option>
-                        <option value="Agence">Agence Partenaire</option>
+            <form id="form-bien" onsubmit="saveBien(event)">
+                <div class="form-card">
+                    <label>Nom ou Référence du bien</label>
+                    <input type="text" id="bien-nom" placeholder="Ex: Studio Paris 11, Immeuble B" required>
+
+                    <label>Type de bien</label>
+                    <select id="bien-type">
+                        <option value="Studio">Studio</option>
+                        <option value="Appartement">Appartement</option>
+                        <option value="Maison">Maison</option>
+                        <option value="Bureau">Bureau</option>
                     </select>
-                    <label>Adresse E-mail</label>
-                    <input type="email" id="admin-new-user-name" placeholder="Ex: partenaire@gmail.com">
-                    <label>Mot de passe (6 char. min)</label>
-                    <input type="password" id="admin-new-user-pin" placeholder="Choisir un mot de passe">
-                    <button class="btn-primary" onclick="adminCreerCompteCourtier()">Créer le compte</button>
-                </div>
-                <h4 style="margin-top: 25px; margin-bottom: 10px; font-size:0.9rem;">Membres du réseau activés</h4>
-                <div id="admin-users-list"></div>
-            </div>
-        </div>
-    </main>
 
-    <div id="modal-bien" class="modal" onclick="fermerModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div id="modal-body"></div>
+                    <label>Loyer Hors Charges (€)</label>
+                    <input type="number" id="bien-loyer" placeholder="Ex: 650" required>
+
+                    <label>Charges (€)</label>
+                    <input type="number" id="bien-charges" placeholder="Ex: 50" required>
+                </div>
+
+                <div class="form-card">
+                    <label>Photos du bien</label>
+                    <div class="photo-upload-area" onclick="document.getElementById('bien-photos').click()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <p style="margin:5px 0 0; font-size:0.85rem; font-weight:600;">Ajouter des photos</p>
+                        <input type="file" id="bien-photos" multiple accept="image/*" style="display:none;" onchange="previewImages(this)">
+                    </div>
+                    <div id="previews-container"></div>
+                </div>
+
+                <button type="submit" class="btn-primary">Enregistrer le bien</button>
+            </form>
+        </div>
+
+        <div id="view-locataires" class="view">
+            <div class="section-header">
+                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2>Nouveau Locataire</h2>
+            </div>
+
+            <form id="form-locataire" onsubmit="saveLocataire(event)">
+                <div class="form-card">
+                    <label>Nom complet du locataire</label>
+                    <input type="text" id="loc-nom" placeholder="Jean Dupont" required>
+
+                    <label>Téléphone</label>
+                    <input type="tel" id="loc-tel" placeholder="06 12 34 56 78" required>
+
+                    <label>Email</label>
+                    <input type="email" id="loc-email" placeholder="jean.dupont@email.com" required>
+                </div>
+
+                <div class="form-card">
+                    <label>Assigner à un bien</label>
+                    <select id="loc-bien-select" required>
+                        <option value="">-- Choisir un bien disponible --</option>
+                    </select>
+
+                    <label>Date d'entrée dans les lieux</label>
+                    <input type="date" id="loc-date-entree" required>
+                </div>
+
+                <button type="submit" class="btn-primary">Créer le contrat</button>
+            </form>
+        </div>
+
+        <div id="view-encaissement" class="view">
+            <div class="section-header">
+                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2>Encaisser un loyer</h2>
+            </div>
+
+            <form id="form-encaissement" onsubmit="processEncaissement(event)">
+                <div class="form-card">
+                    <label>Sélectionner le locataire</label>
+                    <select id="pay-locataire-select" onchange="autoFillAmount()" required>
+                        <option value="">-- Sélectionner --</option>
+                    </select>
+
+                    <label>Montant payé (€)</label>
+                    <input type="number" id="pay-montant" placeholder="0.00" required>
+                </div>
+
+                <div class="form-card">
+                    <label>Mode de paiement</label>
+                    <div class="mode-pay-grid">
+                        <label>
+                            <input type="radio" name="mode-paiement" value="Virement" checked>
+                            <div class="mode-pay-box">VIREMENT</div>
+                        </label>
+                        <label>
+                            <input type="radio" name="mode-paiement" value="Carte">
+                            <div class="mode-pay-box">CARTE</div>
+                        </label>
+                        <label>
+                            <input type="radio" name="mode-paiement" value="Espèces">
+                            <div class="mode-pay-box">ESPÈCES</div>
+                        </label>
+                    </div>
+
+                    <label>Période / Mois</label>
+                    <select id="pay-periode">
+                        <option value="Mai 2026">Mai 2026</option>
+                        <option value="Juin 2026">Juin 2026</option>
+                        <option value="Juillet 2026">Juillet 2026</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary">Valider l'encaissement</button>
+            </form>
+        </div>
+
+        <div id="view-historique" class="view">
+            <div class="section-header">
+                <button class="back-btn" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2>Historique de paiement</h2>
+            </div>
+
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchTab('tous')">Tous</button>
+                <button class="tab-btn" onclick="switchTab('Virement')">Virement</button>
+                <button class="tab-btn" onclick="switchTab('Carte')">Carte</button>
+            </div>
+
+            <div id="transactions-list"></div>
+        </div>
+
+        <button class="fab-add" onclick="switchView('view-encaissement')">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+
+    </div>
+
+    <div id="receipt-modal" class="modal">
+        <div class="modal-content">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="width: 60px; height: 60px; background: #E0E7FF; color: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.6rem;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 1.4rem;">Paiement Enregistré !</h3>
+                <p style="color: #64748b; font-size: 0.85rem; margin: 5px 0 0;">Le reçu a été généré avec succès.</p>
+            </div>
+            
+            <div style="background: var(--bg); padding: 15px; border-radius: 15px; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6;">
+                <div style="display: flex; justify-content: space-between;"><strong>Locataire :</strong> <span id="modal-loc">-</span></div>
+                <div style="display: flex; justify-content: space-between;"><strong>Bien :</strong> <span id="modal-bien">-</span></div>
+                <div style="display: flex; justify-content: space-between;"><strong>Période :</strong> <span id="modal-periode">-</span></div>
+                <div style="display: flex; justify-content: space-between;"><strong>Méthode :</strong> <span id="modal-methode">-</span></div>
+                <hr style="border: none; border-top: 1px dashed #cbd5e1; margin: 10px 0;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--blue); font-size: 1.05rem;">
+                    <span>Montant :</span> <span id="modal-montant">0.00 €</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="closeModal()">Terminer</button>
+            <button class="btn-outline" onclick="alert('Partage du reçu simulé (WhatsApp/Email)')">Partager le reçu</button>
         </div>
     </div>
 
-    <nav>
-        <div class="nav-item active" onclick="showView('dashboard'); resetNavStyles(this);">
-            <i class="fas fa-chart-pie"></i>Dash
-        </div>
-        <div class="nav-item" onclick="showView('biens'); resetNavStyles(this);">
-            <i class="fas fa-home"></i>Biens
-        </div>
-        <div class="nav-item" onclick="showView('etat-lieux'); resetNavStyles(this);">
-            <i class="fas fa-file-signature"></i>EDL
-        </div>
-        <div class="nav-item" onclick="showView('planning'); resetNavStyles(this);">
-            <i class="fas fa-calendar-alt"></i>Planning
-        </div>
-        <div class="nav-item" onclick="showView('profil'); resetNavStyles(this);">
-            <i class="fas fa-user-shield"></i>Réseau
-        </div>
-    </nav>
+    <script>
+        // --- 1. BASE DE DONNÉES LOCALES (SIMULÉE AVEC LOCALSTORAGE) ---
+        let database = JSON.parse(localStorage.getItem('immo_db')) || {
+            biens: [],
+            locataires: [],
+            transactions: []
+        };
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // Fonction pour sauvegarder l'état dans le LocalStorage
+        function saveToStorage() {
+            localStorage.setItem('immo_db', JSON.stringify(database));
+            updateDashboardCounters();
+            populateDropdowns();
+        }
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyB2Sa42rvZZyZu-lwfKNtu6RVvX1lXgA4s",
-        authDomain: "sama-gestion-pro.firebaseapp.com",
-        projectId: "sama-gestion-pro",
-        storageBucket: "sama-gestion-pro.firebasestorage.app",
-        messagingSenderId: "584735387587",
-        appId: "1:584735387587:web:4bb5f2c9671474da23d776"
-      };
+        // --- 2. GESTION DE LA NAVIGATION (VUES) ---
+        function switchView(viewId) {
+            // Masquer toutes les vues
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active-view');
+            });
+            // Afficher la vue demandée
+            document.getElementById(viewId).classList.add('active-view');
+            
+            // Si on charge l'historique, rafraîchir la liste
+            if(viewId === 'view-historique') {
+                renderTransactions('tous');
+            }
+        }
 
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-      const auth = getAuth(app);
+        // --- 3. PREVIEW IMAGE (AJOUT BIENS) ---
+        function previewImages(input) {
+            const container = document.getElementById('previews-container');
+            container.innerHTML = ''; // Reset les anciennes previews
+            if (input.files) {
+                Array.from(input.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.classList.add('preview-img');
+                        container.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
 
-      window.db = db; window.auth = auth; window.fsDoc = doc; window.fsGetDoc = getDoc;
-      window.fsSetDoc = setDoc; window.fsCollection = collection; window.fsGetDocs = getDocs;
-      window.fsUpdateDoc = updateDoc; window.fsDeleteDoc = deleteDoc;
-      window.fbSignIn = signInWithEmailAndPassword; window.fbSignOut = signOut; window.fbOnAuth = onAuthStateChanged;
+        // --- 4. ENREGISTREMENT DES BIENS ---
+        function saveBien(event) {
+            event.preventDefault();
+            const nom = document.getElementById('bien-nom').value;
+            const type = document.getElementById('bien-type').value;
+            const loyer = parseFloat(document.getElementById('bien-loyer').value);
+            const charges = parseFloat(document.getElementById('bien-charges').value);
+
+            const nouveauBien = {
+                id: 'b_' + Date.now(),
+                nom: nom,
+                type: type,
+                loyerHC: loyer,
+                charges: charges,
+                totalCC: loyer + charges
+            };
+
+            database.biens.push(nouveauBien);
+            saveToStorage();
+
+            alert('Bien immobilier enregistré avec succès !');
+            document.getElementById('form-bien').reset();
+            document.getElementById('previews-container').innerHTML = '';
+            switchView('view-dashboard');
+        }
+
+        // --- 5. ENREGISTREMENT DES LOCATAIRES ---
+        function saveLocataire(event) {
+            event.preventDefault();
+            const nom = document.getElementById('loc-nom').value;
+            const tel = document.getElementById('loc-tel').value;
+            const email = document.getElementById('loc-email').value;
+            const bienId = document.getElementById('loc-bien-select').value;
+            const dateEntree = document.getElementById('loc-date-entree').value;
+
+            const trouveBien = database.biens.find(b => b.id === bienId);
+
+            const nouveauLocataire = {
+                id: 'l_' + Date.now(),
+                nom: nom,
+                tel: tel,
+                email: email,
+                bienId: bienId,
+                bienNom: trouveBien ? trouveBien.nom : 'Inconnu',
+                loyerTotal: trouveBien ? trouveBien.totalCC : 0,
+                dateEntree: dateEntree
+            };
+
+            database.locataires.push(nouveauLocataire);
+            saveToStorage();
+
+            alert('Contrat locataire créé et activé !');
+            document.getElementById('form-locataire').reset();
+            switchView('view-dashboard');
+        }
+
+        // --- 6. GESTION DES SELECT DYNAMIQUES (DROPDOWNS) ---
+        function populateDropdowns() {
+            const locBienSelect = document.getElementById('loc-bien-select');
+            const payLocSelect = document.getElementById('pay-locataire-select');
+
+            // Reset
+            locBienSelect.innerHTML = '<option value="">-- Choisir un bien disponible --</option>';
+            payLocSelect.innerHTML = '<option value="">-- Sélectionner --</option>';
+
+            // Ajouter les biens existants au menu locataire
+            database.biens.forEach(bien => {
+                // Optionnel : vérifier si déjà occupé par un locataire
+                const estOccupe = database.locataires.some(l => l.bienId === bien.id);
+                const suffixe = estOccupe ? ' (Occupé)' : '';
+                locBienSelect.innerHTML += `<option value="${bien.id}">${bien.nom} - ${bien.totalCC}€ ${suffixe}</option>`;
+            });
+
+            // Ajouter les locataires existants au menu encaissement
+            database.locataires.forEach(loc => {
+                payLocSelect.innerHTML += `<option value="${loc.id}">${loc.nom} (${loc.bienNom})</option>`;
+            });
+        }
+
+        // Remplissage automatique du montant selon le locataire sélectionné
+        function autoFillAmount() {
+            const locId = document.getElementById('pay-locataire-select').value;
+            const locataire = database.locataires.find(l => l.id === locId);
+            if(locataire) {
+                document.getElementById('pay-montant').value = locataire.loyerTotal;
+            } else {
+                document.getElementById('pay-montant').value = '';
+            }
+        }
+
+        // --- 7. TRAITEMENT DE L'ENCAISSEMENT & RENDER RECEIPT ---
+        function processEncaissement(event) {
+            event.preventDefault();
+            const locId = document.getElementById('pay-locataire-select').value;
+            const montant = parseFloat(document.getElementById('pay-montant').value);
+            const mode = document.querySelector('input[name="mode-paiement"]:checked').value;
+            const periode = document.getElementById('pay-periode').value;
+
+            const locataire = database.locataires.find(l => l.id === locId);
+
+            if(!locataire) return alert("Sélectionnez un locataire valide.");
+
+            const transaction = {
+                id: 't_' + Date.now(),
+                locataireNom: locataire.nom,
+                bienNom: locataire.bienNom,
+                montant: montant,
+                mode: mode,
+                periode: periode,
+                dateAction: new Date().toLocaleDateString('fr-FR')
+            };
+
+            database.transactions.push(transaction);
+            saveToStorage();
+
+            // Remplir les données dans la Modal de reçu
+            document.getElementById('modal-loc').innerText = transaction.locataireNom;
+            document.getElementById('modal-bien').innerText = transaction.bienNom;
+            document.getElementById('modal-periode').innerText = transaction.periode;
+            document.getElementById('modal-methode').innerText = transaction.mode;
+            document.getElementById('modal-montant').innerText = transaction.montant.toFixed(2) + ' €';
+
+            // Afficher la modal
+            document.getElementById('receipt-modal').style.display = 'flex';
+            document.getElementById('form-encaissement').reset();
+        }
+
+        function closeModal() {
+            document.getElementById('receipt-modal').style.display = 'none';
+            switchView('view-dashboard');
+        }
+
+        // --- 8. CALCULS DU COMPTEUR (RECETTES DU MOIS) ---
+        function updateDashboardCounters() {
+            const total = database.transactions.reduce((sum, current) => sum + current.montant, 0);
+            document.getElementById('total-revenue').innerText = total.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
+        }
+
+        // --- 9. ONGLETS FILTRES & RENDU DE L'HISTORIQUE ---
+        function switchTab(mode) {
+            // Gérer le style actif sur les boutons d'onglets
+            const btns = document.querySelectorAll('.tabs-container .tab-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            renderTransactions(mode);
+        }
+
+        function renderTransactions(filterMode) {
+            const container = document.getElementById('transactions-list');
+            container.innerHTML = '';
+
+            // Filtrer la liste globale
+            const listeFiltree = filterMode === 'tous' 
+                ? database.transactions 
+                : database.transactions.filter(t => t.mode === filterMode);
+
+            if(listeFiltree.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:0.9rem; margin-top:30px;">Aucune transaction enregistrée.</p>`;
+                return;
+            }
+
+            // Générer les blocs HTML de l'historique
+            listeFiltree.reverse().forEach(t => {
+                container.innerHTML += `
+                    <div class="form-card" style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; margin-bottom:10px;">
+                        <div>
+                            <p style="margin:0; font-weight:bold; font-size:0.95rem;">${t.locataireNom}</p>
+                            <p style="margin:2px 0 0; color:#64748b; font-size:0.75rem;">${t.bienNom} • ${t.periode}</p>
+                            <span style="display:inline-block; margin-top:5px; font-size:0.7rem; background:#E0E7FF; color:var(--blue); padding:2px 8px; border-radius:8px; font-weight:bold;">${t.mode}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <p style="margin:0; font-weight:bold; color:var(--green); font-size:1.1rem;">+ ${t.montant.toFixed(2)} €</p>
+                            <p style="margin:2px 0 0; color:#94a3b8; font-size:0.7rem;">${t.dateAction}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 10. INITIALISATION AU CHARGEMENT ---
+        window.onload = function() {
+            updateDashboardCounters();
+            populateDropdowns();
+        };
     </script>
-    <script src="script.js"></script>
 </body>
 </html>
