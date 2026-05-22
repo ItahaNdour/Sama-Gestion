@@ -35,10 +35,11 @@ window.onload = () => {
             }
             
             await chargerDonneesCloud();
-            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'none'; // Dissimulation immédiate si connecté
             majInterfaceProfil();
             showView('dashboard');
         } else {
+            // Seul cas où on affiche l'écran de login : Firebase confirme l'absence de session active
             document.getElementById('login-screen').style.display = 'flex';
         }
     });
@@ -61,7 +62,6 @@ async function chargerDonneesCloud() {
         const docCom = await window.fsGetDoc(window.fsDoc(window.db, "config", "finance"));
         if(docCom.exists()) comTotaleGlobal = docCom.data().comTotaleGlobal || 0;
         
-        // ETAPE 5 - ALERTE DIRECTE AU LANCEMENT
         verifierAlertesEcheances();
     } catch (e) { console.error(e); }
 }
@@ -77,7 +77,7 @@ async function verifierConnexion() {
             majInterfaceProfil(); showView('dashboard'); return;
         }
         await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-    } catch (error) { alert("Erreur d'accès"); }
+    } catch (error) { alert("Erreur d'accès, veuillez vérifier vos identifiants."); }
 }
 
 function deconnexion() { window.fbSignOut(window.auth); document.getElementById('login-screen').style.display = 'flex'; }
@@ -91,7 +91,6 @@ function majInterfaceProfil() {
 
     if (profilRole === "SuperAdmin") {
         document.getElementById('admin-management-section').style.display = 'block';
-        renderAdminAgencesList();
     }
 }
 
@@ -102,6 +101,7 @@ async function sauvegarderLienPaiement(val) {
 }
 
 function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
+    if(!telephone) telephone = "";
     let propre = telephone.replace(/\s+/g, '').replace(/[-+]/g, '');
     if (propre.length === 9 && propre.startsWith('7')) propre = '221' + propre;
     let signature = `\n\nCordiales salutations,\n*${courtierNom}*`;
@@ -109,22 +109,44 @@ function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
     window.location.href = `https://api.whatsapp.com/send?phone=${propre}&text=${encodeURIComponent(message + signature)}`;
 }
 
-// ETAPE 5 - GESTION DU MATCH DES ALERTES AU MATIN
+// ==========================================
+// SCANS ET ALERTES AUTOMATIQUES (ÉTAPES 5)
+// ==========================================
 function verifierAlertesEcheances() {
     const conteneurBox = document.getElementById('morning-alerts-box');
     const conteneurListe = document.getElementById('morning-alerts-list');
-    let alertesHtml = ""; const aujourdhui = new Date();
+    if(!conteneurBox || !conteneurListe) return;
+    
+    let alertesHtml = ""; 
+    const aujourdhui = new Date();
 
+    // 1. Alertes visites imminentes
     visites.forEach(v => {
         if(v.verrouille) return;
         const diff = new Date(v.date) - aujourdhui;
         const jours = Math.ceil(diff / (1000 * 60 * 60 * 24));
         if(jours === 0 || jours === 1) {
+            const txtJour = jours === 0 ? "aujourd'hui" : "demain";
             alertesHtml += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:4px; border-radius:6px; font-size:0.75rem; border:1px solid #FEB2B2;">
-                    <span>⏳ Visite avec <b>${v.nom}</b> bientôt (${v.bien}).</span>
-                    <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:#2ECC71; color:white;" onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre RDV pour le bien ${v.bien}.')">💬 Rappel</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; border-radius:6px; font-size:0.75rem; border:1px solid #FEB2B2;">
+                    <span>⏳ Visite avec <b>${v.nom}</b> ${txtJour} (${v.bien}).</span>
+                    <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:#2ECC71; color:white;" onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour ${v.nom}, je vous confirme notre RDV pour la visite du bien ${v.bien}. Merci de confirmer.')">💬 Rappel</button>
                 </div>`;
+        }
+    });
+
+    // 2. Alertes loyers à encaisser sous 3 jours
+    biens.forEach(b => {
+        if(b.statut === 'Occupé' && b.dateEntree) {
+            const jourFacture = new Date(b.dateEntree).getDate();
+            const jourActuel = aujourdhui.getDate();
+            if(jourFacture - jourActuel <= 3 && jourFacture - jourActuel >= 0) {
+                alertesHtml += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:6px; border-radius:6px; font-size:0.75rem; border:1px solid #FEB2B2;">
+                        <span>📅 Échéance Loyer dû le <b>${jourFacture} du mois</b> pour ${b.nom} (${b.locataire}).</span>
+                        <button style="width:auto; padding:2px 6px; font-size:0.65rem; background:var(--gold); color:white;" onclick="envoyerMessageWhatsApp('${b.locataireTel}', 'Bonjour ${b.locataire}, nous vous rappelons que le loyer du bien ${b.nom} arrive à échéance.')">💵 Relancer</button>
+                    </div>`;
+            }
         }
     });
 
@@ -164,6 +186,7 @@ function ouvrirFormulaireAjout() {
     document.getElementById('previews-container').innerHTML = '';
     document.getElementById('new-bien-nom').value = ''; document.getElementById('new-bien-loyer').value = '';
     document.getElementById('new-bien-superficie').value = ''; document.getElementById('new-bien-adresse').value = '';
+    document.getElementById('form-bien-title').innerText = "Nouveau Bien";
     showView('ajouter-bien');
 }
 
@@ -199,7 +222,7 @@ function renderBiens() {
             <div style="position:relative; margin-top:4px;">
                 <b>${b.nom}</b> ${b.superficie ? `[📐 ${b.superficie}]` : ''}<br>
                 <span style="color:var(--gold); font-weight:700;">${parseInt(b.loyer).toLocaleString()} CFA</span>
-                <button onclick="event.stopPropagation(); partagerBienWhatsApp(${b.id})" style="position:absolute; right:0; bottom:0; width:auto; background:#2ECC71; color:white; padding:4px 8px; font-size:0.7rem;"><i class="fab fa-whatsapp"></i> Partager</button>
+                <button onclick="event.stopPropagation(); partagerBienWhatsApp(${b.id})" style="position:absolute; right:0; bottom:0; width:auto; background:#2ECC71; color:white; padding:4px 8px; font-size:0.7rem; border-radius:4px;"><i class="fab fa-whatsapp"></i> Partager</button>
             </div>
         </div>
     `).reverse().join('');
@@ -217,8 +240,8 @@ function voirDetailBien(id) {
     const b = biens.find(x => x.id === id);
     document.getElementById('modal-body').innerHTML = `
         <h3>${b.nom}</h3>
-        <p>Proprio: ${b.proprio} (${b.proprioTel})</p>
-        <p>Locataire: ${b.locataire} (${b.locataireTel})</p>
+        <p><b>Proprio:</b> ${b.proprio} (${b.proprioTel})</p>
+        <p><b>Locataire:</b> ${b.locataire} (${b.locataireTel})</p>
         <div style="display:flex; gap:6px; margin-top:10px;">
             <button class="btn-primary" onclick="toggleStatut(${b.id})">Changer Statut</button>
             <button class="btn-outline" onclick="ouvrirModifierBien(${b.id})">Modifier</button>
@@ -235,6 +258,7 @@ function ouvrirModifierBien(id) {
     document.getElementById('new-bien-adresse').value = b.adresse; document.getElementById('new-bien-proprio').value = b.proprio; document.getElementById('new-bien-proprio-tel').value = b.proprioTel;
     document.getElementById('edit-only-fields').style.display = 'block';
     document.getElementById('edit-bien-locataire').value = b.locataire; document.getElementById('edit-bien-locataire-tel').value = b.locataireTel; document.getElementById('edit-bien-date-entree').value = b.dateEntree;
+    document.getElementById('form-bien-title').innerText = "Modifier le Bien";
     showView('ajouter-bien');
 }
 
@@ -246,12 +270,12 @@ async function toggleStatut(id) {
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
 
-// ETL MODULE (SANS CHANGER DE COMPORTEMENT ANCIEN)
+// ETATS DES LIEUX MODULE (ETL)
 function ouvrirFormulaireEDL() {
     document.getElementById('edl-bien-select').innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
     document.getElementById('edl-rooms-container').innerHTML = ROOMS_CONFIG.map(r => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span>${r}</span><select class="room-state" data-r="${r}"><option>✨ Neuf</option><option>✅ Bon</option><option>❌ Mauvais</option></select>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span>${r}</span><select class="room-state" data-r="${r}" style="width:auto; margin:0;"><option>✨ Neuf</option><option>✅ Bon</option><option>❌ Mauvais</option></select>
         </div>`).join('');
     showView('nouveau-edl');
 }
@@ -265,8 +289,7 @@ async function saveEDLCloud() {
     };
     await window.fsSetDoc(window.fsDoc(window.db, "etats_des_lieux", String(docEtl.id)), docEtl);
     await chargerDonneesCloud();
-    // ENVOI WHATSAPP AUTOMATIQUE DU CONSTAT IMMÉDIAT
-    envoyerMessageWhatsApp("", `*CONSTAT ETL (${docEtl.type})*\nBien: ${docEtl.bien}\nEau: ${docEtl.eau} | Elec: ${docEtl.elec}\nEtat: ${docDocEtl.details}`);
+    envoyerMessageWhatsApp("", `*CONSTAT ETL (${docEtl.type})*\nBien: ${docEtl.bien}\nEau: ${docEtl.eau} | Elec: ${docEtl.elec}\nEtat: ${docEtl.details}`);
     showView('etat-lieux');
 }
 
@@ -275,12 +298,12 @@ function renderEtatsLieuxList() {
         <div class="form-card">
             <b>${e.bien} (${e.type})</b> - ${e.date}<br>
             <small>${e.details}</small><br>
-            <button style="width:auto; margin-top:6px; padding:2px 6px; background:#2ECC71; color:white;" onclick="envoyerMessageWhatsApp('', 'ETL ${e.bien}: ${e.details}')">📳 Renvoyer</button>
+            <button style="width:auto; margin-top:6px; padding:4px 8px; background:#2ECC71; color:white; font-size:0.7rem;" onclick="envoyerMessageWhatsApp('', 'ETL ${e.bien}: ${e.details}')"><i class="fab fa-whatsapp"></i> Renvoyer</button>
         </div>
     `).reverse().join('');
 }
 
-// CAISSE ET ENCAISSEMENTS
+// CAISSE / FLUX
 function analyserReliquatComptable() {
     const n = document.getElementById('c-bien-select').value; const b = biens.find(x => x.nom === n);
     if(!b) return; document.getElementById('c-montant').value = b.loyer;
@@ -303,42 +326,71 @@ async function validerCollecte() {
     await window.fsSetDoc(window.fsDoc(window.db, "biens", String(b.id)), b);
     await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
     await chargerDonneesCloud();
-    // RE-CONVERTIT EN NOTIFICATION WHATSAPP DIRECTE
     envoyerMessageWhatsApp(b.locataireTel, `Reçu de paiement : ${mt} CFA encaissé pour le ${type} du bien ${b.nom}. Merci !`, true);
     showView('dashboard');
 }
 
-// VISITES AVEC INTEGRATION SYSTEME DE VERROUILLAGE SOLICITÉ
+// ==========================================
+// CONFIGURATION MODULE VISITES CORRIGÉES
+// ==========================================
 async function sauverVisite() {
     const struct = {
-        id: Date.now(), nom: document.getElementById('p-name').value, tel: document.getElementById('p-tel').value,
-        bien: document.getElementById('p-bien-select').value, date: document.getElementById('p-date').value,
-        statutChecking: "Planifié", qualification: "Non qualifié", verrouille: false
+        id: Date.now(), 
+        nom: document.getElementById('p-name').value, 
+        tel: document.getElementById('p-tel').value,
+        bien: document.getElementById('p-bien-select').value, 
+        date: document.getElementById('p-date').value,
+        notesPerso: document.getElementById('p-notes-libre') ? document.getElementById('p-notes-libre').value : "",
+        statutChecking: "Planifié", 
+        qualification: "Non qualifié", 
+        verrouille: false
     };
     await window.fsSetDoc(window.fsDoc(window.db, "visites", String(struct.id)), struct);
-    await chargerDonneesCloud(); renderVisites();
+    
+    document.getElementById('p-name').value = "";
+    document.getElementById('p-tel').value = "";
+    if(document.getElementById('p-notes-libre')) document.getElementById('p-notes-libre').value = "";
+    
+    await chargerDonneesCloud(); 
+    renderVisites();
 }
 
 function renderVisites() {
     document.getElementById('visites-list').innerHTML = visites.map(v => {
         const estVerrouille = v.verrouille === true;
         return `
-        <div class="form-card">
-            <b>${v.nom}</b> - ${v.bien}<br><small>${new Date(v.date).toLocaleString()}</small>
+        <div class="form-card" style="position:relative;">
+            <button onclick="supprimerVisiteCloud(${v.id})" style="position:absolute; right:10px; top:10px; width:auto; background:transparent; color:var(--red); padding:0; font-size:0.9rem;">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+
+            <b>${v.nom}</b> - ${v.bien}<br>
+            <small>📅 ${new Date(v.date).toLocaleString('fr-FR', {dateStyle: 'short', timeStyle: 'short'})}</small>
+            
+            ${v.notesPerso ? `<div style="background:var(--bg); padding:4px; border-radius:4px; font-size:0.7rem; margin:4px 0; color:var(--text-light);">📝 <i>${v.notesPerso}</i></div>` : ''}
+
             <div style="margin-top:6px; display:flex; gap:4px; align-items:center;">
-                <select id="chk-${v.id}" ${estVerrouille ? 'disabled' : ''}>
+                <select id="chk-${v.id}" ${estVerrouille ? 'disabled' : ''} style="margin:0; padding:4px; font-size:0.7rem; width:auto;">
                     <option ${v.statutChecking==='Planifié'?'selected':''}>Planifié</option>
                     <option ${v.statutChecking==='Honoré'?'selected':''}>Honoré</option>
                     <option ${v.statutChecking==='Absent'?'selected':''}>Absent</option>
                 </select>
-                <select id="qalf-${v.id}" ${estVerrouille ? 'disabled' : ''}>
+                <select id="qalf-${v.id}" ${estVerrouille ? 'disabled' : ''} style="margin:0; padding:4px; font-size:0.7rem; width:auto;">
                     <option ${v.qualification==='Non qualifié'?'selected':''}>Non qualifié</option>
                     <option ${v.qualification==='Client Sérieux'?'selected':''}>Client Sérieux</option>
                 </select>
-                ${estVerrouille ? '🔒' : `<button style="padding:2px 4px; background:var(--dark); color:white;" onclick="validerPointageVisite(${v.id})">OK</button>`}
+                ${estVerrouille ? '🔒' : `<button style="width:auto; padding:4px 8px; background:var(--dark); color:white; font-size:0.7rem;" onclick="validerPointageVisite(${v.id})">OK</button>`}
             </div>
         </div>`;
     }).reverse().join('');
+}
+
+async function supprimerVisiteCloud(id) {
+    if(confirm("Supprimer définitivement ce rendez-vous ?")) {
+        await window.fsDeleteDoc(window.fsDoc(window.db, "visites", String(id)));
+        await chargerDonneesCloud();
+        renderVisites();
+    }
 }
 
 async function validerPointageVisite(id) {
@@ -361,4 +413,3 @@ function showView(id) {
 
 function resetNavStyles(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
 function adminCreerCompteCourtier() {}
-function renderAdminAgencesList() {}
