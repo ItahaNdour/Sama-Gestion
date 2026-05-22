@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SAMA GESTION PRO</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -15,7 +15,6 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* INTEGRATION DU DE-ZOOM GLOBAL */
         body { background: var(--bg); color: var(--text); padding-bottom: 80px; font-size: 13px; }
         .container { max-width: 480px; margin: 0 auto; padding: 12px 10px; }
         
@@ -47,7 +46,6 @@
         .kpi-card { background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius); text-align: center; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         
-        /* NAVIGATION STABLE EN BAS */
         nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; z-index: 999; }
         .nav-item { color: #94A3B8; display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; font-weight: 600; gap: 2px; background: none; border: none; width: auto; padding: 0; }
         .nav-item i { font-size: 1.1rem; }
@@ -60,16 +58,14 @@
         .payment-selector label { background: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; text-align: center; font-weight: 600; text-transform: none; font-size: 0.8rem; margin: 0; }
         .payment-selector input[type="radio"] { display: none; }
         .payment-selector input[type="radio"]:checked + label { background: var(--gold-light); border-color: var(--gold); color: var(--gold); }
-        .table-suivi { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-        .table-suivi th, .table-suivi td { padding: 6px; border-bottom: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" style="position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 15px;">
+    <div id="login-screen" style="position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 15px;">
         <div class="login-card" style="background: var(--surface); width: 100%; max-width: 340px; padding: 20px; border-radius: var(--radius); text-align: center;">
             <h3>SAMA GESTION</h3>
-            <p style="color: var(--text-light); font-size: 0.75rem; margin-bottom: 15px;">V9.5 • Version Compacte Sécurisée</p>
+            <p style="color: var(--text-light); font-size: 0.75rem; margin-bottom: 15px;">V9.6 • Version Compacte Connectée</p>
             <input type="email" id="login-username" placeholder="Email professionnel">
             <input type="password" id="login-password" placeholder="Mot de passe / Code PIN">
             <p id="login-error" style="color: var(--red); font-size: 0.75rem; margin-bottom: 10px; display: none;"></p>
@@ -88,7 +84,7 @@
             <h2><i class="fas fa-chart-pie" style="color:var(--gold);"></i> Vue d'ensemble</h2>
             
             <div id="morning-alerts-box" class="form-card" style="display:none; background: #FFF5F5; border: 1px solid #FEB2B2; padding: 10px; margin-bottom: 10px;">
-                <h3 style="color: #C53030; font-size: 0.85rem; margin-bottom: 6px;"><i class="fas fa-bell"></i> Alertes du jour</h3>
+                <h3 style="color: #C53030; font-size: 0.85rem; margin-bottom: 6px;"><i class="fas fa-bell"></i> Alertes & Échéances du jour</h3>
                 <div id="morning-alerts-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
             </div>
 
@@ -101,7 +97,7 @@
                     <i class="fas fa-plus-circle" style="font-size: 1.2rem; color: var(--gold); margin-bottom: 4px;"></i>
                     <span style="font-size: 0.75rem;">Ajouter un bien</span>
                 </button>
-                <button class="btn-outline" style="background: white; flex-direction: column; padding: 12px;" onclick="showView('collecte')">
+                <button class="btn-outline" style="background: white; flex-direction: column; padding: 12px;" onclick="resetNavStyles(document.querySelectorAll('.nav-item')[2]); showView('collecte')">
                     <i class="fas fa-wallet" style="font-size: 1.2rem; color: #10B981; margin-bottom: 4px;"></i>
                     <span style="font-size: 0.75rem;">Encaissement</span>
                 </button>
@@ -115,7 +111,7 @@
                     <i class="fas fa-plus"></i> Nouveau Bien
                 </button>
             </div>
-            <input type="text" id="search-bien-input" placeholder="🔍 Filtrer..." oninput="renderBiens()">
+            <input type="text" id="search-bien-input" placeholder="🔍 Filtrer par nom ou quartier..." oninput="renderBiens()">
             <div class="tabs">
                 <button class="tab-btn active" onclick="filterBiens('Disponible', event)">🟢 Dispo</button>
                 <button class="tab-btn" onclick="filterBiens('Occupé', event)">🔴 Loué</button>
@@ -150,13 +146,13 @@
                 <label>Prix de vente / Loyer (CFA) *</label>
                 <input type="number" id="new-bien-loyer" oninput="calculerProrataAutomatique()">
                 <label>Quartier / Adresse</label>
-                <input type="text" id="new-bien-adresse">
+                <input type="text" id="new-bien-adresse" placeholder="Ex: Dakar, Ngor">
                 <label>Honoraires / Com</label>
                 <input type="text" id="new-bien-com" value="10%">
                 <label>Propriétaire</label>
-                <input type="text" id="new-bien-proprio">
+                <input type="text" id="new-bien-proprio" placeholder="Nom du propriétaire">
                 <label>Téléphone Proprio</label>
-                <input type="tel" id="new-bien-proprio-tel">
+                <input type="tel" id="new-bien-proprio-tel" placeholder="Ex: 77XXXXXXX">
 
                 <div id="edit-only-fields" style="display:none; border-top:1px dashed var(--border); padding-top:10px;">
                     <label>Locataire actuel</label>
@@ -171,6 +167,7 @@
                 <label>Photos (Max 3)</label>
                 <input type="file" accept="image/*" multiple onchange="previewAndCompressImage(this, 'bien')" style="padding:4px; font-size:0.75rem;">
                 <div id="previews-container" class="bien-gallery"></div>
+                
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
                     <button class="btn-outline" onclick="showView('biens')">Annuler</button>
                     <button class="btn-primary" id="btn-save-bien" onclick="saveBienPro()">Enregistrer</button>
@@ -187,10 +184,9 @@
                 <select id="c-type" onchange="analyserReliquatComptable()">
                     <option value="Loyer">Loyer</option><option value="Caution">Caution (Dépôt)</option><option value="Prorata">Prorata</option><option value="Avance">Avance</option>
                 </select>
-                <div id="c-live-status" style="display:none; padding:6px; font-size:0.75rem; margin-bottom:10px; border-radius:4px;"></div>
                 <label>Montant (CFA)</label>
                 <input type="number" id="c-montant">
-                <label>Mode</label>
+                <label>Mode de paiement</label>
                 <div class="payment-selector">
                     <input type="radio" name="pay-mode" id="m-espece" value="Espèces" checked><label for="m-espece">💵 Espèces</label>
                     <input type="radio" name="pay-mode" id="m-wave" value="Mobile Money"><label for="m-wave">📱 Mobile Money</label>
@@ -229,11 +225,19 @@
         <div id="view-planning" class="view">
             <h2><i class="fas fa-calendar-alt" style="color:var(--gold);"></i> Gestion Visites</h2>
             <div class="form-card">
-                <h3>Planifier</h3>
+                <h3>Planifier un RDV</h3>
+                <label>Prospect</label>
                 <input type="text" id="p-name" placeholder="Nom du prospect">
+                <label>Téléphone WhatsApp</label>
                 <input type="tel" id="p-tel" placeholder="Numéro WhatsApp">
+                <label>Bien ciblé</label>
                 <select id="p-bien-select" style="margin-bottom:10px;"></select>
+                <label>Date & Heure</label>
                 <input type="datetime-local" id="p-date">
+                
+                <label>📝 Note libre / Commentaires</label>
+                <textarea id="p-notes-libre" rows="1" placeholder="Ex: Le client souhaite visiter le balcon..." style="resize: none;"></textarea>
+                
                 <button class="btn-primary" onclick="sauverVisite()">Fixer le RDV</button>
             </div>
             <div id="visites-list"></div>
