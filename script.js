@@ -1,14 +1,14 @@
-let profilRole = null;
-let courtierNom = null; 
-let courtierEmail = null;
-let monAvatar = "💼";
-let monLienPaiement = "";
+let profilRole = "SuperAdmin"; // En dur pour le test
+let courtierNom = "Direction Générale"; // En dur pour le test
+let courtierEmail = "admin@samagestion.com"; // En dur pour le test
+let monAvatar = "👑";
+let monLienPaiement = "https://wave.me/s/test"; // Exemple de lien en dur
 
 let utilisateurs = [];
 let biens = [];
 let visites = [];
 let etatsLieux = [];
-let comTotaleGlobal = 0;
+let comTotaleGlobal = 1500000; // Un montant de test pour voir si le KPI s'affiche
 
 let currentFilter = 'Disponible';
 let selectedPhotos = [];
@@ -16,107 +16,56 @@ let selectedPhotosEDL = [];
 
 const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
 
-// ✅ AUTH FIX SAFE (TA CORRECTION)
+// 🧪 SIMULATION CONNEXION EN DUR (SANS FIREBASE POUR LE MOMENT)
 window.onload = () => {
-    window.fbOnAuth(window.auth, async (user) => {
-        if (user) {
-            try {
-                courtierEmail = user.email;
-
-                const docProfil = await window.fsGetDoc(window.fsDoc(window.db, "profils", user.uid));
-
-                if (docProfil.exists()) {
-                    const data = docProfil.data();
-                    profilRole = data.role;
-                    courtierNom = data.fullname || data.username;
-                    monLienPaiement = data.lienPaiement || "";
-                    monAvatar = data.avatar || "🏢";
-                } else {
-                    await window.fsSetDoc(window.fsDoc(window.db, "profils", user.uid), {
-                        uid: user.uid,
-                        username: user.email.split('@')[0],
-                        fullname: "Direction Générale",
-                        role: "SuperAdmin",
-                        avatar: "👑",
-                        lienPaiement: "",
-                        email: user.email
-                    });
-
-                    profilRole = "SuperAdmin";
-                    courtierNom = "Direction Générale";
-                    monAvatar = "👑";
-                }
-
-                await chargerDonneesCloud();
-
-                document.getElementById('login-screen').style.display = 'none';
-                majInterfaceProfil();
-                showView('dashboard');
-
-            } catch (e) {
-                console.error("Erreur auth:", e);
-            }
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
+    console.log("🚀 Mode Diagnostic : Connexion en dur activée.");
+    try {
+        // On masque directement l'écran de login
+        if (document.getElementById('login-screen')) {
+            document.getElementById('login-screen').style.display = 'none';
         }
-    });
+        
+        // On charge l'interface avec nos données locales
+        majInterfaceProfil();
+        showView('dashboard');
+        
+        // On remplit des données fictives pour tester les modules sans le cloud
+        chargerDonneesFictivesTest();
+
+    } catch (e) {
+        console.error("Erreur lors de l'initialisation locale :", e);
+    }
 };
 
-async function chargerDonneesCloud() {
-    try {
-        const queryUsers = await window.fsGetDocs(window.fsCollection(window.db, "profils"));
-        utilisateurs = []; queryUsers.forEach(doc => utilisateurs.push(doc.data()));
-
-        const queryBiens = await window.fsGetDocs(window.fsCollection(window.db, "biens"));
-        biens = []; queryBiens.forEach(doc => biens.push(doc.data()));
-
-        const queryVisites = await window.fsGetDocs(window.fsCollection(window.db, "visites"));
-        visites = []; queryVisites.forEach(doc => visites.push(doc.data()));
-
-        const queryEDL = await window.fsGetDocs(window.fsCollection(window.db, "etats_des_lieux"));
-        etatsLieux = []; queryEDL.forEach(doc => etatsLieux.push(doc.data()));
-
-        const docCom = await window.fsGetDoc(window.fsDoc(window.db, "config", "finance"));
-        if(docCom.exists()) comTotaleGlobal = docCom.data().comTotaleGlobal || 0;
-        
-        verifierAlertesEcheances();
-    } catch (e) { console.error(e); }
+// Fonction temporaire pour simuler les données sans interroger Firestore
+function chargerDonneesFictivesTest() {
+    biens = [
+        { id: 1, nom: "Studio A2 Almadies", loyer: "350000", type: "Studio", superficie: "60 m2", typePapier: "Titre Foncier", adresse: "Almadies", proprio: "M. Diop", proprioTel: "771234567", locataire: "Aucun", locataireTel: "", dateEntree: "", com: "10%", statut: "Disponible", photos: ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"], historiquePaiements: [] },
+        { id: 2, nom: "Appartement 3B Ngor", loyer: "500000", type: "Appartement", superficie: "120 m2", typePapier: "Bail", adresse: "Ngor", proprio: "Mme Ndiaye", proprioTel: "777654321", locataire: "Amadou Diallo", locataireTel: "761112233", dateEntree: "2026-05-01", com: "10%", statut: "Occupé", photos: ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"], historiquePaiements: [] }
+    ];
+    
+    visites = [
+        { id: 101, nom: "Ibrahima Sow", tel: "709998877", bien: "Studio A2 Almadies", date: "2026-05-25T14:00", notesPerso: "Client très intéressé", statutChecking: "Planifié", qualification: "Client Sérieux", verrouille: false }
+    ];
+    
+    verifierAlertesEcheances();
 }
 
-// ✅ ✅ CORRECTION LOGIN (TA CORRECTION)
+// 🧪 SIMULATION DU BOUTON DE LOG IN SI JAMAIS IL REVIENT
 async function verifierConnexion() {
-    const emailSaisi = document.getElementById('login-username').value.trim();
-    const passSaisi = document.getElementById('login-password').value.trim();
-
-    if (!emailSaisi || !passSaisi) {
-        alert("Veuillez remplir tous les champs.");
-        return;
+    // Connexion instantanée sans Firebase
+    if (document.getElementById('login-screen')) {
+        document.getElementById('login-screen').style.display = 'none';
     }
-
-    try {
-        // ✅ ON SUPPRIME LE LOGIN LOCAL
-        await window.fbSignIn(window.auth, emailSaisi, passSaisi);
-
-    } catch (error) {
-        console.error("Erreur Firebase:", error.code, error.message);
-
-        if (error.code === "auth/user-not-found") {
-            alert("Utilisateur introuvable");
-        } else if (error.code === "auth/wrong-password") {
-            alert("Mot de passe incorrect");
-        } else if (error.code === "auth/invalid-credential") {
-            alert("Identifiants incorrects");
-        } else {
-            alert("Erreur de connexion");
-        }
-    }
+    majInterfaceProfil();
+    showView('dashboard');
 }
 
-// ✅ LOGOUT SAFE (TA CORRECTION)
+// 🧪 SIMULATION DECONNEXION
 function deconnexion() {
-    window.fbSignOut(window.auth).then(() => {
+    if (document.getElementById('login-screen')) {
         document.getElementById('login-screen').style.display = 'flex';
-    });
+    }
 }
 
 // ==========================================
@@ -124,21 +73,15 @@ function deconnexion() {
 // ==========================================
 
 function majInterfaceProfil() {
-    document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
-    document.getElementById('profil-statut-actuel').innerHTML = `${monAvatar} ${courtierNom}`;
-    document.getElementById('profil-email-affichage').innerText = courtierEmail || "";
-    document.getElementById('profil-role-badge').innerText = profilRole;
+    if(document.getElementById('header-user-badge')) document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
+    if(document.getElementById('profil-statut-actuel')) document.getElementById('profil-statut-actuel').innerHTML = `${monAvatar} ${courtierNom}`;
+    if(document.getElementById('profil-email-affichage')) document.getElementById('profil-email-affichage').innerText = courtierEmail || "";
+    if(document.getElementById('profil-role-badge')) document.getElementById('profil-role-badge').innerText = profilRole;
     if(document.getElementById('user-payment-link-champ')) document.getElementById('user-payment-link-champ').value = monLienPaiement;
 
-    if (profilRole === "SuperAdmin") {
+    if (profilRole === "SuperAdmin" && document.getElementById('admin-management-section')) {
         document.getElementById('admin-management-section').style.display = 'block';
     }
-}
-
-async function sauvegarderLienPaiement(val) {
-    monLienPaiement = val;
-    const userTrouve = utilisateurs.find(u => u.fullname === courtierNom);
-    if(userTrouve) await window.fsUpdateDoc(window.fsDoc(window.db, "profils", userTrouve.uid), { lienPaiement: val });
 }
 
 function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
@@ -158,7 +101,6 @@ function verifierAlertesEcheances() {
     let alertesHtml = ""; 
     const aujourdhui = new Date();
 
-    // 1. Alertes visites imminentes
     visites.forEach(v => {
         if(v.verrouille) return;
         const diff = new Date(v.date) - aujourdhui;
@@ -173,7 +115,6 @@ function verifierAlertesEcheances() {
         }
     });
 
-    // 2. Alertes loyers à encaisser sous 3 jours
     biens.forEach(b => {
         if(b.statut === 'Occupé' && b.dateEntree) {
             const jourFacture = new Date(b.dateEntree).getDate();
@@ -228,13 +169,13 @@ function ouvrirFormulaireAjout() {
     showView('ajouter-bien');
 }
 
-async function saveBienPro() {
+function saveBienPro() {
     const idExist = document.getElementById('edit-bien-id').value;
     const currentId = idExist ? parseInt(idExist) : Date.now();
     const snap = idExist ? biens.find(x => x.id === currentId) : null;
 
     const obj = {
-        id: currentId, agentCreateur: snap ? snap.agentCreateur : courtierNom,
+        id: currentId, agentCreateur: courtierNom,
         nom: document.getElementById('new-bien-nom').value, loyer: document.getElementById('new-bien-loyer').value,
         type: document.getElementById('new-bien-type').value, superficie: document.getElementById('new-bien-superficie').value,
         typePapier: document.getElementById('new-bien-papier').value, adresse: document.getElementById('new-bien-adresse').value,
@@ -246,8 +187,14 @@ async function saveBienPro() {
         statut: snap ? snap.statut : 'Disponible', photos: selectedPhotos.length > 0 ? selectedPhotos : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"],
         historiquePaiements: snap ? (snap.historiquePaiements || []) : []
     };
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(currentId)), obj);
-    await chargerDonneesCloud(); showView('biens');
+
+    if(idExist) {
+        const idx = biens.findIndex(x => x.id === currentId);
+        biens[idx] = obj;
+    } else {
+        biens.push(obj);
+    }
+    showView('biens');
 }
 
 function renderBiens() {
@@ -300,10 +247,10 @@ function ouvrirModifierBien(id) {
     showView('ajouter-bien');
 }
 
-async function toggleStatut(id) {
+function toggleStatut(id) {
     const b = biens.find(x => x.id === id);
     b.statut = b.statut === 'Disponible' ? 'Occupé' : 'Disponible';
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(id)), b); fermerModal(); await chargerDonneesCloud(); renderBiens();
+    fermerModal(); renderBiens();
 }
 
 function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
@@ -317,15 +264,14 @@ function ouvrirFormulaireEDL() {
     showView('nouveau-edl');
 }
 
-async function saveEDLCloud() {
+function saveEDLCloud() {
     const pieces = []; document.querySelectorAll('.room-state').forEach(s => pieces.push(`${s.getAttribute('data-r')}: ${s.value}`));
     const docEtl = {
         id: Date.now(), date: new Date().toLocaleDateString('fr-FR'), agent: courtierNom,
         bien: document.getElementById('edl-bien-select').value, type: document.getElementById('edl-type').value,
         details: pieces.join(' | '), eau: document.getElementById('edl-eau').value, elec: document.getElementById('edl-elec').value, notes: document.getElementById('edl-notes').value
     };
-    await window.fsSetDoc(window.fsDoc(window.db, "etats_des_lieux", String(docEtl.id)), docEtl);
-    await chargerDonneesCloud();
+    etatsLieux.push(docEtl);
     envoyerMessageWhatsApp("", `*CONSTAT ETL (${docEtl.type})*\nBien: ${docEtl.bien}\nEau: ${docEtl.eau} | Elec: ${docEtl.elec}\nEtat: ${docEtl.details}`);
     showView('etat-lieux');
 }
@@ -351,7 +297,7 @@ function updateSelects() {
     analyserReliquatComptable();
 }
 
-async function validerCollecte() {
+function validerCollecte() {
     const n = document.getElementById('c-bien-select').value; const b = biens.find(x => x.nom === n); const mt = parseFloat(document.getElementById('c-montant').value);
     const type = document.getElementById('c-type').value;
     b.historiquePaiements.push({ montant: mt, type: type, date: new Date().toLocaleDateString('fr-FR') });
@@ -359,14 +305,11 @@ async function validerCollecte() {
     if(type === 'Caution') comTotaleGlobal += parseFloat(b.loyer);
     else comTotaleGlobal += (parseFloat(b.loyer) * 0.1);
 
-    await window.fsSetDoc(window.fsDoc(window.db, "biens", String(b.id)), b);
-    await window.fsSetDoc(window.fsDoc(window.db, "config", "finance"), { comTotaleGlobal: comTotaleGlobal });
-    await chargerDonneesCloud();
     envoyerMessageWhatsApp(b.locataireTel, `Reçu de paiement : ${mt} CFA encaissé pour le ${type} du bien ${b.nom}. Merci !`, true);
     showView('dashboard');
 }
 
-async function sauverVisite() {
+function sauverVisite() {
     const struct = {
         id: Date.now(), 
         nom: document.getElementById('p-name').value, 
@@ -378,13 +321,12 @@ async function sauverVisite() {
         qualification: "Non qualifié", 
         verrouille: false
     };
-    await window.fsSetDoc(window.fsDoc(window.db, "visites", String(struct.id)), struct);
+    visites.push(struct);
     
     document.getElementById('p-name').value = "";
     document.getElementById('p-tel').value = "";
     if(document.getElementById('p-notes-libre')) document.getElementById('p-notes-libre').value = "";
     
-    await chargerDonneesCloud(); 
     renderVisites();
 }
 
@@ -393,7 +335,7 @@ function renderVisites() {
         const estVerrouille = v.verrouille === true;
         return `
         <div class="form-card" style="position:relative;">
-            <button onclick="supprimerVisiteCloud(${v.id})" style="position:absolute; right:10px; top:10px; width:auto; background:transparent; color:var(--red); padding:0; font-size:0.9rem;">
+            <button onclick="supprimerVisiteLocal(${v.id})" style="position:absolute; right:10px; top:10px; width:auto; background:transparent; color:var(--red); padding:0; font-size:0.9rem;">
                 <i class="fas fa-trash-alt"></i>
             </button>
 
@@ -412,32 +354,29 @@ function renderVisites() {
                     <option ${v.qualification==='Non qualifié'?'selected':''}>Non qualifié</option>
                     <option ${v.qualification==='Client Sérieux'?'selected':''}>Client Sérieux</option>
                 </select>
-                ${estVerrouille ? '🔒' : `<button style="width:auto; padding:4px 8px; background:var(--dark); color:white; font-size:0.7rem;" onclick="validerPointageVisite(${v.id})">OK</button>`}
+                ${estVerrouille ? '🔒' : `<button style="width:auto; padding:4px 8px; background:var(--dark); color:white; font-size:0.7rem;" onclick="validerPointageVisiteLocal(${v.id})">OK</button>`}
             </div>
         </div>`;
     }).reverse().join('');
 }
 
-async function supprimerVisiteCloud(id) {
-    if(confirm("Supprimer définitivement ce rendez-vous ?")) {
-        await window.fsDeleteDoc(window.fsDoc(window.db, "visites", String(id)));
-        await chargerDonneesCloud();
-        renderVisites();
-    }
+function supprimerVisiteLocal(id) {
+    visites = visites.filter(x => x.id !== id);
+    renderVisites();
 }
 
-async function validerPointageVisite(id) {
+function validerPointageVisiteLocal(id) {
     const v = visites.find(x => x.id === id);
     v.statutChecking = document.getElementById(`chk-${id}`).value;
     v.qualification = document.getElementById(`qalf-${id}`).value;
     v.verrouille = true;
-    await window.fsSetDoc(window.fsDoc(window.db, "visites", String(id)), v); await chargerDonneesCloud(); renderVisites();
+    renderVisites();
 }
 
 function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.getElementById('view-' + id).style.display = 'block';
-    if(id === 'dashboard') document.getElementById('total-display').innerText = comTotaleGlobal.toLocaleString() + " CFA";
+    if(document.getElementById('view-' + id)) document.getElementById('view-' + id).style.display = 'block';
+    if(id === 'dashboard' && document.getElementById('total-display')) document.getElementById('total-display').innerText = comTotaleGlobal.toLocaleString() + " CFA";
     if(id === 'biens') renderBiens();
     if(id === 'etat-lieux') renderEtatsLieuxList();
     if(id === 'collecte') updateSelects();
@@ -445,4 +384,5 @@ function showView(id) {
 }
 
 function resetNavStyles(el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
+function sauvegarderLienPaiement(val) { monLienPaiement = val; }
 function adminCreerCompteCourtier() {}
