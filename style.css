@@ -1,3 +1,6 @@
+/* ==========================================
+   1. VARIABLES & RESET
+   ========================================== */
 :root { 
     --blue: #4A69FF; 
     --bg: #F4F7FE; 
@@ -5,61 +8,385 @@
     --red: #FF4A4A;
     --green: #2ECC71;
 }
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Segoe UI', sans-serif; background: #C0C9D3; margin: 0; display: flex; justify-content: center; color: var(--navy); }
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+}
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    background: #C0C9D3; 
+    margin: 0; 
+    display: flex; 
+    justify-content: center; 
+    color: var(--navy); 
+}
 
-.app-shell { width: 100%; max-width: 450px; background: var(--bg); min-height: 100vh; position: relative; overflow-x: hidden; padding-bottom: 80px; }
+/* Structure globale type "App Mobile" */
+.app-shell { 
+    width: 100%; 
+    max-width: 450px; 
+    background: var(--bg); 
+    min-height: 100vh; 
+    position: relative; 
+    overflow-x: hidden; 
+    padding-bottom: 80px; 
+}
 
-/* HEADER & REVENUE CARD */
-.main-header { background: var(--blue); padding: 40px 20px 80px; border-radius: 0 0 40px 40px; color: white; text-align: center; }
-.revenue-card { background: white; color: var(--navy); padding: 25px; border-radius: 25px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin: -60px auto 20px; width: 85%; text-align: center; }
+/* ==========================================
+   2. HEADER & REVENUE CARD
+   ========================================== */
+.main-header { 
+    background: var(--blue); 
+    padding: 40px 20px 80px; 
+    border-radius: 0 0 40px 40px; 
+    color: white; 
+    text-align: center; 
+}
+.main-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+.revenue-card { 
+    background: white; 
+    color: var(--navy); 
+    padding: 25px; 
+    border-radius: 25px; 
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1); 
+    margin: -60px auto 20px; 
+    width: 85%; 
+    text-align: center; 
+}
+.revenue-card h3 { 
+    margin: 0 0 5px 0; 
+    color: #64748b; 
+    font-size: 0.9rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
+.revenue-amount { 
+    font-size: 1.8rem; 
+    font-weight: bold; 
+    color: var(--navy); 
+    margin: 0;
+}
 
-/* DASHBOARD GRID */
-.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
-.menu-card { background: white; padding: 25px 10px; border-radius: 25px; text-align: center; position: relative; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-.icon-circle { width: 50px; height: 50px; border-radius: 15px; background: #F8F9FF; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem; }
-.dot { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: 12px; right: 12px; }
+/* ==========================================
+   3. DASHBOARD GRID (ACCUEIL)
+   ========================================== */
+.menu-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px; 
+    padding: 20px; 
+}
+.menu-card { 
+    background: white; 
+    padding: 25px 10px; 
+    border-radius: 25px; 
+    text-align: center; 
+    position: relative; 
+    cursor: pointer; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+    transition: transform 0.2s;
+}
+.menu-card:active {
+    transform: scale(0.95);
+}
+.menu-card p {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.icon-circle { 
+    width: 50px; 
+    height: 50px; 
+    border-radius: 15px; 
+    background: #F8F9FF; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto 10px; 
+    font-size: 1.2rem; 
+    color: var(--blue);
+}
+.dot { 
+    width: 8px; 
+    height: 8px; 
+    border-radius: 50%; 
+    position: absolute; 
+    top: 12px; 
+    right: 12px; 
+}
 .blue-dot { background: var(--blue); } 
 .orange-dot { background: #F39C12; } 
 .green-dot { background: #2ECC71; } 
 .navy-dot { background: var(--navy); }
 
-/* VUES & FORMULAIRES */
-.view { padding: 15px; display: none; animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-.back-btn { background: #E0E7FF; border: none; width: 35px; height: 35px; border-radius: 50%; color: var(--blue); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+/* ==========================================
+   4. VUES & FORMULAIRES (NAVIGATION)
+   ========================================== */
+.view { 
+    padding: 15px; 
+    display: none; 
+    animation: fadeIn 0.3s ease; 
+}
+.view.active-view {
+    display: block;
+}
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
 
-.form-card { background: white; padding: 20px; border-radius: 25px; margin-bottom: 15px; box-shadow: 0 5px 10px rgba(0,0,0,0.02); }
-input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1.5px solid #f1f5f9; border-radius: 12px; background: #f8fafc; font-size: 14px; outline: none; }
-label { font-size: 0.8rem; color: #64748b; margin-left: 5px; display: block; margin-bottom: 5px; font-weight: 600; }
+.section-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    margin-bottom: 20px; 
+}
+.section-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+.back-btn { 
+    background: #E0E7FF; 
+    border: none; 
+    width: 35px; 
+    height: 35px; 
+    border-radius: 50%; 
+    color: var(--blue); 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 1rem;
+}
 
-/* TABS & GALERIE */
-.tabs-container { display: flex; background: #e2e8f0; padding: 5px; border-radius: 15px; margin-bottom: 20px; }
-.tab-btn { flex: 1; border: none; padding: 10px; border-radius: 12px; font-weight: bold; color: #64748b; background: transparent; cursor: pointer; }
-.tab-btn.active { background: white; color: var(--blue); }
+.form-card { 
+    background: white; 
+    padding: 20px; 
+    border-radius: 25px; 
+    margin-bottom: 15px; 
+    box-shadow: 0 5px 10px rgba(0,0,0,0.02); 
+}
+input, select, textarea { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    border: 1.5px solid #f1f5f9; 
+    border-radius: 12px; 
+    background: #f8fafc; 
+    font-size: 14px; 
+    outline: none; 
+    font-family: inherit;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: var(--blue);
+    background: white;
+}
+label { 
+    font-size: 0.8rem; 
+    color: #64748b; 
+    margin-left: 5px; 
+    display: block; 
+    margin-bottom: 5px; 
+    font-weight: 600; 
+}
 
-.bien-gallery { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 5px; }
-.bien-gallery::-webkit-scrollbar { display: none; }
-.bien-gallery img { width: 120px; height: 120px; object-fit: cover; border-radius: 15px; flex-shrink: 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+/* ==========================================
+   5. TABS & GALERIE
+   ========================================== */
+.tabs-container { 
+    display: flex; 
+    background: #e2e8f0; 
+    padding: 5px; 
+    border-radius: 15px; 
+    margin-bottom: 20px; 
+}
+.tab-btn { 
+    flex: 1; 
+    border: none; 
+    padding: 10px; 
+    border-radius: 12px; 
+    font-weight: bold; 
+    color: #64748b; 
+    background: transparent; 
+    cursor: pointer; 
+    font-size: 0.9rem;
+}
+.tab-btn.active { 
+    background: white; 
+    color: var(--blue); 
+}
 
-/* UPLOAD AREA */
-.photo-upload-area { border: 2px dashed #cbd5e1; border-radius: 20px; padding: 20px; text-align: center; color: #64748b; cursor: pointer; margin-bottom: 15px; }
-#previews-container { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.bien-gallery { 
+    display: flex; 
+    gap: 10px; 
+    overflow-x: auto; 
+    scrollbar-width: none; 
+    padding-bottom: 5px; 
+    margin-top: 10px;
+}
+.bien-gallery::-webkit-scrollbar { 
+    display: none; 
+}
+.bien-gallery img { 
+    width: 120px; 
+    height: 120px; 
+    object-fit: cover; 
+    border-radius: 15px; 
+    flex-shrink: 0; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+}
 
-/* ENCAISSEMENT GRID */
-.mode-pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-.mode-pay-box { text-align: center; background: #f1f5f9; padding: 12px 5px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; font-size: 0.8rem; font-weight: bold; }
-input[type="radio"] { display: none; }
-input[type="radio"]:checked + .mode-pay-box { border-color: var(--blue); background: #E0E7FF; color: var(--blue); }
+/* ==========================================
+   6. UPLOAD AREA
+   ========================================== */
+.photo-upload-area { 
+    border: 2px dashed #cbd5e1; 
+    border-radius: 20px; 
+    padding: 25px; 
+    text-align: center; 
+    color: #64748b; 
+    cursor: pointer; 
+    margin-bottom: 15px; 
+    transition: background 0.2s;
+}
+.photo-upload-area:hover {
+    background: #f1f5f9;
+}
+.photo-upload-area i {
+    font-size: 1.8rem;
+    color: var(--blue);
+    margin-bottom: 8px;
+}
+#previews-container { 
+    display: flex; 
+    gap: 10px; 
+    justify-content: center; 
+    margin-top: 10px; 
+    flex-wrap: wrap; 
+}
+.preview-img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
 
-/* BOUTONS */
-.btn-primary { background: var(--blue); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; display: block; text-align: center; }
-.btn-primary:active { transform: scale(0.98); opacity: 0.9; }
-.btn-outline { background: #f1f5f9; color: #475569; border: none; padding: 12px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; width: 100%; font-weight: 600; }
-.fab-add { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: var(--blue); color: white; border: none; font-size: 24px; box-shadow: 0 10px 20px rgba(74, 105, 255, 0.3); z-index: 100; cursor: pointer; }
+/* ==========================================
+   7. ENCAISSEMENT GRID
+   ========================================== */
+.mode-pay-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 8px; 
+    margin-bottom: 15px; 
+}
+.mode-pay-box { 
+    text-align: center; 
+    background: #f1f5f9; 
+    padding: 12px 5px; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    border: 2px solid transparent; 
+    font-size: 0.8rem; 
+    font-weight: bold; 
+    transition: all 0.2s;
+}
+input[type="radio"] { 
+    display: none; 
+}
+input[type="radio"]:checked + .mode-pay-box { 
+    border-color: var(--blue); 
+    background: #E0E7FF; 
+    color: var(--blue); 
+}
 
-/* MODALS */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
-.modal-content { background: white; padding: 25px; border-radius: 30px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.3s ease-out; }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } 
+/* ==========================================
+   8. BOUTONS
+   ========================================== */
+.btn-primary { 
+    background: var(--blue); 
+    color: white; 
+    border: none; 
+    padding: 15px; 
+    width: 100%; 
+    border-radius: 15px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    display: block; 
+    text-align: center; 
+    font-size: 1rem;
+    text-decoration: none;
+}
+.btn-primary:active { 
+    transform: scale(0.98); 
+    opacity: 0.9; 
+}
+.btn-outline { 
+    background: #f1f5f9; 
+    color: #475569; 
+    border: none; 
+    padding: 12px; 
+    border-radius: 12px; 
+    font-size: 0.85rem; 
+    cursor: pointer; 
+    width: 100%; 
+    font-weight: 600; 
+    margin-top: 5px;
+}
+.fab-add { 
+    position: fixed; 
+    bottom: 25px; 
+    right: calc(50% - 200px); 
+    width: 60px; 
+    height: 60px; 
+    border-radius: 50%; 
+    background: var(--blue); 
+    color: white; 
+    border: none; 
+    font-size: 24px; 
+    box-shadow: 0 10px 20px rgba(74, 105, 255, 0.3); 
+    z-index: 100; 
+    cursor: pointer; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+@media (max-width: 450px) {
+    .fab-add { right: 25px; }
+}
+
+/* ==========================================
+   9. MODALS
+   ========================================== */
+.modal { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.6); 
+    display: none; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 2000; 
+    padding: 20px; 
+}
+.modal-content { 
+    background: white; 
+    padding: 25px; 
+    border-radius: 30px; 
+    width: 100%; 
+    max-width: 380px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+    animation: slideUp 0.3s ease-out; 
+}
+@keyframes slideUp { 
+    from { transform: translateY(20px); opacity: 0; } 
+    to { transform: translateY(0); opacity: 1; } 
+}
