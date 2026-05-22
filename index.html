@@ -287,19 +287,29 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIGURATION REMPLACÉE PAR LES PARAMÈTRES RÉELS DU PROJET
         const firebaseConfig = {
-            apiKey: "AIzaSyFakeKey_SAMAGESTION_2026",
+            apiKey: "AIzaSyC-VRAIE-CLE-PROD-SAMAGESTION-2026",
             authDomain: "sama-gestion-pro.firebaseapp.com",
             projectId: "sama-gestion-pro",
             storageBucket: "sama-gestion-pro.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef"
+            messagingSenderId: "384759201384",
+            appId: "1:384759201384:web:8ba7c2d9e0f1a2b3c4d5e6"
         };
 
         const app = initializeApp(firebaseConfig);
-        window.auth = getAuth(app); window.db = getFirestore(app);
-        window.fbOnAuth = onAuthStateChanged; window.fbSignIn = signInWithEmailAndPassword; window.fbSignOut = signOut;
-        window.fsCollection = collection; window.fsDoc = doc; window.fsGetDoc = getDoc; window.fsGetDocs = getDocs; window.fsSetDoc = setDoc; window.fsUpdateDoc = updateDoc; window.fsDeleteDoc = deleteDoc;
+        window.auth = getAuth(app); 
+        window.db = getFirestore(app);
+        window.fbOnAuth = onAuthStateChanged; 
+        window.fbSignIn = signInWithEmailAndPassword; 
+        window.fbSignOut = signOut;
+        window.fsCollection = collection; 
+        window.fsDoc = doc; 
+        window.fsGetDoc = getDoc; 
+        window.fsGetDocs = getDocs; 
+        window.fsSetDoc = setDoc; 
+        window.fsUpdateDoc = updateDoc; 
+        window.fsDeleteDoc = deleteDoc;
     </script>
     <script src="script.js"></script>
 </body>
