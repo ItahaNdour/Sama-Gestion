@@ -1,548 +1,916 @@
-// ==============================================================================
-// SAMA GESTION PRO V9.5 - CORRIGÉ MODE LOCAL (SANS FIREBASE)
-// ==============================================================================
+// ==========================================
+// CONFIGURATION & VARIABLES GLOBALES
+// ==========================================
+let currentUserData = null;
+let localBiens = [];
+let currentFilterStatus = "Disponible";
 
-let profilRole = "SuperAdmin";
-let courtierNom = "Amadou Ndour"; 
-let courtierEmail = "19amadoundour@gmail.com";
-let monAvatar = "👑";
-let monLienPaiement = "";
+// Liste des pièces par défaut pour l'État des Lieux (EDL)
+const ROOMS_LIST = ["Salon / Séjour", "Chambre Principale", "Cuisine", "Salle de Bain / WC", "Balcon / Extérieur"];
 
-let utilisateurs = [];
-let biens = [];
-let visites = [];
-let etatsLieux = [];
-let comTotaleGlobal = 0;
+// ==========================================
+// DEBARQUEMENT & ROUTING
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    // Écouteur de l'état de connexion Firebase
+    window.fbOnAuth(window.auth, async (user) => {
+        if (user) {
+            try {
+                // Récupération du profil utilisateur dans Firestore
+                const userDoc = await window.fsGetDoc(window.fsDoc(window.db, "users", user.uid));
+                if (userDoc.exists()) {
+                    currentUserData = { id: user.uid, ...userDoc.data() };
+                    initialiserApplication();
+                } else {
+                    // Cas d'un utilisateur sans document Firestore (sécurité)
+                    document.getElementById("login-error").innerText = "Profil utilisateur introuvable.";
+                    document.getElementById("login-error").style.display = "block";
+                    window.fbSignOut(window.auth);
+                }
+            } catch (error) {
+                console.error("Erreur de récupération du profil:", error);
+                deconnexion();
+            }
+        } else {
+            // Non connecté -> Afficher l'écran de connexion
+            document.getElementById("login-screen").style.display = "flex";
+            document.getElementById("header-user-badge").innerText = "...";
+        }
+    });
+});
 
-let currentFilter = 'Disponible';
-let selectedPhotos = [];
-let selectedPhotosEDL = [];
-
-const ROOMS_CONFIG = ["Salon", "Cuisine", "Chambre Principale", "SDE / WC", "Balcon / Terrasse"];
-
-window.onload = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const emailInvite = urlParams.get('email');
-    if(emailInvite && document.getElementById('login-username')) {
-        document.getElementById('login-username').value = emailInvite;
+// Initialisation globale après auth réussie
+async function initialiserApplication() {
+    document.getElementById("login-screen").style.display = "none";
+    
+    // UI Profil & Badges Header
+    document.getElementById("header-user-badge").innerHTML = `<i class="fas fa-user-circle"></i> ${currentUserData.fullname.split(' ')[0]}`;
+    document.getElementById("profil-statut-actuel").innerText = currentUserData.fullname;
+    document.getElementById("profil-role-badge").innerText = `💼 ${currentUserData.role}`;
+    
+    // Remplir le lien de paiement s'il existe
+    if (currentUserData.paymentLink) {
+        document.getElementById("user-payment-link").value = currentUserData.paymentLink;
     }
 
-    // Connexion locale instantanée et synchronisation
-    chargerDonneesCloud();
-    
-    if (document.getElementById('login-screen')) {
-        document.getElementById('login-screen').style.display = 'none';
+    // Gestion de la section d'administration réseau
+    if (currentUserData.role === "SuperAdmin") {
+        document.getElementById("admin-management-section").style.display = "block";
+        chargerMembresReseau();
+    } else {
+        document.getElementById("admin-management-section").style.display = "none";
     }
+
+    // Chargement des données métier
+    await chargerBiensCloud();
+    chargerVisitesCloud();
+    chargerEDLCloudList();
     
-    majInterfaceProfil();
+    // Aller sur le Dashboard par défaut
+    showView("dashboard");
+}
+
+// Navigation entre les vues
+window.showView = function(viewId) {
+    // Cacher toutes les vues
+    document.querySelectorAll(".view").forEach(v => v.style.display = "none");
     
-    if(document.getElementById('user-payment-link-champ')) {
-        document.getElementById('user-payment-link-champ').value = monLienPaiement;
-    }
-    
-    showView('dashboard');
+    // Afficher la vue ciblée
+    const targetView = document.getElementById(`view-${viewId}`);
+    if (targetView) targetView.style.display = "block";
 };
 
-function chargerDonneesCloud() {
+window.resetNavStyles = function(buttonElement) {
+    document.querySelectorAll("nav .nav-item").forEach(item => item.classList.remove("active"));
+    buttonElement.classList.add("active");
+};
+
+// ==========================================
+// AUTHENTIFICATION
+// ==========================================
+window.verifierConnexion = async function() {
+    const email = document.getElementById("login-username").value.trim();
+    const pin = document.getElementById("login-password").value.trim();
+    const errorEl = document.getElementById("login-error");
+
+    if (!email || !pin) {
+        errorEl.innerText = "Veuillez remplir tous les champs.";
+        errorEl.style.display = "block";
+        return;
+    }
+
     try {
-        // Chargement sécurisé depuis le localStorage local
-        utilisateurs = JSON.parse(localStorage.getItem('sama_utilisateurs')) || [];
-        biens = JSON.parse(localStorage.getItem('sama_biens')) || [];
-        visites = JSON.parse(localStorage.getItem('sama_visites')) || [];
-        etatsLieux = JSON.parse(localStorage.getItem('sama_etatsLieux')) || [];
-        comTotaleGlobal = parseFloat(localStorage.getItem('sama_comTotaleGlobal')) || 0;
-        
-        // Mise à jour du KPI global du Dashboard
-        const totalDisplay = document.getElementById('total-display');
-        if (totalDisplay) {
-            totalDisplay.innerText = `${comTotaleGlobal.toLocaleString()} CFA`;
-        }
-        
+        errorEl.style.display = "none";
+        await window.fbSignIn(window.auth, email, pin);
     } catch (error) {
-        console.error("Erreur de chargement des données locales", error);
+        console.error(error);
+        errorEl.innerText = "Identifiants ou Code PIN incorrects.";
+        errorEl.style.display = "block";
     }
-}
+};
 
-function verifierConnexion() {
-    // Connexion forcée validée automatiquement pour le mode hors-ligne
-    if (document.getElementById('login-screen')) {
-        document.getElementById('login-screen').style.display = 'none';
-    }
-    showView('dashboard');
-}
+window.deconnexion = function() {
+    window.fbSignOut(window.auth).then(() => {
+        location.reload();
+    });
+};
 
-function deconnexion() {
-    if (document.getElementById('login-screen')) {
-        document.getElementById('login-screen').style.display = 'flex';
-    }
-}
-
-function majInterfaceProfil() {
-    if (document.getElementById('header-user-badge')) {
-        document.getElementById('header-user-badge').innerHTML = `${monAvatar} ${courtierNom}`;
-    }
-    if (document.getElementById('profil-statut-actuel')) {
-        document.getElementById('profil-statut-actuel').innerHTML = `${monAvatar} ${courtierNom}`;
-    }
-    if (document.getElementById('profil-email-affichage')) {
-        document.getElementById('profil-email-affichage').innerText = courtierEmail || "Non renseigné";
-    }
-    if (document.getElementById('profil-role-badge')) {
-        document.getElementById('profil-role-badge').innerText = '👑 Administrateur Général';
-    }
-    
-    if (document.getElementById('admin-management-section')) {
-        document.getElementById('admin-management-section').style.display = 'block';
-        renderAdminAgencesList();
-    }
-}
-
-function sauvegarderLienPaiement(val) {
-    monLienPaiement = val.trim();
-    localStorage.setItem('sama_monLienPaiement', monLienPaiement);
-}
-
-function formaterNumeroWhatsApp(num) {
-    if(!num) return "";
-    let propre = num.replace(/\s+/g, '').replace(/[-+]/g, ''); 
-    if ((propre.startsWith('06') || propre.startsWith('07')) && propre.length === 10) propre = '33' + propre.substring(1); 
-    else if (propre.length === 9 && propre.startsWith('7')) propre = '221' + propre;
-    if(propre.startsWith('00')) propre = propre.substring(2);
-    return propre;
-}
-
-function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
-    const numeroPropre = formaterNumeroWhatsApp(telephone);
-    if(!numeroPropre || numeroPropre.length < 8) return alert("⚠️ Numéro mal formaté ou absent.");
-    let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Gestion Immobilière`;
-    if(inclurePaiement && monLienPaiement) signatureFormatee += `\n\n💵 Dépôt Mobile Money : *${monLienPaiement}*`;
-    window.location.href = `https://api.whatsapp.com/send?phone=${numeroPropre}&text=${encodeURIComponent(message + signatureFormatee)}`;
-}
-
-function calculerProrataAutomatique() {
-    const loyerTotal = parseFloat(document.getElementById('new-bien-loyer').value);
-    const dateEntreeStr = document.getElementById('edit-bien-date-entree').value;
-    const box = document.getElementById('prorata-box');
-    const result = document.getElementById('prorata-result');
-
-    if(!loyerTotal || !dateEntreeStr) { if(box) box.style.display = 'none'; return; }
-    const dateEntree = new Date(dateEntreeStr);
-    const jourEntree = dateEntree.getDate();
-    const joursDansLeMois = new Date(dateEntree.getFullYear(), dateEntree.getMonth() + 1, 0).getDate();
-
-    if(jourEntree === 1) { if(box) box.style.display = 'none'; return; }
-    const joursDus = (joursDansLeMois - jourEntree) + 1;
-    const montantProrata = Math.round((loyerTotal / joursDansLeMois) * joursDus);
-    if(result) result.innerHTML = `${joursDus} jours occupés.<br>💰 Montant : ${montantProrata.toLocaleString()} CFA`;
-    if(box) box.style.display = 'block';
-}
-
-function previewAndCompressImage(input, target) {
-    if (input.files) {
-        Array.from(input.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const img = new Image();
-                img.onload = function () {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const MAX_WIDTH = 400; 
-                    let width = img.width, height = img.height;
-                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    canvas.width = width; canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5); 
-                    if(target === 'bien' && selectedPhotos.length < 3) { selectedPhotos.push(compressedBase64); renderPreviews('previews-container', selectedPhotos); }
-                    else if(target === 'edl' && selectedPhotosEDL.length < 3) { selectedPhotosEDL.push(compressedBase64); renderPreviews('edl-previews-container', selectedPhotosEDL); }
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+// ==========================================
+// GESTION DU CATALOGUE DE BIENS
+// ==========================================
+async function chargerBiensCloud() {
+    try {
+        const querySnapshot = await window.fsGetDocs(window.fsCollection(window.db, "biens"));
+        localBiens = [];
+        querySnapshot.forEach(doc => {
+            localBiens.push({ id: doc.id, ...doc.data() });
         });
+        
+        calculerKpiCommissions();
+        renderBiens();
+        remplirSelectsBiens();
+    } catch (error) {
+        console.error("Erreur de chargement des biens:", error);
     }
 }
 
-function renderPreviews(containerId, arrayData) {
-    const container = document.getElementById(containerId);
-    if(container) {
-        container.innerHTML = arrayData.map(p => `<img src="${p}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid #CBD5E1;">`).join('');
-    }
+function calculerKpiCommissions() {
+    // Cumul des commissions générées sur l'ensemble des biens loués/occupés
+    let cumul = 0;
+    localBiens.forEach(bien => {
+        if (bien.statut === "Occupé" && bien.loyer) {
+            let loyerNum = parseFloat(bien.loyer) || 0;
+            if (bien.commission && bien.commission.includes("%")) {
+                let pct = parseFloat(bien.commission.replace("%", "")) || 0;
+                cumul += (loyerNum * pct) / 100;
+            } else {
+                cumul += parseFloat(bien.commission) || 0;
+            }
+        }
+    });
+    document.getElementById("total-display").innerText = new Intl.NumberFormat('fr-FR').format(cumul) + " CFA";
 }
 
-function adminCreerCompteCourtier() {
-    alert("Fonctionnalité réseau simulée avec succès en local.");
-}
+window.filterBiens = function(status, event) {
+    currentFilterStatus = status;
+    document.querySelectorAll(".tabs .tab-btn").forEach(btn => btn.classList.remove("active"));
+    if (event) event.target.classList.add("active");
+    renderBiens();
+};
 
-function renderAdminAgencesList() {
-    const conteneur = document.getElementById('admin-users-list'); if(!conteneur) return;
-    conteneur.innerHTML = `
-        <div style="background:white; padding:8px; border-radius:8px; margin-bottom:6px; border:1px solid #e2e8f0; font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
-            <span>👑 <b>${courtierNom}</b> (SuperAdmin)</span>
-            <span>⭐</span>
-        </div>
-    `;
-}
+window.renderBiens = function() {
+    const listEl = document.getElementById("biens-list");
+    const searchVal = document.getElementById("search-bien-input").value.toLowerCase();
+    listEl.innerHTML = "";
 
-// ==========================================
-// MODULE BIENS
-// ==========================================
-function ouvrirFormulaireAjout() {
-    selectedPhotos = [];
-    document.getElementById('edit-bien-id').value = '';
-    document.getElementById('form-bien-title').innerText = "Nouveau Bien";
-    document.getElementById('edit-only-fields').style.display = 'none';
-    if(document.getElementById('prorata-box')) document.getElementById('prorata-box').style.display = 'none';
-    document.getElementById('previews-container').innerHTML = '';
-    document.getElementById('new-bien-nom').value = ''; document.getElementById('new-bien-loyer').value = '';
-    document.getElementById('new-bien-adresse').value = ''; document.getElementById('new-bien-proprio').value = '';
-    document.getElementById('new-bien-proprio-tel').value = '';
-    if(document.getElementById('new-bien-superficie')) document.getElementById('new-bien-superficie').value = '';
-    if(document.getElementById('new-bien-papier')) document.getElementById('new-bien-papier').value = 'Non spécifié';
-    showView('ajouter-bien');
-}
-
-function modifierBienExistant(id) {
-    const b = biens.find(x => x.id === id); if(!b) return;
-    fermerModal(); selectedPhotos = b.photos || [];
-    document.getElementById('edit-bien-id').value = b.id;
-    document.getElementById('form-bien-title').innerText = "Modifier le Bien";
-    document.getElementById('new-bien-nom').value = b.nom; document.getElementById('new-bien-type').value = b.type;
-    document.getElementById('new-bien-loyer').value = b.loyer; document.getElementById('new-bien-adresse').value = b.adresse;
-    document.getElementById('new-bien-com').value = b.com || '10%'; document.getElementById('new-bien-proprio').value = b.proprio;
-    document.getElementById('new-bien-proprio-tel').value = b.proprioTel;
-    if(document.getElementById('new-bien-superficie')) document.getElementById('new-bien-superficie').value = b.superficie || '';
-    if(document.getElementById('new-bien-papier')) document.getElementById('new-bien-papier').value = b.typePapier || 'Non spécifié';
-    document.getElementById('edit-only-fields').style.display = 'block';
-    document.getElementById('edit-bien-locataire').value = b.locataire || 'Aucun';
-    document.getElementById('edit-bien-locataire-tel').value = b.locataireTel || '';
-    document.getElementById('edit-bien-date-entree').value = b.dateEntree || '';
-    calculerProrataAutomatique(); renderPreviews('previews-container', selectedPhotos);
-    showView('ajouter-bien');
-}
-
-async function saveBienPro() {
-    const nom = document.getElementById('new-bien-nom').value.trim();
-    const loyer = document.getElementById('new-bien-loyer').value.trim();
-    if(!nom || !loyer) return alert("Champs obligatoires manquants.");
-
-    const existingId = document.getElementById('edit-bien-id').value;
-    const currentId = existingId ? parseInt(existingId) : Date.now();
-    const ancienBien = existingId ? biens.find(x => x.id === currentId) : null;
-
-    const structureBien = {
-        id: currentId, agentCreateur: courtierNom, nom: nom, loyer: loyer,
-        type: document.getElementById('new-bien-type').value, adresse: document.getElementById('new-bien-adresse').value || 'Non spécifiée',
-        superficie: document.getElementById('new-bien-superficie') ? document.getElementById('new-bien-superficie').value.trim() : '', 
-        typePapier: document.getElementById('new-bien-papier') ? document.getElementById('new-bien-papier').value : 'Non spécifié',
-        proprio: document.getElementById('new-bien-proprio').value || 'Inconnu', proprioTel: document.getElementById('new-bien-proprio-tel').value || '',
-        locataire: existingId ? document.getElementById('edit-bien-locataire').value : 'Aucun', locataireTel: existingId ? document.getElementById('edit-bien-locataire-tel').value : '',
-        dateEntree: existingId ? document.getElementById('edit-bien-date-entree').value : '', com: document.getElementById('new-bien-com').value || '10%',
-        photos: selectedPhotos.length > 0 ? [...selectedPhotos] : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200"],
-        statut: ancienBien ? ancienBien.statut : 'Disponible', historiquePaiements: ancienBien ? (ancienBien.historiquePaiements || []) : []
-    };
-
-    if (existingId) {
-        biens = biens.map(x => x.id === currentId ? structureBien : x);
-    } else {
-        biens.push(structureBien);
-    }
-
-    localStorage.setItem('sama_biens', JSON.stringify(biens));
-    chargerDonneesCloud();
-    showView('biens');
-}
-
-function renderBiens() {
-    const searchInput = document.getElementById('search-bien-input');
-    const txt = searchInput ? searchInput.value.toLowerCase() : "";
-    const filtered = biens.filter(b => {
-        const matchesSearch = b.nom.toLowerCase().includes(txt) || b.adresse.toLowerCase().includes(txt);
-        const matchesTab = b.statut === currentFilter;
-        return matchesTab && matchesSearch;
+    const filtrés = localBiens.filter(b => {
+        const matchStatus = b.statut === currentFilterStatus;
+        const matchSearch = b.nom.toLowerCase().includes(searchVal) || 
+                            (b.adresse && b.adresse.toLowerCase().includes(searchVal)) ||
+                            (b.proprioNom && b.proprioNom.toLowerCase().includes(searchVal));
+        return matchStatus && matchSearch;
     });
 
-    const listElement = document.getElementById('biens-list');
-    if (!listElement) return;
-
-    listElement.innerHTML = filtered.map(b => `
-        <div class="form-card" onclick="voirDetailBien(${b.id})" style="padding:10px; margin-bottom:10px; cursor:pointer;">
-            <div class="bien-gallery">${b.photos.map(p => `<img src="${p}" style="width:50px; height:40px; object-fit:cover; margin-right:4px; border-radius:4px;">`).join('')}</div>
-            <div style="margin-top:6px; position:relative;">
-                <strong style="font-size:0.85rem;">${b.nom}</strong> ${b.superficie ? `<small style="background:#E2E8F0; padding:1px 4px; border-radius:4px; font-size:0.65rem;">📐 ${b.superficie}</small>` : ''}<br>
-                <small style="font-size:0.75rem; color:#718096;">${b.adresse}</small><br>
-                <span style="color:#F1C40F; font-weight:700; font-size:0.85rem;">${parseInt(b.loyer).toLocaleString()} CFA</span>
-                <button onclick="event.stopPropagation(); ouvrirPortefeuille(${b.id})" style="position:absolute; right:0; bottom:0; width:auto; background:rgba(241,196,15,0.1); color:#F1C40F; border:none; padding:4px 8px; border-radius:6px; font-size:0.7rem; font-weight:700; cursor:pointer;"><i class="fas fa-wallet"></i> Flux</button>
-            </div>
-        </div>
-    `).reverse().join('');
-}
-
-function filterBiens(s, e) {
-    currentFilter = s; 
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-    e.target.classList.add('active'); 
-    renderBiens();
-}
-
-function voirDetailBien(id) {
-    const b = biens.find(x => x.id === id); if(!b) return;
-    const blocFoncier = (b.superficie || (b.typePapier && b.typePapier !== 'Non spécifié')) ? `
-        <div style="background:#F8FAFC; padding:6px; border-radius:6px; margin:6px 0; font-size:0.8rem; border:1px dashed #CBD5E1;">
-            ${b.superficie ? `📌 <b>Superficie :</b> ${b.superficie}<br>` : ''}
-            ${b.typePapier && b.typePapier !== 'Non spécifié' ? `📄 <b>Document :</b> ${b.typePapier}` : ''}
-        </div>
-    ` : '';
-
-    document.getElementById('modal-body').innerHTML = `
-        <h3 style="font-size:1rem; margin-bottom:8px;">${b.nom}</h3> ${blocFoncier}
-        <p style="font-size:0.8rem; margin:4px 0;"><b>Prix :</b> ${parseInt(b.loyer).toLocaleString()} CFA</p>
-        <p style="font-size:0.8rem; margin:4px 0;"><b>Proprio :</b> ${b.proprio} (${b.proprioTel || 'N/A'})</p>
-        <p style="font-size:0.8rem; margin:4px 0;"><b>Locataire :</b> ${b.locataire || 'Aucun'} (${b.locataireTel || 'N/A'})</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px;">
-            <button class="btn-primary" style="padding:10px; font-size:0.8rem;" onclick="toggleStatut(${b.id})">${b.statut==='Disponible'?'Marquer Loué':'Libérer bien'}</button>
-            <button class="btn-outline" style="padding:10px; font-size:0.8rem; color:#F1C40F; border-color:#F1C40F;" onclick="modifierBienExistant(${b.id})"><i class="fas fa-edit"></i> Modifier</button>
-        </div>
-        <button class="btn-outline" style="padding:8px; font-size:0.8rem; color:#E53E3E; border-color:#E53E3E; margin-top:6px;" onclick="supprimerBien(${b.id})"><i class="fas fa-trash"></i> Supprimer</button>
-    `;
-    document.getElementById('modal-bien').style.display = 'flex';
-}
-
-async function toggleStatut(id) {
-    const b = biens.find(x => x.id === id); if(!b) return;
-    if(b.statut === 'Disponible') {
-        b.locataire = prompt("Nom du locataire :") || "Inconnu"; b.locataireTel = prompt("Téléphone :") || ""; b.dateEntree = prompt("Date (AAAA-MM-JJ) :") || ""; b.statut = 'Occupé';
-    } else {
-        if(confirm("Libérer ce bien ?")) { b.statut = 'Disponible'; b.locataire = 'Aucun'; b.locataireTel = ''; b.dateEntree = ''; }
-    }
-    
-    biens = biens.map(x => x.id === id ? b : x);
-    localStorage.setItem('sama_biens', JSON.stringify(biens));
-    chargerDonneesCloud(); fermerModal(); renderBiens();
-}
-
-async function supprimerBien(id) {
-    if(confirm("Supprimer ce bien ?")) { 
-        biens = biens.filter(x => x.id !== id);
-        localStorage.setItem('sama_biens', JSON.stringify(biens));
-        chargerDonneesCloud(); fermerModal(); renderBiens(); 
-    }
-}
-
-function ouvrirPortefeuille(id) {
-    const b = biens.find(x => x.id === id); if(!b) return;
-    const paiements = b.historiquePaiements || []; const total = paiements.reduce((s,p) => s + p.montant, 0);
-    let lignesTableau = paiements.map(p => `<tr><td><b>${p.date}</b></td><td>${p.type}</td><td style="color:#2ECC71; font-weight:600;">${p.montant.toLocaleString()}</td><td><small class="user-badge" style="padding:1px 4px; font-size:0.65rem;">${p.mode}</small></td></tr>`).reverse().join('');
-    if(paiements.length === 0) lignesTableau = `<tr><td colspan="4" style="text-align:center; color:#718096;">Aucune transaction</td></tr>`;
-
-    document.getElementById('modal-body').innerHTML = `
-        <h3 style="font-size:1rem; margin-bottom:6px;">📊 Comptabilité</h3>
-        <div style="background:#1A1A2E; color:white; padding:10px; border-radius:8px; margin-bottom:10px; text-align:center;">
-            <h2 style="color:#FFF; font-size:1.2rem; margin:0;">${total.toLocaleString()} CFA</h2>
-        </div>
-        <div style="max-height:150px; overflow-y:auto; border:1px solid #CBD5E1; border-radius:6px;">
-            <table style="width:100%; border-collapse:collapse; font-size:0.8rem;"><thead style="background:#F4F6F9;"><tr><th style="padding:4px;">Date</th><th style="padding:4px;">Type</th><th style="padding:4px;">Montant</th><th style="padding:4px;">Mode</th></tr></thead><tbody>${lignesTableau}</tbody></table>
-        </div>
-        <button class="btn-primary" style="background:#2ECC71; margin-top:10px; padding:10px; font-size:0.8rem;" onclick="relancerPaiementWhatsApp(${b.id})"><i class="fab fa-whatsapp"></i> Rappel doux</button>
-    `;
-    document.getElementById('modal-bien').style.display = 'flex';
-}
-
-function relancerPaiementWhatsApp(id) {
-    const b = biens.find(x => x.id === id); if(!b || !b.locataireTel) return alert("Pas de numéro.");
-    const nomLocataire = b.locataire && b.locataire !== "Aucun" ? b.locataire : "Cher Locataire";
-    envoyerMessageWhatsApp(b.locataireTel, `Bonjour ${nomLocataire},\n\nLe règlement du loyer pour votre logement (*${b.nom}*) n'a pas encore été validé pour ce terme. Merci de régulariser.`, true);
-}
-
-function fermerModal() { document.getElementById('modal-bien').style.display = 'none'; }
-
-// ==========================================
-// MODULE EDL
-// ==========================================
-function ouvrirFormulaireEDL() {
-    selectedPhotosEDL = []; 
-    if(document.getElementById('edl-previews-container')) document.getElementById('edl-previews-container').innerHTML = '';
-    document.getElementById('edl-eau').value = ''; document.getElementById('edl-elec').value = '';
-    if(document.getElementById('edl-cles')) document.getElementById('edl-cles').value = ''; 
-    document.getElementById('edl-notes').value = '';
-    
-    document.getElementById('edl-bien-select').innerHTML = biens.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    document.getElementById('edl-rooms-container').innerHTML = ROOMS_CONFIG.map(r => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#F1F5F9; padding:6px; border-radius:6px; margin-bottom:4px;">
-            <span style="font-weight:600; font-size:0.75rem;">${r}</span>
-            <select class="edl-room-select" data-room="${r}" style="width:auto; margin:0; padding:2px; font-size:0.75rem;">
-                <option value="✨ Neuf">✨ Neuf</option><option value="✅ Bon">✅ Bon</option><option value="⚠️ Moyen">⚠️ Moyen</option><option value="❌ Mauvais">❌ Mauvais</option>
-            </select>
-        </div>
-    `).join('');
-    showView('nouveau-edl');
-}
-
-async function saveEDLCloud() {
-    const bienNom = document.getElementById('edl-bien-select').value; const type = document.getElementById('edl-type').value; if(!bienNom) return;
-    const piecesData = []; document.querySelectorAll('.edl-room-select').forEach(s => { piecesData.push({ piece: s.getAttribute('data-room'), etat: s.value }); });
-
-    const structureEDL = {
-        id: Date.now(), date: new Date().toLocaleDateString('fr-FR'), agent: courtierNom, bien: bienNom, type: type, pieces: piecesData,
-        eau: document.getElementById('edl-eau').value || "N/A", elec: document.getElementById('edl-elec').value || "N/A", cles: document.getElementById('edl-cles') ? document.getElementById('edl-cles').value : "0", notes: document.getElementById('edl-notes').value || "RAS", photos: selectedPhotosEDL
-    };
-
-    etatsLieux.push(structureEDL);
-    localStorage.setItem('sama_etatsLieux', JSON.stringify(etatsLieux));
-    
-    await chargerDonneesCloud();
-    alert("🎉 Rapport validé !"); 
-    showView('etat-lieux');
-}
-
-function renderEtatsLieuxList() {
-    const listContainer = document.getElementById('edl-list'); if(!listContainer) return;
-    listContainer.innerHTML = etatsLieux.map(e => `
-        <div class="form-card" style="border-left: 4px solid ${e.type.includes('Entrée') ? '#2ECC71' : '#E53E3E'}; padding:10px; position:relative; margin-bottom:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; padding-right:25px;">
-                <div><strong>${e.bien}</strong><br><small>${e.type} • ${e.date}</small></div>
-                <button class="btn-primary" style="width:auto; padding:4px 8px; font-size:0.7rem; background:#2ECC71; cursor:pointer;" onclick="partagerEDLExistant(${e.id})"><i class="fab fa-whatsapp"></i> Envoyer</button>
-            </div>
-            <i class="fas fa-trash-alt" style="position:absolute; right:10px; top:12px; color:#E53E3E; font-size:0.8rem; cursor:pointer;" onclick="supprimerEDLExistant(${e.id})"></i>
-        </div>
-    `).reverse().join('');
-}
-
-async function supprimerEDLExistant(id) {
-    if(confirm("Supprimer ce constat ?")) { 
-        etatsLieux = etatsLieux.filter(x => x.id !== id);
-        localStorage.setItem('sama_etatsLieux', JSON.stringify(etatsLieux));
-        chargerDonneesCloud(); renderEtatsLieuxList(); 
-    }
-}
-
-function partagerEDLExistant(id) {
-    const e = etatsLieux.find(x => x.id === id); if(!e) return;
-    const b = biens.find(x => x.nom === e.bien);
-    let checkSummary = e.pieces.map(p => `• ${p.piece} : ${p.etat}`).join('\n');
-    envoyerMessageWhatsApp(b ? b.locataireTel : "", `*ETAT DES LIEUX - ${e.type.toUpperCase()}*\n\n*Bien :* ${e.bien}\n\n*CONSTAT :*\n${checkSummary}`, false);
-}
-
-// ==========================================
-// VENTES / COLLECTES
-// ==========================================
-function analyserReliquatComptable() {
-    const name = document.getElementById('c-bien-select').value; const type = document.getElementById('c-type').value;
-    const liveBox = document.getElementById('c-live-status'); const inputMontant = document.getElementById('c-montant');
-    if(!name) { if(liveBox) liveBox.style.display = 'none'; return; }
-
-    const b = biens.find(x => x.nom === name); if(!b) return;
-    const paiements = b.historiquePaiements || [];
-    const filtreMois = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-
-    let totalDu = 0, dejaPayeCeMois = 0;
-    if (type.includes('Loyer') || type.includes('Avance')) {
-        totalDu = parseFloat(b.loyer);
-        dejaPayeCeMois = paiements.filter(p => p.date.endsWith(filtreMois) && (p.type.includes('Loyer') || p.type.includes('Avance'))).reduce((sum, p) => sum + p.montant, 0);
-    } else if (type.includes('Caution')) {
-        totalDu = parseFloat(b.loyer) * 3; dejaPayeCeMois = paiements.filter(p => p.type.includes('Caution')).reduce((sum, p) => sum + p.montant, 0);
+    if (filtrés.length === 0) {
+        listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:20px;">Aucun bien trouvé.</p>`;
+        return;
     }
 
-    let reliquat = Math.max(0, totalDu - dejaPayeCeMois); 
-    if(liveBox) {
-        liveBox.style.display = 'block';
-        if (reliquat === 0) {
-            liveBox.style.background = '#FEE2E2'; liveBox.innerHTML = `⚠️ Terme déjà soldé pour ce bien.`; inputMontant.value = 0;
-        } else {
-            liveBox.style.background = 'rgba(241,196,15,0.1)'; liveBox.innerHTML = `🎯 <b>Reste à percevoir : ${reliquat.toLocaleString()} CFA</b>`; inputMontant.value = reliquat;
+    filtrés.forEach(b => {
+        const card = document.createElement("div");
+        card.className = "form-card";
+        card.style.cursor = "pointer";
+        card.onclick = () => ouvrirModalBien(b);
+
+        let imageHTML = "";
+        if (b.photos && b.photos.length > 0) {
+            imageHTML = `<div class="bien-gallery">`;
+            b.photos.forEach(img => { imageHTML += `<img src="${img}" alt="bien">`; });
+            imageHTML += `</div>`;
         }
-    } else {
-        inputMontant.value = reliquat || b.loyer;
-    }
-}
 
-function updateSelects() {
-    const occ = biens.filter(b => b.statut === 'Occupé');
-    const disp = biens.filter(b => b.statut === 'Disponible');
-    
-    if(document.getElementById('c-bien-select')) {
-        document.getElementById('c-bien-select').innerHTML = occ.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    }
-    if(document.getElementById('p-bien-select')) {
-        document.getElementById('p-bien-select').innerHTML = disp.map(b => `<option value="${b.nom}">${b.nom}</option>`).join('');
-    }
-    analyserReliquatComptable();
-}
-
-async function validerCollecte() {
-    const name = document.getElementById('c-bien-select').value; 
-    const mt = parseFloat(document.getElementById('c-montant').value);
-    const type = document.getElementById('c-type').value; 
-    
-    const radioChecked = document.querySelector('input[name="pay-mode"]:checked');
-    const mode = radioChecked ? radioChecked.value : "Espèces";
-    
-    const b = biens.find(x => x.nom === name); if (!b || mt <= 0 || isNaN(mt)) return;
-
-    if(!b.historiquePaiements) b.historiquePaiements = [];
-    b.historiquePaiements.push({ id: Date.now(), type: type, montant: mt, mode: mode, date: new Date().toLocaleDateString('fr-FR') });
-
-    let maCom = type.includes('Caution') ? parseFloat(b.loyer) : (b.com.includes('%') ? (parseFloat(b.com)/100)*mt : parseFloat(b.com));
-    comTotaleGlobal += maCom;
-
-    biens = biens.map(x => x.id === b.id ? b : x);
-    localStorage.setItem('sama_biens', JSON.stringify(biens));
-    localStorage.setItem('sama_comTotaleGlobal', comTotaleGlobal);
-    
-    await chargerDonneesCloud();
-    alert("💸 Encaissement enregistré !"); 
-    showView('dashboard');
-}
-
-// ==========================================
-// MODULE VISITES
-// ==========================================
-async function sauverVisite() {
-    const nom = document.getElementById('p-name').value; const tel = document.getElementById('p-tel').value;
-    const bien = document.getElementById('p-bien-select').value; const date = document.getElementById('p-date').value;
-    if(!nom || !tel || !date) return alert("Remplir tous les champs.");
-
-    const struct = { id: Date.now(), nom, tel, bien, date, statutChecking: "Planifié", qualification: "Non qualifié", verrouille: false };
-    visites.push(struct);
-    localStorage.setItem('sama_visites', JSON.stringify(visites));
-    
-    await chargerDonneesCloud();
-    document.getElementById('p-name').value = ''; document.getElementById('p-tel').value = '';
-    renderVisites();
-}
-
-function renderVisites() {
-    const conteneur = document.getElementById('visites-list'); if(!conteneur) return;
-    conteneur.innerHTML = visites.map(v => {
-        let badgeColor = v.statutChecking === "Honoré" ? "#10B981" : (v.statutChecking === "Absent" ? "#EF4444" : "#3B82F6");
-        return `
-            <div class="form-card" style="padding:10px; margin-bottom:10px; border-left: 4px solid ${badgeColor};">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <b style="font-size:0.85rem;">👤 ${v.nom}</b> <small>(${v.bien})</small><br>
-                        <small style="color:#718096;">📅 ${new Date(v.date).toLocaleString('fr-FR')}</small>
-                    </div>
-                    <span style="font-size:0.75rem; font-weight:bold; color:${badgeColor};">${v.statutChecking}</span>
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+                <div>
+                    <h3 style="margin-bottom:2px; color:var(--dark);">${b.nom}</h3>
+                    <small style="color:var(--text-light);"><i class="fas fa-map-marker-alt"></i> ${b.adresse || 'N/A'}</small>
                 </div>
+                <span class="user-badge" style="background:${b.statut === 'Disponible' ? '#D1FAE5' : '#FEE2E2'}; color:${b.statut === 'Disponible' ? '#065F46' : '#991B1B'}; border:none;">
+                    ${b.statut}
+                </span>
+            </div>
+            ${imageHTML}
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
+                <b style="color:var(--gold); font-size:1rem;">${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA <small style="font-size:0.7rem; color:var(--text-light); font-weight:500;">/mois</small></b>
+                <span style="font-size:0.75rem; font-weight:600; background:var(--bg); padding:4px 8px; border-radius:6px;">📄 ${b.papier || 'Non spécifié'}</span>
             </div>
         `;
-    }).reverse().join('');
+        listEl.appendChild(card);
+    });
+};
+
+function remplirSelectsBiens() {
+    const selects = ["c-bien-select", "edl-bien-select", "p-bien-select"];
+    selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = "";
+        
+        // Pour l'encaissement, filtrer uniquement les biens occupés
+        let listeACocher = (id === "c-bien-select") ? localBiens.filter(b => b.statut === "Occupé") : localBiens;
+        
+        if (listeACocher.length === 0) {
+            el.innerHTML = `<option value="">-- Aucun bien disponible --</option>`;
+        } else {
+            listeACocher.forEach(b => {
+                el.innerHTML += `<option value="${b.id}">${b.nom} (${b.statut})</option>`;
+            });
+        }
+    });
 }
 
 // ==========================================
-// ROUTAGE INTERNE DES VUES RE-DÉVELOPPÉ SÉCURISÉ
+// FORMULAIRE AJOUT / EDITION DE BIEN
 // ==========================================
-function showView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    const activeView = document.getElementById(`view-${viewId}`);
-    if(activeView) activeView.style.display = 'block';
+let currentBienUploadedPhotos = [];
 
-    if(viewId === 'biens') renderBiens();
-    if(viewId === 'planning') { updateSelects(); renderVisites(); }
-    if(viewId === 'collecte') updateSelects();
-    if(viewId === 'etat-lieux') renderEtatsLieuxList();
+window.ouvrirFormulaireAjout = function() {
+    document.getElementById("form-bien-title").innerText = "Nouveau Bien";
+    document.getElementById("edit-bien-id").value = "";
+    document.getElementById("new-bien-nom").value = "";
+    document.getElementById("new-bien-type").value = "Appartement";
+    document.getElementById("new-bien-superficie").value = "";
+    document.getElementById("new-bien-papier").value = "Non spécifié";
+    document.getElementById("new-bien-loyer").value = "";
+    document.getElementById("new-bien-adresse").value = "";
+    document.getElementById("new-bien-com").value = "";
+    document.getElementById("new-bien-proprio").value = "";
+    document.getElementById("new-bien-proprio-tel").value = "";
+    document.getElementById("edit-only-fields").style.display = "none";
+    document.getElementById("previews-container").innerHTML = "";
+    currentBienUploadedPhotos = [];
+    
+    showView("ajouter-bien");
+};
+
+window.saveBienPro = async function() {
+    const btn = document.getElementById("btn-save-bien");
+    const id = document.getElementById("edit-bien-id").value;
+    const nom = document.getElementById("new-bien-nom").value.trim();
+    const loyer = parseFloat(document.getElementById("new-bien-loyer").value) || 0;
+
+    if (!nom || !loyer) {
+        alert("Le nom et le prix/loyer sont obligatoires.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Enregistrement...";
+
+    const payload = {
+        nom: nom,
+        type: document.getElementById("new-bien-type").value,
+        superficie: document.getElementById("new-bien-superficie").value.trim(),
+        papier: document.getElementById("new-bien-papier").value,
+        loyer: loyer,
+        adresse: document.getElementById("new-bien-adresse").value.trim(),
+        commission: document.getElementById("new-bien-com").value.trim() || "10%",
+        proprioNom: document.getElementById("new-bien-proprio").value.trim(),
+        proprioTel: document.getElementById("new-bien-proprio-tel").value.trim(),
+        photos: currentBienUploadedPhotos,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUserData.fullname
+    };
+
+    try {
+        if (id) {
+            // Mode Édition (Sauvegarde des champs d'occupation)
+            payload.locataireNom = document.getElementById("edit-bien-locataire").value.trim();
+            payload.locataireTel = document.getElementById("edit-bien-locataire-tel").value.trim();
+            payload.dateEntree = document.getElementById("edit-bien-date-entree").value;
+            payload.statut = (payload.locataireNom) ? "Occupé" : "Disponible";
+            
+            await window.fsUpdateDoc(window.fsDoc(window.db, "biens", id), payload);
+        } else {
+            // Mode Création
+            payload.statut = "Disponible";
+            payload.createdAt = new Date().toISOString();
+            const newDocRef = window.fsDoc(window.fsCollection(window.db, "biens"));
+            await window.fsSetDoc(newDocRef, payload);
+        }
+
+        await chargerBiensCloud();
+        showView("biens");
+    } catch (e) {
+        console.error(e);
+        alert("Erreur lors de la sauvegarde du bien.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Enregistrer";
+    }
+};
+
+// ==========================================
+// MODAL DÉTAILS ET ACTIONS MULTIPLES
+// ==========================================
+window.ouvrirModalBien = function(bien) {
+    const body = document.getElementById("modal-body");
+    
+    let photoGrid = "";
+    if (bien.photos && bien.photos.length > 0) {
+        photoGrid = `<div class="bien-gallery" style="margin-bottom:15px;">`;
+        bien.photos.forEach(p => { photoGrid += `<img src="${p}" style="width:80px; height:65px; border-radius:8px;">`; });
+        photoGrid += `</div>`;
+    }
+
+    body.innerHTML = `
+        <h3 style="color:var(--dark); font-size:1.3rem; margin-bottom:2px;">${bien.nom}</h3>
+        <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;"><i class="fas fa-map-marker-alt"></i> ${bien.adresse || 'Pas d\'adresse'}</p>
+        
+        ${photoGrid}
+
+        <table class="table-suivi" style="margin-bottom:15px;">
+            <tr><th>Type</th><td><b>${bien.type}</b></td></tr>
+            <tr><th>Loyer / Prix</th><td><b style="color:var(--gold);">${new Intl.NumberFormat('fr-FR').format(bien.loyer)} CFA</b></td></tr>
+            <tr><th>Superficie</th><td>${bien.superficie || 'Inconnue'}</td></tr>
+            <tr><th>Documents</th><td><span style="font-size:0.75rem;" class="user-badge">${bien.papier}</span></td></tr>
+            <tr><th>Propriétaire</th><td>${bien.proprioNom || 'N/A'} (${bien.proprioTel || 'N/A'})</td></tr>
+            <tr><th>Statut</th><td><b>${bien.statut}</b></td></tr>
+            ${bien.statut === 'Occupé' ? `
+                <tr style="background:#F0FDF4;"><th style="color:var(--green);">Locataire</th><td><b>${bien.locataireNom}</b></td></tr>
+                <tr style="background:#F0FDF4;"><th style="color:var(--green);">Téléphone</th><td>${bien.locataireTel}</td></tr>
+                <tr style="background:#F0FDF4;"><th style="color:var(--green);">Entrée</th><td>${bien.dateEntree || 'Non définie'}</td></tr>
+            ` : ''}
+        </table>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button class="btn-outline" style="font-size:0.85rem;" onclick="preparerEditionBien('${bien.id}')"><i class="fas fa-edit"></i> Modifier / Louer</button>
+            <button class="btn-primary" style="font-size:0.85rem; background:var(--dark);" onclick="partagerFicheWhatsApp('${bien.id}')"><i class="fab fa-whatsapp"></i> Fiche vitrine</button>
+            ${currentUserData.role === 'SuperAdmin' ? `
+                <button class="btn-outline" style="grid-column: span 2; border-color:var(--red); color:var(--red); font-size:0.8rem; padding:8px;" onclick="supprimerBien('${bien.id}')">
+                    <i class="fas fa-trash"></i> Supprimer définitivement du catalogue
+                </button>
+            ` : ''}
+        </div>
+    `;
+    document.getElementById("modal-bien").style.display = "flex";
+};
+
+window.fermerModal = function() {
+    document.getElementById("modal-bien").style.display = "none";
+};
+
+window.preparerEditionBien = function(bienId) {
+    fermerModal();
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+
+    document.getElementById("form-bien-title").innerText = "Éditer / Gérer Occupation";
+    document.getElementById("edit-bien-id").value = b.id;
+    document.getElementById("new-bien-nom").value = b.nom;
+    document.getElementById("new-bien-type").value = b.type;
+    document.getElementById("new-bien-superficie").value = b.superficie || "";
+    document.getElementById("new-bien-papier").value = b.papier || "Non spécifié";
+    document.getElementById("new-bien-loyer").value = b.loyer;
+    document.getElementById("new-bien-adresse").value = b.adresse || "";
+    document.getElementById("new-bien-com").value = b.commission || "";
+    document.getElementById("new-bien-proprio").value = b.proprioNom || "";
+    document.getElementById("new-bien-proprio-tel").value = b.proprioTel || "";
+    
+    // Remplir & déplier les champs d'occupation
+    document.getElementById("edit-only-fields").style.display = "block";
+    document.getElementById("edit-bien-locataire").value = b.locataireNom || "";
+    document.getElementById("edit-bien-locataire-tel").value = b.locataireTel || "";
+    document.getElementById("edit-bien-date-entree").value = b.dateEntree || "";
+    
+    // Gestion des photos existantes
+    currentBienUploadedPhotos = b.photos || [];
+    const prevContainer = document.getElementById("previews-container");
+    prevContainer.innerHTML = "";
+    currentBienUploadedPhotos.forEach(p => {
+        prevContainer.innerHTML += `<img src="${p}" alt="preview">`;
+    });
+
+    calculerProrataAutomatique();
+    showView("ajouter-bien");
+};
+
+window.partagerFicheWhatsApp = function(bienId) {
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+
+    let texte = `✨ *SAMA GESTION PRO - OFFRE IMMOBILIÈRE* ✨\n\n`;
+    texte += `🏢 *Bien :* ${b.nom}\n`;
+    texte += `📍 *Quartier/Adresse :* ${b.adresse || 'Sénégal'}\n`;
+    texte += `📐 *Superficie :* ${b.superficie || 'N/A'}\n`;
+    texte += `📄 *Statut Juridique :* ${b.papier}\n`;
+    texte += `💰 *Prix / Loyer :* ${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA / mois\n\n`;
+    texte += `📱 _Contactez notre réseau de partenaires certifiés pour planifier une visite immédiate._`;
+
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texte)}`, '_blank');
+};
+
+window.supprimerBien = async function(bienId) {
+    if (!confirm("Voulez-vous vraiment supprimer définitivement ce bien ? Cette action est irréversible.")) return;
+    try {
+        await window.fsDeleteDoc(window.fsDoc(window.db, "biens", bienId));
+        fermerModal();
+        await chargerBiensCloud();
+    } catch (e) {
+        alert("Erreur de suppression");
+    }
+};
+
+// ==========================================
+// CALCULATEUR DE PRORATA AUTOMATIQUE
+// ==========================================
+window.calculerProrataAutomatique = function() {
+    const loyer = parseFloat(document.getElementById("new-bien-loyer").value) || 0;
+    const dateStr = document.getElementById("edit-bien-date-entree").value;
+    const box = document.getElementById("prorata-box");
+    const res = document.getElementById("prorata-result");
+
+    if (!loyer || !dateStr) {
+        box.style.display = "none";
+        return;
+    }
+
+    const dateEntree = new Date(dateStr);
+    const jour = dateEntree.getDate();
+    
+    // Trouver le dernier jour du mois en cours
+    const annee = dateEntree.getFullYear();
+    const mois = dateEntree.getMonth();
+    const totalJoursMois = new Date(annee, mois + 1, 0).getDate();
+
+    if (jour === 1) {
+        box.style.display = "block";
+        res.innerText = "Entrée le 1er du mois. Pas de prorata applicable (Loyer complet).";
+        return;
+    }
+
+    const joursDus = totalJoursMois - jour + 1;
+    const prorataCalculé = Math.round((loyer / totalJoursMois) * joursDus);
+
+    box.style.display = "block";
+    res.innerText = `${joursDus} jours d'occupation dus sur ${totalJoursMois} jours au total.\nMontant à percevoir : ${new Intl.NumberFormat('fr-FR').format(prorataCalculé)} CFA.`;
+};
+
+// ==========================================
+// COMPTABILITÉ & ENCAISSEMENT (FLUX WHATSAPP)
+// ==========================================
+window.analyserReliquatComptable = function() {
+    const bienId = document.getElementById("c-bien-select").value;
+    const typeFlux = document.getElementById("c-type").value;
+    const statusBox = document.getElementById("c-live-status");
+    
+    if (!bienId) {
+        statusBox.style.display = "none";
+        return;
+    }
+
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+
+    statusBox.style.display = "block";
+    statusBox.style.background = "var(--gold-light)";
+    statusBox.style.color = "#9A3412";
+    
+    if (typeFlux === "Loyer") {
+        statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>💰 <b>Loyer Standard :</b> ${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA`;
+        document.getElementById("c-montant").value = b.loyer;
+    } else if (typeFlux === "Caution") {
+        statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>🔑 <b>Montant Caution conseillé (2 mois) :</b> ${new Intl.NumberFormat('fr-FR').format(b.loyer * 2)} CFA`;
+        document.getElementById("c-montant").value = b.loyer * 2;
+    } else {
+        statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>⚙️ Saisissez le montant spécifique convenu pour le type : <b>${typeFlux}</b>.`;
+        document.getElementById("c-montant").value = "";
+    }
+};
+
+window.validerCollecte = async function(cibleNotification) {
+    const bienId = document.getElementById("c-bien-select").value;
+    const typeFlux = document.getElementById("c-type").value;
+    const montant = document.getElementById("c-montant").value;
+    const mode = document.querySelector('input[name="pay-mode"]:checked').value;
+
+    if (!bienId || !montant) {
+        alert("Sélectionnez un bien et saisissez un montant.");
+        return;
+    }
+
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+
+    // Enregistrement de la transaction dans l'historique Firestore
+    try {
+        const transRef = window.fsDoc(window.fsCollection(window.db, "transactions"));
+        await window.fsSetDoc(transRef, {
+            bienId: bienId,
+            bienNom: b.nom,
+            locataireNom: b.locataireNom,
+            montant: parseFloat(montant),
+            nature: typeFlux,
+            modePaiement: mode,
+            dateEnregistrement: new Date().toISOString(),
+            percuPar: currentUserData.fullname
+        });
+    } catch(e) {
+        console.error("Erreur log comptable:", e);
+    }
+
+    // Préparation du message texte WhatsApp de reçu numérique
+    let recu = `🧾 *REÇU NUMÉRIQUE - SAMA GESTION PRO*\n`;
+    recu += `-------------------------------------------\n`;
+    recu += `🏠 *Bien immobilier :* ${b.nom}\n`;
+    recu += `👤 *Locataire :* ${b.locataireNom}\n`;
+    recu += `💵 *Montant Perçu :* ${new Intl.NumberFormat('fr-FR').format(montant)} CFA\n`;
+    recu += `🎯 *Nature de l'encaissement :* ${typeFlux}\n`;
+    recu += `💳 *Mode de règlement :* ${mode}\n`;
+    recu += `📅 *Date :* ${new Date().toLocaleDateString('fr-FR')}\n`;
+    recu += `✍️ *Gestionnaire :* ${currentUserData.fullname}\n`;
+    recu += `-------------------------------------------\n`;
+    recu += `✅ _Paiement validé avec succès. Merci pour votre confiance._`;
+
+    // Dispatch WhatsApp selon la cible choisie par l'utilisateur
+    let numeroTel = (cibleNotification === "locataire") ? b.locataireTel : b.proprioTel;
+    
+    if (numeroTel) {
+        // Nettoyage sommaire du numéro (retrait des espaces)
+        numeroTel = numeroTel.replace(/\s+/g, '');
+        if (!numeroTel.startsWith("+") && numeroTel.length === 9) {
+            numeroTel = "221" + numeroTel; // Préfixe Sénégal par défaut si 9 chiffres
+        }
+        window.open(`https://wa.me/${numeroTel}?text=${encodeURIComponent(recu)}`, '_blank');
+    } else {
+        // Fallback générique si aucun numéro n'est enregistré
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(recu)}`, '_blank');
+    }
+    
+    showView("dashboard");
+};
+
+// ==========================================
+// ÉTATS DES LIEUX (EDL) & CONSTATS
+// ==========================================
+let currentEDLUploadedPhotos = [];
+
+window.ouvrirFormulaireEDL = function() {
+    remplirSelectsBiens();
+    const container = document.getElementById("edl-rooms-container");
+    container.innerHTML = "";
+
+    // Génération dynamique de l'état des pièces
+    ROOMS_LIST.forEach((piece, index) => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "10px";
+        div.style.background = "var(--bg)";
+        div.style.padding = "10px";
+        div.style.borderRadius = "8px";
+        div.innerHTML = `
+            <span style="font-weight:700; font-size:0.85rem; display:block; margin-bottom:4px;">${piece}</span>
+            <select class="edl-state-select" data-room="${piece}">
+                <option value="Neuf / Excellent état">✨ Neuf / Excellent</option>
+                <option value="Bon état général">👍 Bon état</option>
+                <option value="État d'usage / Moyen">⚠️ État moyen</option>
+                <option value="Mauvais état / Dégradé">🚨 Mauvais état</option>
+            </select>
+        `;
+        container.appendChild(div);
+    });
+
+    document.getElementById("edl-eau").value = "";
+    document.getElementById("edl-elec").value = "";
+    document.getElementById("edl-cles").value = "";
+    document.getElementById("edl-notes").value = "";
+    document.getElementById("edl-previews-container").innerHTML = "";
+    currentEDLUploadedPhotos = [];
+
+    showView("nouveau-edl");
+};
+
+window.saveEDLCloud = async function() {
+    const btn = document.getElementById("btn-save-edl");
+    const bienId = document.getElementById("edl-bien-select").value;
+    const typeConstat = document.getElementById("edl-type").value;
+    
+    if (!bienId) {
+        alert("Veuillez assigner un bien.");
+        return;
+    }
+
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+
+    btn.disabled = true;
+    btn.innerText = "Signature cloud...";
+
+    // Récupérer l'état des pièces
+    let piecesEtats = {};
+    document.querySelectorAll(".edl-state-select").forEach(sel => {
+        piecesEtats[sel.getAttribute("data-room")] = sel.value;
+    });
+
+    const edlData = {
+        bienId: bienId,
+        bienNom: b.nom,
+        type: typeConstat,
+        etats: piecesEtats,
+        compteurEau: document.getElementById("edl-eau").value.trim(),
+        compteurElec: document.getElementById("edl-elec").value.trim(),
+        nombreCles: document.getElementById("edl-cles").value.trim(),
+        notes: document.getElementById("edl-notes").value.trim(),
+        photos: currentEDLUploadedPhotos,
+        dateCertificat: new Date().toISOString(),
+        signataire: currentUserData.fullname
+    };
+
+    try {
+        const docRef = window.fsDoc(window.fsCollection(window.db, "etats_lieux"));
+        await window.fsSetDoc(docRef, edlData);
+        
+        // Notification WhatsApp de signature d'EDL
+        let msg = `📝 *CERTIFICAT DE CONSTAT D'ÉTAT DES LIEUX*\n`;
+        msg += `-------------------------------------------\n`;
+        msg += `🏠 *Bien :* ${b.nom}\n`;
+        msg += `🎯 *Type :* Constat d'${typeConstat}\n`;
+        msg += `🔑 *Clés remises :* ${edlData.nombreCles} jeu(x)\n`;
+        msg += `💧 *Index Eau :* ${edlData.compteurEau || 'Non relevé'} m3\n`;
+        msg += `⚡ *Index Élec/Woyofal :* ${edlData.compteurElec || 'Non relevé'}\n`;
+        msg += `✍️ *Signé numériquement par :* ${currentUserData.fullname}\n`;
+        msg += `-------------------------------------------\n`;
+        msg += `✅ _L'historique complet ainsi que les photos de preuve associées ont été synchronisés sur le réseau SAMA GESTION._`;
+
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+
+        chargerEDLCloudList();
+        showView("etat-lieux");
+    } catch (e) {
+        console.error(e);
+        alert("Erreur réseau lors de la sauvegarde de l'état des lieux.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Signer & Envoyer WhatsApp";
+    }
+};
+
+async function chargerEDLCloudList() {
+    const listEl = document.getElementById("edl-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    try {
+        const snap = await window.fsGetDocs(window.fsCollection(window.db, "etats_lieux"));
+        if (snap.empty) {
+            listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:20px;">Aucun procès-verbal signé.</p>`;
+            return;
+        }
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement("div");
+            div.className = "form-card";
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:var(--dark);">${data.bienNom}</b>
+                    <span class="user-badge" style="background:var(--gold-light); color:var(--gold); font-size:0.75rem; border:none;">${data.type}</span>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-light); margin-top:5px;">
+                    📅 ${new Date(data.dateCertificat).toLocaleDateString('fr-FR')} • Signé par: ${data.signataire}
+                </p>
+            `;
+            listEl.appendChild(div);
+        });
+    } catch (e) {
+        console.error(e);
+    }
 }
 
-function resetNavStyles(element) {
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    if(element) element.classList.add('active');
+// ==========================================
+// AGENDA DES VISITES & PROSPECTS
+// ==========================================
+window.sauverVisite = async function() {
+    const nom = document.getElementById("p-name").value.trim();
+    const tel = document.getElementById("p-tel").value.trim();
+    const bienId = document.getElementById("p-bien-select").value;
+    const dateVisite = document.getElementById("p-date").value;
+
+    if (!nom || !bienId || !dateVisite) {
+        alert("Nom du visiteur, bien et date requis.");
+        return;
+    }
+
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+
+    const visitePayload = {
+        prospectNom: nom,
+        prospectTel: tel,
+        bienId: bienId,
+        bienNom: b.nom,
+        dateRendezVous: dateVisite,
+        agentAssigné: currentUserData.fullname,
+        createdAt: new Date().toISOString()
+    };
+
+    try {
+        const docRef = window.fsDoc(window.fsCollection(window.db, "visites"));
+        await window.fsSetDoc(docRef, visitePayload);
+
+        // Envoi d'une confirmation de rendez-vous directement sur le WhatsApp du prospect
+        if (tel) {
+            let msgVisite = `Bonjour ${nom}, votre visite pour le bien immobilier *${b.nom}* est bien confirmée pour le 📅 *${new Date(dateVisite).toLocaleString('fr-FR')}*.\n\n📍 *Lieu de RDV :* ${b.adresse || 'Sur place'}\n🤝 *Agent en charge :* ${currentUserData.fullname}.\n\nMerci de nous notifier en cas de retard ou d'empêchement.`;
+            let telClean = tel.replace(/\s+/g, '');
+            if (!telClean.startsWith("+") && telClean.length === 9) telClean = "221" + telClean;
+            window.open(`https://wa.me/${telClean}?text=${encodeURIComponent(msgVisite)}`, '_blank');
+        }
+
+        // Reset formulaire
+        document.getElementById("p-name").value = "";
+        document.getElementById("p-tel").value = "";
+        
+        chargerVisitesCloud();
+    } catch(e) {
+        alert("Erreur de sauvegarde de la visite.");
+    }
+};
+
+async function chargerVisitesCloud() {
+    const listEl = document.getElementById("visites-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    try {
+        const snap = await window.fsGetDocs(window.fsCollection(window.db, "visites"));
+        if (snap.empty) {
+            listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:15px;">Aucune visite planifiée à l'agenda.</p>`;
+            return;
+        }
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            const card = document.createElement("div");
+            card.className = "form-card";
+            card.style.borderLeft = "4px solid var(--gold)";
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <b style="font-size:0.95rem; color:var(--dark);">${data.prospectNom}</b><br>
+                        <small style="color:var(--text-light);">🏠 ${data.bienNom}</small>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:700; color:var(--gold);"><i class="far fa-clock"></i> ${new Date(data.dateRendezVous).toLocaleString('fr-FR')}</span>
+                </div>
+                <div style="margin-top:6px; font-size:0.75rem; color:var(--text-light); display:flex; justify-content:space-between;">
+                    <span>📞 ${data.prospectTel || 'N/A'}</span>
+                    <span>💼 Cortège : ${data.agentAssigné}</span>
+                </div>
+            `;
+            listEl.appendChild(card);
+        });
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// ==========================================
+// OUTILS REZ-DE-CHAUSSÉE : PRE-COMPRESSION IMAGES
+// ==========================================
+window.previewAndCompressImage = function(inputElement, contexte) {
+    const files = inputElement.files;
+    const container = (contexte === 'bien') ? document.getElementById("previews-container") : document.getElementById("edl-previews-container");
+    
+    if (contexte === 'bien') currentBienUploadedPhotos = [];
+    else currentEDLUploadedPhotos = [];
+
+    if (!files) return;
+
+    // Prise en charge de 3 images maximum pour préserver le stockage local / quotas firestore string base64
+    const maxFiles = Math.min(files.length, 3);
+
+    for (let i = 0; i < maxFiles; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+
+            img.onload = function() {
+                // Compression dynamique via canvas HTML5
+                const canvas = document.createElement("canvas");
+                const MAX_WIDTH = 600; // Largeur optimisée pour affichage mobile fluide
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Exportation vers base64 avec qualité réduite (0.6)
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+
+                // Ajout à la liste globale correspondante
+                if (contexte === 'bien') currentBienUploadedPhotos.push(compressedBase64);
+                else currentEDLUploadedPhotos.push(compressedBase64);
+
+                // Ajout de la miniature dans l'interface
+                const previewImg = document.createElement("img");
+                previewImg.src = compressedBase64;
+                container.appendChild(previewImg);
+            };
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+window.sauvegarderLienPaiement = async function(valeurLien) {
+    if (!currentUserData) return;
+    try {
+        await window.fsUpdateDoc(window.fsDoc(window.db, "users", currentUserData.id), {
+            paymentLink: valeurLien.trim()
+        });
+        currentUserData.paymentLink = valeurLien.trim();
+    } catch(e) {
+        console.error("Erreur mise à jour lien paiement:", e);
+    }
+};
+
+// ==========================================
+// ADMINISTRATION RÉSEAU (SUPERADMIN ONLY)
+// ==========================================
+window.adminCreerCompteCourtier = async function() {
+    const fullname = document.getElementById("admin-new-user-fullname").value.trim();
+    const email = document.getElementById("admin-new-user-name").value.trim();
+    const pin = document.getElementById("admin-new-user-pin").value.trim();
+    const role = document.getElementById("admin-new-user-role").value;
+
+    if (!fullname || !email || !pin) {
+        alert("Tous les champs de création de compte sont requis.");
+        return;
+    }
+
+    if (pin.length < 6) {
+        alert("Le mot de passe / code PIN doit comporter au moins 6 caractères.");
+        return;
+    }
+
+    try {
+        // Enregistrement de l'intention de création de compte dans une collection d'attente 
+        // ou création directe si le SuperAdmin utilise le SDK d'administration dédié.
+        // À des fins de simplicité sur application monopage pure sans serveur (Edge-auth),
+        // nous écrivons le document utilisateur dans Firestore. Le partenaire pourra s'enregistrer/se connecter.
+        const userDummyId = email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        await window.fsSetDoc(window.fsDoc(window.db, "users", userDummyId), {
+            fullname: fullname,
+            email: email,
+            role: role,
+            paymentLink: "",
+            createdAt: new Date().toISOString()
+        });
+
+        alert(`Compte Partenaire activé provisoirement dans la base Firestore sous l'identifiant technique : ${userDummyId}. Note: Pour une sécurité totale en production, associez Firebase Auth Trigger.`);
+        
+        // Vider les champs
+        document.getElementById("admin-new-user-fullname").value = "";
+        document.getElementById("admin-new-user-name").value = "";
+        document.getElementById("admin-new-user-pin").value = "";
+        
+        chargerMembresReseau();
+    } catch(e) {
+        console.error(e);
+        alert("Erreur lors de la création du profil membre.");
+    }
+};
+
+async function chargerMembresReseau() {
+    const listEl = document.getElementById("admin-users-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    try {
+        const snap = await window.fsGetDocs(window.fsCollection(window.db, "users"));
+        snap.forEach(doc => {
+            const u = doc.data();
+            const div = document.createElement("div");
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            div.style.padding = "8px 0";
+            div.style.borderBottom = "1px dashed var(--border)";
+            div.style.fontSize = "0.8rem";
+            div.innerHTML = `
+                <span>👤 <b>${u.fullname}</b> (${u.email})</span>
+                <span class="user-badge" style="font-size:0.7rem; padding:2px 6px;">${u.role}</span>
+            `;
+            listEl.appendChild(div);
+        });
+    } catch(e) {
+        console.error(e);
+    }
 }
