@@ -1,5 +1,5 @@
 // ==============================================================================
-// SAMA GESTION PRO V9.2 - SÉCURITÉ PLANNING, DOUBLE ENVOI ET POLITESSE
+// SAMA GESTION PRO V9.4 - FONCIER, DOUBLE ENVOI, CHECKING & QUALIFICATION
 // ==============================================================================
 
 let profilRole = null;
@@ -134,12 +134,11 @@ function majInterfaceProfil() {
 }
 
 async function sauvegarderLienPaiement(val) {
-    monLienPaiement = val.trim();
     const userTrouve = utilisateurs.find(u => u.fullname === courtierNom);
     const targetUID = userTrouve ? userTrouve.uid : (window.auth.currentUser ? window.auth.currentUser.uid : "temp");
     
     await window.fsUpdateDoc(window.fsDoc(window.db, "profils", targetUID), {
-        lienPaiement: monLienPaiement
+        lienPaiement: val.trim()
     });
 }
 
@@ -164,14 +163,12 @@ function envoyerMessageWhatsApp(telephone, message, inclurePaiement = false) {
     }
     
     let signatureFormatee = `\n\nCordiales salutations,\n*${courtierNom}* • Gestion Immobilière`;
-    
     if(inclurePaiement && monLienPaiement) {
         signatureFormatee += `\n\n💵 Pour votre dépôt Mobile Money (Wave/OM) : *${monLienPaiement}*`;
     }
     
     let messageComplet = message + signatureFormatee;
     let messageEncode = encodeURIComponent(messageComplet);
-    
     window.location.href = `https://api.whatsapp.com/send?phone=${numeroPropre}&text=${messageEncode}`;
 }
 
@@ -315,6 +312,10 @@ function ouvrirFormulaireAjout() {
     document.getElementById('new-bien-adresse').value = '';
     document.getElementById('new-bien-proprio').value = '';
     document.getElementById('new-bien-proprio-tel').value = '';
+    
+    if(document.getElementById('new-bien-superficie')) document.getElementById('new-bien-superficie').value = '';
+    if(document.getElementById('new-bien-papier')) document.getElementById('new-bien-papier').value = 'Non spécifié';
+
     document.getElementById('btn-save-bien').disabled = false;
     document.getElementById('btn-save-bien').innerText = "Enregistrer";
     showView('ajouter-bien');
@@ -336,6 +337,9 @@ function modifierBienExistant(id) {
     document.getElementById('new-bien-proprio').value = b.proprio;
     document.getElementById('new-bien-proprio-tel').value = b.proprioTel;
     
+    if(document.getElementById('new-bien-superficie')) document.getElementById('new-bien-superficie').value = b.superficie || '';
+    if(document.getElementById('new-bien-papier')) document.getElementById('new-bien-papier').value = b.typePapier || 'Non spécifié';
+
     document.getElementById('edit-only-fields').style.display = 'block';
     document.getElementById('edit-bien-locataire').value = b.locataire || 'Aucun';
     document.getElementById('edit-bien-locataire-tel').value = b.locataireTel || '';
@@ -359,12 +363,17 @@ async function saveBienPro() {
     const currentId = existingId ? parseInt(existingId) : Date.now();
     const ancienBien = existingId ? biens.find(x => x.id === currentId) : null;
 
+    const supEl = document.getElementById('new-bien-superficie');
+    const papEl = document.getElementById('new-bien-papier');
+
     const structureBien = {
         id: currentId,
         agentCreateur: ancienBien ? ancienBien.agentCreateur : courtierNom,
         nom: nom, loyer: loyer,
         type: document.getElementById('new-bien-type').value,
         adresse: document.getElementById('new-bien-adresse').value || 'Non spécifiée',
+        superficie: supEl ? supEl.value.trim() : "",
+        typePapier: papEl ? papEl.value : "Non spécifié",
         proprio: document.getElementById('new-bien-proprio').value || 'Inconnu',
         proprioTel: document.getElementById('new-bien-proprio-tel').value || '',
         locataire: existingId ? document.getElementById('edit-bien-locataire').value : 'Aucun',
@@ -393,7 +402,7 @@ function renderBiens() {
         <div class="form-card" onclick="voirDetailBien(${b.id})">
             <div class="bien-gallery">${b.photos.map(p => `<img src="${p}">`).join('')}</div>
             <div style="margin-top:10px; position:relative;">
-                <strong>${b.nom}</strong><br>
+                <strong>${b.nom}</strong> ${b.superficie ? `<small style="background:#E2E8F0; padding:2px 5px; border-radius:4px; font-size:0.7rem; margin-left:5px;">📐 ${b.superficie}</small>` : ''}<br>
                 <small>${b.adresse}</small><br>
                 <span style="color:var(--gold); font-weight:700;">${parseInt(b.loyer).toLocaleString()} CFA</span>
                 <button onclick="event.stopPropagation(); ouvrirPortefeuille(${b.id})" style="position:absolute; right:0; bottom:0; background:var(--gold-light); color:var(--gold); border:none; padding:6px; border-radius:8px; font-size:0.75rem; font-weight:600;"><i class="fas fa-wallet"></i> Suivi</button>
@@ -411,9 +420,18 @@ function filterBiens(s, e) {
 
 function voirDetailBien(id) {
     const b = biens.find(x => x.id === id);
+    
+    const blocFoncier = (b.superficie || (b.typePapier && b.typePapier !== 'Non spécifié')) ? `
+        <div style="background:#F8FAFC; padding:8px; border-radius:6px; margin:10px 0; font-size:0.85rem; border:1px dashed #CBD5E1;">
+            ${b.superficie ? `📌 <b>Superficie :</b> ${b.superficie}<br>` : ''}
+            ${b.typePapier && b.typePapier !== 'Non spécifié' ? `📄 <b>Document :</b> ${b.typePapier}` : ''}
+        </div>
+    ` : '';
+
     document.getElementById('modal-body').innerHTML = `
         <h3>${b.nom}</h3>
-        <p style="margin-top:5px;"><b>Loyer :</b> ${parseInt(b.loyer).toLocaleString()} CFA</p>
+        ${blocFoncier}
+        <p style="margin-top:5px;"><b>Prix / Loyer :</b> ${parseInt(b.loyer).toLocaleString()} CFA</p>
         <p><b>Propriétaire :</b> ${b.proprio} (${b.proprioTel || 'Pas de numéro'})</p>
         <p><b>Locataire :</b> ${b.locataire || 'Aucun'} (${b.locataireTel || 'Pas de numéro'})</p>
         <p><b>Entrée :</b> ${b.dateEntree ? new Date(b.dateEntree).toLocaleDateString('fr-FR') : 'Non renseignée'}</p>
@@ -701,7 +719,6 @@ function updateSelects() {
     analyserReliquatComptable();
 }
 
-// 🔄 ENCAISSEMENT INTELLIGENT AVEC FLUX DE DOUBLE ENVOI SEQUENTIEL AUTOMATIQUE
 async function validerCollecte(cible) {
     const name = document.getElementById('c-bien-select').value;
     const mt = parseFloat(document.getElementById('c-montant').value);
@@ -737,24 +754,21 @@ async function validerCollecte(cible) {
     let txtProprio = `Bonjour et Salam alaykoum ${nomProprio},\n\n*NOTIFICATION DE TRANSFERT FONDS PROPRIÉTAIRE*\n\nNous vous informons qu'un versement a été encaissé au titre de : *${type}* pour votre bien et que les fonds ont été reversés.\n\n*Bien immobilier :* ${b.nom}\n*Montant Brut collecté :* ${mt.toLocaleString()} CFA\n*Frais de gestion (${b.com}) :* - ${maCom.toLocaleString()} CFA\n*Net transféré :* *${netAReverser.toLocaleString()} CFA*\n*Canal d'envoi :* ${mode}\n*Date de l'opération :* ${new Date().toLocaleDateString('fr-FR')}${chaineReliquat}`;
 
     if (cible === 'locataire') {
-        // Envoi immédiat au Locataire
         envoyerMessageWhatsApp(b.locataireTel, txtLocataire, false);
         
-        // Petit délai de confort pour laisser WhatsApp s'ouvrir, puis proposition de notifier le propriétaire
         setTimeout(() => {
             if(confirm(`Reçu envoyé au locataire !\nVoulez-vous maintenant envoyer la notification de versement (${type}) à M./Mme ${nomProprio} ?`)) {
                 envoyerMessageWhatsApp(b.proprioTel, txtProprio, false);
             }
         }, 1000);
     } else {
-        // Si l'utilisateur clique directement sur le bouton Propriétaire
         envoyerMessageWhatsApp(b.proprioTel, txtProprio, false);
     }
     showView('dashboard');
 }
 
 // ==========================================
-// VISITES & PLANNING (AVEC BLOCAGE DU PASSÉ)
+// VISITES & PLANNING (AVEC CHECKING & QUALIFICATION)
 // ==========================================
 async function sauverVisite() {
     const nom = document.getElementById('p-name').value;
@@ -763,7 +777,16 @@ async function sauverVisite() {
     const date = document.getElementById('p-date').value;
     if(!nom || !tel || !date) return alert("Remplir tous les champs.");
 
-    const struct = { id: Date.now(), nom, tel, bien, date };
+    // Initialisation avec statut "Planifié" et qualification par défaut "Non qualifié"
+    const struct = { 
+        id: Date.now(), 
+        nom, 
+        tel, 
+        bien, 
+        date, 
+        statutChecking: "Planifié", 
+        qualification: "Non qualifié" 
+    };
     await window.fsSetDoc(window.fsDoc(window.db, "visites", String(struct.id)), struct);
     await chargerDonneesCloud();
     
@@ -781,15 +804,48 @@ function renderVisites() {
 
     conteneur.innerHTML = filtered.map(v => {
         const dateVisite = new Date(v.date);
-        const estPasse = dateVisite < maintenant; // 🔒 Vérification si le RDV est dépassé
+        const estPasse = dateVisite < maintenant;
+
+        // Configuration visuelle du badge selon le checking de la visite
+        let badgeColor = "#3B82F6"; 
+        if(v.statutChecking === "Honoré") badgeColor = "#10B981";
+        if(v.statutChecking === "Absent") badgeColor = "#EF4444";
 
         return `
-            <div class="form-card" style="position:relative; opacity: ${estPasse ? '0.6' : '1'}; background: ${estPasse ? '#F1F5F9' : '#FFFFFF'};">
-                <b>👤 ${v.nom}</b> - <small>${v.bien}</small><br>
-                <small>📅 ${dateVisite.toLocaleString('fr-FR')}</small><br>
-                <div style="margin-top:8px; display:flex; gap:10px;">
+            <div class="form-card" style="position:relative; opacity: ${estPasse && v.statutChecking === 'Planifié' ? '0.6' : '1'}; background: ${estPasse && v.statutChecking === 'Planifié' ? '#F1F5F9' : '#FFFFFF'};">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <b>👤 ${v.nom}</b> - <small>${v.bien}</small><br>
+                        <small>📅 ${dateVisite.toLocaleString('fr-FR')}</small>
+                    </div>
+                    <span style="background:${badgeColor}; color:white; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:700;">
+                        ${v.statutChecking || 'Planifié'}
+                    </span>
+                </div>
+
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px; margin:8px 0; display:flex; gap:6px; align-items:center; justify-content:space-between;">
+                    <div>
+                        <small style="display:block; font-size:0.65rem; color:var(--text-light); font-weight:700;">CHECKING VISITE :</small>
+                        <select onchange="changerCheckingVisite(${v.id}, this.value)" style="width:auto; margin:0; padding:2px 5px; font-size:0.75rem;">
+                            <option value="Planifié" ${v.statutChecking === 'Planifié' ? 'selected' : ''}>⏳ Planifié</option>
+                            <option value="Honoré" ${v.statutChecking === 'Honoré' ? 'selected' : ''}>✅ Honoré</option>
+                            <option value="Absent" ${v.statutChecking === 'Absent' ? 'selected' : ''}>❌ Absent / Annulé</option>
+                        </select>
+                    </div>
+                    <div>
+                        <small style="display:block; font-size:0.65rem; color:var(--text-light); font-weight:700;">QUALIFICATION :</small>
+                        <select onchange="changerQualificationVisiteur(${v.id}, this.value)" style="width:auto; margin:0; padding:2px 5px; font-size:0.75rem;">
+                            <option value="Non qualifié" ${v.qualification === 'Non qualifié' ? 'selected' : ''}>❓ En attente</option>
+                            <option value="Client Sérieux" ${v.qualification === 'Client Sérieux' ? 'selected' : ''}>🔥 Très Sérieux</option>
+                            <option value="Curieux / Pas de budget" ${v.qualification === 'Curieux / Pas de budget' ? 'selected' : ''}>🥶 Curieux seul</option>
+                            <option value="Dossier en cours" ${v.qualification === 'Dossier en cours' ? 'selected' : ''}>📝 Dossier déposé</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top:8px; display:flex; gap:10px; align-items:center;">
                     ${estPasse ? 
-                        `<span style="color:#94A3B8; font-size:0.85rem; font-weight:500;"><i class="fas fa-clock"></i> Visite passée (Grisée)</span>` : 
+                        `<span style="color:#94A3B8; font-size:0.85rem; font-weight:500;"><i class="fas fa-clock"></i> Historique (Date Passée)</span>` : 
                         `<span onclick="envoyerMessageWhatsApp('${v.tel}', 'Bonjour et Salam alaykoum ${v.nom},\n\nJe vous confirme notre rendez-vous fixé le ${dateVisite.toLocaleString('fr-FR')} pour la visite du bien suivant : *${v.bien}*.', true)" style="color:#2ECC71; cursor:pointer; font-size:0.85rem; font-weight:700;"><i class="fab fa-whatsapp"></i> Confirmer (Avec Infos MM)</span>`
                     }
                     <span onclick="supprimerRendezVous(${v.id})" style="color:var(--red); cursor:pointer; font-size:0.85rem; font-weight:600; margin-left:auto;"><i class="fas fa-trash-alt"></i> Annuler</span>
@@ -797,6 +853,24 @@ function renderVisites() {
             </div>
         `;
     }).reverse().join('');
+}
+
+async function changerCheckingVisite(id, nouveauStatut) {
+    const v = visites.find(x => x.id === id);
+    if(!v) return;
+    v.statutChecking = nouveauStatut;
+    await window.fsSetDoc(window.fsDoc(window.db, "visites", String(id)), v);
+    await chargerDonneesCloud();
+    renderVisites();
+}
+
+async function changerQualificationVisiteur(id, nouvelleQualif) {
+    const v = visites.find(x => x.id === id);
+    if(!v) return;
+    v.qualification = nouvelleQualif;
+    await window.fsSetDoc(window.fsDoc(window.db, "visites", String(id)), v);
+    await chargerDonneesCloud();
+    renderVisites();
 }
 
 async function supprimerRendezVous(id) {
