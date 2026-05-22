@@ -72,8 +72,8 @@
 
         /* Barre de navigation basse (Mobile-First) */
         nav { position: fixed; bottom: 0; inset: 0 0 0 0; height: 75px; background: var(--dark); display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 999; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
-        .nav-item { color: #94A3B8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; font-weight: 600; gap: 4px; transition: color 0.2s; background: none; border: none; width: auto; padding: 0; }
-        .nav-item i { font-size: 1.25rem; }
+        .nav-item { color: #94A3B8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: 600; gap: 4px; transition: color 0.2s; background: none; border: none; width: auto; padding: 0; }
+        .nav-item i { font-size: 1.3rem; }
         .nav-item.active { color: #FFFFFF; }
 
         /* Modal custom */
@@ -108,7 +108,6 @@
             <p id="login-error" style="color: var(--red); font-size: 0.8rem; margin-bottom: 14px; display: none; font-weight: 600;"></p>
             
             <button class="btn-primary" onclick="verifierConnexion()">Se connecter <i class="fas fa-sign-in-alt"></i></button>
-            
             <button class="btn-outline" style="margin-top: 10px; font-size: 0.85rem; background: var(--bg); border-color: var(--border);" onclick="document.getElementById('login-screen').style.display='none'; if(typeof showView === 'function') { showView('dashboard'); }">🔄 Accès Secours (Sans Passe)</button>
         </div>
     </div>
@@ -174,7 +173,10 @@
         </div>
 
         <div id="view-biens" class="view">
-            <h2><i class="fas fa-building" style="color:var(--gold);"></i> Catalogue Biens</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2><i class="fas fa-building" style="color:var(--gold);"></i> Catalogue Biens</h2>
+                <button class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;" onclick="ouvrirFormulaireAjout()"><i class="fas fa-plus"></i> Ajouter</button>
+            </div>
             
             <input type="text" id="search-bien-input" placeholder="🔍 Rechercher par nom, quartier..." oninput="renderBiens()">
             
@@ -259,7 +261,7 @@
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                     <button class="btn-outline" onclick="showView('biens')">Annuler</button>
-                    <button class="btn-primary" id="btn-save-bien" onclick="saveBienPro()">Enregistrer</button>
+                    <button class="btn-primary" id="btn-save-bien" onclick="saveBien()">Enregistrer</button>
                 </div>
             </div>
         </div>
@@ -305,14 +307,14 @@
 
         <div id="view-etat-lieux" class="view">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2><i class="fas fa-clipboard-check" style="color:var(--dark);"></i> États des Lieux</h2>
+                <h2><i class="fas fa-clipboard-check" style="color:var(--dark);"></i> ETL</h2>
                 <button class="btn-primary" style="width:auto; padding:8px 14px; font-size:0.85rem;" onclick="ouvrirFormulaireEDL()"><i class="fas fa-plus"></i> Créer</button>
             </div>
             <div id="edl-list"></div>
         </div>
 
         <div id="view-nouveau-edl" class="view">
-            <h2>Nouveau Certificat Constat</h2>
+            <h2>Nouveau Certificat ETL</h2>
             <div class="form-card">
                 <label>Bien immobilier concerné</label>
                 <select id="edl-bien-select"></select>
@@ -387,11 +389,15 @@
     <nav>
         <button class="nav-item active" onclick="resetNavStyles(this); showView('dashboard')">
             <i class="fas fa-th-large"></i>
-            <span>Dashboard</span>
+            <span>Dispo</span>
         </button>
         <button class="nav-item" onclick="resetNavStyles(this); showView('biens')">
             <i class="fas fa-building"></i>
             <span>Biens</span>
+        </button>
+        <button class="nav-item" onclick="resetNavStyles(this); showView('planning')">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Planning</span>
         </button>
         <button class="nav-item" onclick="resetNavStyles(this); showView('collecte')">
             <i class="fas fa-wallet"></i>
@@ -399,11 +405,7 @@
         </button>
         <button class="nav-item" onclick="resetNavStyles(this); showView('etat-lieux')">
             <i class="fas fa-clipboard-check"></i>
-            <span>Constats</span>
-        </button>
-        <button class="nav-item" onclick="resetNavStyles(this); showView('planning')">
-            <i class="fas fa-calendar-alt"></i>
-            <span>Visites</span>
+            <span>ETL</span>
         </button>
     </nav>
 
@@ -412,7 +414,6 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Configuration de vos clés réelles
         const firebaseConfig = {
             apiKey: "AIzaSyDEYgUuD4X8lscK_rE1Lg5mCpxLpBv6I3k",
             authDomain: "sama-gestion-pro.firebaseapp.com",
@@ -426,7 +427,6 @@
         window.auth = getAuth(app);
         window.db = getFirestore(app);
 
-        // Liaison globale pour l'architecture externe script.js
         window.fbOnAuth = onAuthStateChanged;
         window.fbSignIn = signInWithEmailAndPassword;
         window.fbSignOut = signOut;
