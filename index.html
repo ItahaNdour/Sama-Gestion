@@ -95,7 +95,13 @@
             <input type="email" id="login-username" placeholder="exemple@mail.com">
             <label>Code PIN / Mot de passe</label>
             <input type="password" id="login-password" placeholder="••••">
-            <button class="btn-primary" onclick="window.verifierConnexion()">Se connecter</button>
+            
+            <button class="btn-primary" onclick="window.verifierConnexion()">Se connecter via Firebase</button>
+            
+            <button class="btn-outline" style="margin-top:10px; border-color:var(--gold); color:var(--gold);" onclick="window.connexionSecours()">
+                ⚠️ Accès Secours (Sans Firebase)
+            </button>
+            
             <p id="login-error" style="color:var(--red); text-align:center; margin-top:10px; display:none; font-size:0.85rem;"></p>
         </div>
     </div>
@@ -279,10 +285,6 @@
                 <label>Notes & Observations générales</label>
                 <textarea id="edl-notes" rows="3" placeholder="Ras, peinture neuve..."></textarea>
 
-                <label>Photos de Preuve (3 max)</label>
-                <input type="file" accept="image/*" multiple onchange="window.previewAndCompressImage(this, 'edl')">
-                <div id="edl-previews-container" style="display:flex; gap:5px; margin-bottom:15px;"></div>
-
                 <button class="btn-primary" id="btn-save-edl" onclick="window.saveEDLCloud()">Signer & Synchroniser Cloud</button>
             </div>
         </div>
@@ -320,5 +322,5 @@
         </div>
     </div>
 
-    </body>
+</body>
 </html>
