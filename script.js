@@ -1,65 +1,66 @@
-// ==============================================================================
-// 1. MOTEUR DE STOCKAGE LOCAL (Data Manager)
-// ==============================================================================
+// --- 1. MOTEUR DE STOCKAGE ---
 const DataManager = {
     init: () => {
         if (!localStorage.getItem('sama_gestion_data')) {
-            const defaultData = {
-                profils: [],
-                biens: [],
-                visites: [],
-                etats_des_lieux: [],
-                config: { finance: { comTotaleGlobal: 0 } }
-            };
-            localStorage.setItem('sama_gestion_data', JSON.stringify(defaultData));
+            localStorage.setItem('sama_gestion_data', JSON.stringify({ biens: [] }));
         }
     },
-
-    getCollection: (name) => {
+    getCollection: (name) => JSON.parse(localStorage.getItem('sama_gestion_data'))[name] || [],
+    saveDocument: (collectionName, docData) => {
         const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
-        return data[name] || [];
-    },
-
-    saveCollection: (name, array) => {
-        const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
-        data[name] = array;
+        docData.id = docData.id || 'bien_' + Date.now();
+        data[collectionName].push(docData);
         localStorage.setItem('sama_gestion_data', JSON.stringify(data));
     },
-
-    saveDocument: (collectionName, id, docData) => {
-        const collection = DataManager.getCollection(collectionName);
-        const index = collection.findIndex(item => String(item.id) === String(id));
-        if (index !== -1) {
-            collection[index] = { ...collection[index], ...docData };
-        } else {
-            collection.push({ ...docData, id });
-        }
-        DataManager.saveCollection(collectionName, collection);
+    deleteDocument: (collectionName, id) => {
+        const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
+        data[collectionName] = data[collectionName].filter(item => item.id !== id);
+        localStorage.setItem('sama_gestion_data', JSON.stringify(data));
     }
 };
 
-// Initialisation au chargement de la page
-DataManager.init();
-
-// ==============================================================================
-// 2. LOGIQUE DE CHARGEMENT DES DONNÉES (Remplacement de Firebase)
-// ==============================================================================
-/**
- * Charge les données depuis le stockage local vers l'interface
- * @param {string} collection - Nom de la collection à charger
- * @param {Function} callback - Fonction pour traiter les données après récupération
- */
-function chargerDonnees(collection, callback) {
-    console.log(`Chargement de la collection : ${collection}`);
-    try {
-        const data = DataManager.getCollection(collection);
-        if (callback) {
-            callback(data);
-        }
-    } catch (error) {
-        console.error("Erreur lors du chargement des données locales :", error);
-    }
+// --- 2. NAVIGATION ---
+function naviguerVers(viewId) {
+    document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+    document.getElementById(viewId).style.display = 'block';
+    if (viewId === 'view-liste') afficherListeBiens();
 }
 
-// Exemple d'utilisation : 
-// chargerDonnees('biens', (biens) => { afficherListeBiens(biens); });
+// --- 3. GESTION DES BIENS ---
+function afficherListeBiens() {
+    const conteneur = document.getElementById('liste-biens-container');
+    const biens = DataManager.getCollection('biens');
+    conteneur.innerHTML = biens.map(b => `
+        <div class="card-bien">
+            <div class="bien-img"></div>
+            <h3>${b.nom}</h3>
+            <p>${b.adresse}</p>
+            <span class="com-badge">${b.type}</span>
+            <div class="proprio-info">Propriétaire : ${b.proprio}</div>
+            <button onclick="supprimerBien('${b.id}')">Supprimer</button>
+        </div>
+    `).join('');
+}
+
+function supprimerBien(id) {
+    DataManager.deleteDocument('biens', id);
+    afficherListeBiens();
+}
+
+// Initialisation
+DataManager.init();
+document.getElementById('form-bien').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nouveauBien = {
+        nom: document.getElementById('nom').value,
+        adresse: document.getElementById('adresse').value,
+        type: document.getElementById('type').value,
+        proprio: document.getElementById('proprio').value
+    };
+    DataManager.saveDocument('biens', nouveauBien);
+    e.target.reset();
+    naviguerVers('view-liste');
+});
+
+// Premier affichage
+afficherListeBiens();
