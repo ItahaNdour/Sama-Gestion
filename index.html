@@ -2,17 +2,24 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion - Connexion</title>
+    <title>Sama Gestion - Premium</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+    <!-- Header global -->
+    <header id="app-header" style="display: none;">
+        <div class="logo">Sama Gestion</div>
+        <div class="user-actions">
+            <span id="user-info">Profil</span>
+            <button onclick="logout()">Déconnexion</button>
+        </div>
+    </header>
 
     <!-- Vue : Login -->
     <section id="view-login">
         <div class="login-container">
             <h1>Sama Gestion</h1>
-            <p>Connexion sécurisée</p>
             <form id="form-login">
                 <input type="email" id="email" placeholder="Email" required>
                 <input type="password" id="password" placeholder="Mot de passe" required>
@@ -23,24 +30,20 @@
 
     <!-- Vue : Liste des biens -->
     <section id="view-liste" style="display: none;">
-        <header>
+        <div class="content-header">
             <h1>Mes Biens</h1>
-            <button onclick="naviguerVers('view-formulaire')">+ Ajouter</button>
-        </header>
+            <button onclick="naviguerVers('view-formulaire')">+ Ajouter un bien</button>
+        </div>
         <div id="liste-biens-container"></div>
     </section>
 
-    <!-- Vue : Formulaire d'ajout -->
+    <!-- Vue : Formulaire -->
     <section id="view-formulaire" style="display: none;">
-        <header>
-            <button onclick="naviguerVers('view-liste')">Retour</button>
-            <h1>Ajouter un bien</h1>
-        </header>
+        <button onclick="naviguerVers('view-liste')">Retour</button>
+        <h2>Ajouter un bien</h2>
         <form id="form-bien">
             <input type="text" id="nom" placeholder="Nom du bien" required>
             <input type="text" id="adresse" placeholder="Adresse" required>
-            <input type="text" id="type" placeholder="Type (Appartement, Villa...)" required>
-            <input type="text" id="proprio" placeholder="Propriétaire" required>
             <button type="submit">Enregistrer</button>
         </form>
     </section>
