@@ -9,20 +9,21 @@ const DataManager = {
         }
     },
     getCollection: (name) => JSON.parse(localStorage.getItem('sama_gestion_data'))[name] || [],
-    saveBien: (bienData) => {
+    saveBien: (dataForm) => {
         const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
         const user = JSON.parse(sessionStorage.getItem('user'));
-        bienData.id = 'bien_' + Date.now();
-        bienData.createdBy = user.id;
-        data.biens.push(bienData);
+        
+        const nouveauBien = {
+            id: 'bien_' + Date.now(),
+            createdBy: user.id,
+            statut: 'Disponible',
+            ...dataForm
+        };
+        
+        data.biens.push(nouveauBien);
         localStorage.setItem('sama_gestion_data', JSON.stringify(data));
     }
 };
-
-function logout() {
-    sessionStorage.removeItem('user');
-    window.location.reload();
-}
 
 function naviguerVers(viewId) {
     const isLogged = !!sessionStorage.getItem('user');
@@ -38,17 +39,38 @@ function afficherListeBiens() {
     const conteneur = document.getElementById('liste-biens-container');
     const allBiens = DataManager.getCollection('biens');
     const user = JSON.parse(sessionStorage.getItem('user'));
+    
     const biens = (user.role === 'admin') ? allBiens : allBiens.filter(b => b.createdBy === user.id);
     
     conteneur.innerHTML = biens.map(b => `
         <div class="card-bien">
-            <h3>${b.nom}</h3>
-            <p>${b.adresse}</p>
+            <div style="display:flex; justify-content:space-between;">
+                <h3>${b.nom}</h3>
+                <span class="badge">${b.statut}</span>
+            </div>
+            <p><strong>Loyer:</strong> ${Number(b.loyer).toLocaleString()} FCFA | <strong>Type:</strong> ${b.type}</p>
+            <p><strong>Adresse:</strong> ${b.adresse}</p>
         </div>
     `).join('');
 }
 
+// Initialisation et gestionnaire de soumission
 DataManager.init();
+document.getElementById('form-bien').addEventListener('submit', (e) => {
+    e.preventDefault();
+    DataManager.saveBien({
+        nom: document.getElementById('nom').value,
+        type: document.getElementById('type').value,
+        adresse: document.getElementById('adresse').value,
+        statutJuridique: document.getElementById('statutJuridique').value,
+        superficie: document.getElementById('superficie').value,
+        loyer: document.getElementById('loyer').value,
+        fraisAgence: document.getElementById('fraisAgence').value,
+        proprio: document.getElementById('proprio').value
+    });
+    naviguerVers('view-liste');
+});
+
 document.getElementById('form-login').addEventListener('submit', (e) => {
     e.preventDefault();
     const user = DataManager.getCollection('users').find(u => u.email === document.getElementById('email').value && u.password === document.getElementById('password').value);
@@ -58,11 +80,4 @@ document.getElementById('form-login').addEventListener('submit', (e) => {
     } else alert("Erreur d'authentification");
 });
 
-document.getElementById('form-bien').addEventListener('submit', (e) => {
-    e.preventDefault();
-    DataManager.saveBien({ nom: document.getElementById('nom').value, adresse: document.getElementById('adresse').value });
-    naviguerVers('view-liste');
-});
-
-// Lancement initial
 naviguerVers('view-login');
