@@ -5,7 +5,7 @@ const DataManager = {
                 users: [{id:'admin', email:'admin@sama.com', password:'password', role:'admin'}], 
                 biens: [] 
             }));
-        }
+        } 
     },
     getCollection: (name) => JSON.parse(localStorage.getItem('sama_gestion_data'))[name] || [],
     saveBien: (bienData) => {
