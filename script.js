@@ -43,10 +43,14 @@ async function initialiserApplication() {
     const nameDisplay = currentUserData.fullname ? currentUserData.fullname.split(' ')[0] : "Utilisateur";
     document.getElementById("header-user-badge").innerHTML = `<i class="fas fa-user-circle"></i> ${nameDisplay}`;
     
-    // Sécurité doublée pour le SuperAdmin (Rôle OU Email)
-    if (currentUserData.role === "SuperAdmin" || currentUserData.email === "19amadoundour@gmail.com") {
+    // SÉCURITÉ : Rôle SuperAdmin (avec ou sans majuscule) OU ton adresse email
+    if (currentUserData.role === "SuperAdmin" || currentUserData.role === "superadmin" || currentUserData.email === "19amadoundour@gmail.com") {
         const adminSection = document.getElementById("admin-management-section");
         if (adminSection) adminSection.style.display = "block";
+        
+        // On s'assure que la navigation principale est bien visible pour l'admin
+        const mainNav = document.querySelector("nav");
+        if (mainNav) mainNav.style.display = "flex";
     } else {
         const adminSection = document.getElementById("admin-management-section");
         if (adminSection) adminSection.style.display = "none";
@@ -113,7 +117,7 @@ async function chargerBiensCloud() {
             localBiens.push({ id: doc.id, ...doc.data() });
         });
         
-        calculerKpiCommissions(); // Orthographe corrigée ici
+        calculerKpiCommissions();
         renderBiens();
         remplirSelectsBiens();
     } catch (error) {
@@ -121,7 +125,6 @@ async function chargerBiensCloud() {
     }
 }
 
-// Orthographe corrigée : calculerKpiCommissions au lieu de calcularKpiCommissions
 function calculerKpiCommissions() {
     let cumul = 0;
     localBiens.forEach(bien => {
@@ -244,7 +247,6 @@ window.ouvrirFormulaireAjout = function() {
     showView("ajouter-bien");
 };
 
-// Fonction synchronisée avec le bouton HTML (saveBien)
 window.saveBien = async function() {
     const btn = document.getElementById("btn-save-bien");
     const id = document.getElementById("edit-bien-id").value;
@@ -276,7 +278,6 @@ window.saveBien = async function() {
 
     try {
         if (id) {
-            // Mode Édition
             payload.locataireNom = document.getElementById("edit-bien-locataire").value.trim();
             payload.locataireTel = document.getElementById("edit-bien-locataire-tel").value.trim();
             payload.dateEntree = document.getElementById("edit-bien-date-entree").value;
@@ -284,7 +285,6 @@ window.saveBien = async function() {
             
             await window.fsUpdateDoc(window.fsDoc(window.db, "biens", id), payload);
         } else {
-            // Mode Création
             payload.statut = "Disponible";
             payload.createdAt = new Date().toISOString();
             const newDocRef = window.fsDoc(window.fsCollection(window.db, "biens"));
@@ -339,7 +339,7 @@ window.ouvrirModalBien = function(bien) {
         photoGrid += `</div>`;
     }
 
-    const isSuperAdmin = currentUserData && (currentUserData.role === 'SuperAdmin' || currentUserData.email === '19amadoundour@gmail.com');
+    const isSuperAdmin = currentUserData && (currentUserData.role === 'SuperAdmin' || currentUserData.role === 'superadmin' || currentUserData.email === '19amadoundour@gmail.com');
 
     body.innerHTML = `
         <h3 style="color:var(--dark); font-size:1.3rem; margin-bottom:2px;">${bien.nom}</h3>
