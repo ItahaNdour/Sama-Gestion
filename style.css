@@ -1,7 +1,8 @@
-body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; }
 #app-header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-.login-container { max-width: 320px; margin: 100px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-.content-header { display: flex; justify-content: space-between; padding: 20px; }
-.card-bien { background: white; padding: 15px; margin: 20px; border-radius: 15px; border-left: 5px solid #2c3e50; }
-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+.login-container { max-width: 320px; margin: 100px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.content-header { display: flex; justify-content: space-between; padding: 20px; align-items: center; }
+.card-bien { background: white; padding: 20px; margin: 20px; border-radius: 12px; border-left: 6px solid #2c3e50; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.badge { padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; background: #d4edda; color: #155724; }
+input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
 button { padding: 10px 20px; border-radius: 8px; border: none; background: #2c3e50; color: white; cursor: pointer; }
