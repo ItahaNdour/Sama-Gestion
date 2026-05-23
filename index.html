@@ -2,53 +2,40 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion - Premium</title>
+    <title>SAMA GESTION - Biens</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-
-    <header id="app-header" style="display: none;">
-        <div class="logo">Sama Gestion</div>
-        <button onclick="logout()">Déconnexion</button>
+    <header>
+        <span>🏢 SAMA GESTION</span>
+        <button onclick="showForm()" class="btn-add">+</button>
     </header>
 
-    <section id="view-login">
-        <div class="login-container">
-            <h1>Connexion</h1>
-            <form id="form-login">
-                <input type="email" id="email" placeholder="Email" required>
-                <input type="password" id="password" placeholder="Mot de passe" required>
-                <button type="submit">Se connecter</button>
-            </form>
-        </div>
-    </section>
+    <div class="filters">
+        <input type="text" id="search" placeholder="Rechercher (Quartier, Nom...)" oninput="renderBiens()">
+        <select id="filter-type" onchange="renderBiens()">
+            <option value="">Tous types</option>
+            <option value="Appartement">Appartement</option>
+            <option value="Villa">Villa</option>
+            <option value="Studio">Studio</option>
+        </select>
+    </div>
 
-    <section id="view-liste" style="display: none;">
-        <div class="filter-bar">
-            <input type="text" id="search" placeholder="Rechercher..." oninput="filtrerEtAfficher()">
-            <select id="filter-type" onchange="filtrerEtAfficher()">
-                <option value="Tous">Tous types</option>
-                <option value="Appartement">Appartement</option>
-                <option value="Studio">Studio</option>
-                <option value="Villa">Villa</option>
-            </select>
-        </div>
-        <div id="liste-biens-container"></div>
-        <button class="add-btn" onclick="naviguerVers('view-formulaire')">+</button>
-    </section>
+    <div id="biens-container" class="container"></div>
 
-    <section id="view-formulaire" style="display: none;">
-        <button onclick="naviguerVers('view-liste')">Retour</button>
-        <h2>Ajouter un Mandat</h2>
-        <form id="form-bien">
-            <input type="text" id="nom" placeholder="Nom du bien" required>
-            <select id="type"><option value="Appartement">Appartement</option><option value="Studio">Studio</option><option value="Villa">Villa</option></select>
-            <input type="number" id="loyer" placeholder="Loyer (FCFA)" required>
-            <input type="file" id="photoInput" accept="image/*" capture="environment">
-            <button type="submit">Sauvegarder le mandat</button>
-        </form>
-    </section>
+    <div id="form-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <input type="text" id="nom" placeholder="Nom du bien">
+            <input type="text" id="quartier" placeholder="Quartier">
+            <input type="number" id="loyer" placeholder="Loyer">
+            <input type="text" id="superficie" placeholder="Superficie m²">
+            <input type="text" id="papier" placeholder="Type de papier (TF, Bail...)">
+            <select id="type"><option value="Appartement">Appartement</option><option value="Villa">Villa</option></select>
+            <input type="file" id="photo" accept="image/*">
+            <button onclick="saveBien()">Enregistrer</button>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
