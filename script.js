@@ -1,33 +1,36 @@
-let appData = JSON.parse(localStorage.getItem('sama_data')) || { biens: [], visites: [], collecte: [] };
+// Initialisation des données locales
+let appData = JSON.parse(localStorage.getItem('sama_gestion')) || {
+    biens: [],
+    collecte: [],
+    totalCollecte: 0
+};
 
-function save() { localStorage.setItem('sama_data', JSON.stringify(appData)); }
-
-function loadModule(module) {
-    const root = document.getElementById('app-root');
-    root.innerHTML = `<h1>${module.charAt(0).toUpperCase() + module.slice(1)}</h1>`;
-    
-    if (module === 'biens') {
-        root.innerHTML += `
-            <input type="text" placeholder="Rechercher par quartier..." oninput="filterBiens(this.value)">
-            <div id="list-container"></div>
-        `;
-        renderBiens();
-    }
-}
-
-function renderBiens() {
-    const list = document.getElementById('list-container');
-    list.innerHTML = appData.biens.map(b => `
-        <div class="card">
-            <h3>${b.nom}</h3>
-            <p>${b.type} - ${b.quartier}</p>
-            <p><b>${b.loyer} CFA</b></p>
+// Fonction pour charger le Dashboard (l'écran principal)
+function loadDashboard() {
+    const root = document.getElementById('app-content');
+    root.innerHTML = `
+        <div class="today-container">
+            <div class="card-small">📅 Visite 10h<br>Modou Diouf</div>
+            <div class="card-small">📋 EDL<br>Fatou Cissé</div>
         </div>
-    `).join('');
+        <div class="grid-modules">
+            <div class="module-card" style="background: #2563EB;" onclick="loadModule('visites')">Visite</div>
+            <div class="module-card" style="background: #D97706;" onclick="loadModule('edl')">État des lieux</div>
+            <div class="module-card" style="background: #059669;" onclick="loadModule('collecte')">Collecter Loyer</div>
+            <div class="module-card" style="background: #DC2626;" onclick="loadModule('biens')">Mes Biens</div>
+        </div>
+        <div class="finance-card">
+            <div style="font-size: 0.9rem; color: #666;">Total Loyers Collectés</div>
+            <div style="font-size: 1.5rem; font-weight: bold;">${appData.totalCollecte.toLocaleString()} CFA</div>
+        </div>
+    `;
 }
 
-function openModal() { document.getElementById('modal').style.display = 'block'; }
-function closeModal() { document.getElementById('modal').style.display = 'none'; }
+// Moteur de chargement des modules
+function loadModule(module) {
+    const root = document.getElementById('app-content');
+    root.innerHTML = `<div style="padding: 20px;"><h1>Module ${module.toUpperCase()}</h1><p>En construction...</p></div>`;
+}
 
-// Chargement initial
-loadModule('biens');
+// Lancement au démarrage
+loadDashboard();
