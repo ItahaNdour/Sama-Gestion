@@ -3,34 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAMA GESTION PRO</title>
+    <title>SAMA GESTION</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --teal: #008080; --bg: #F4F7F6; --white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
-        header { background: var(--teal); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Dashboard Layout */
-        .today-container { display: flex; gap: 10px; padding: 15px; }
-        .card-small { background: white; flex: 1; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.8rem; }
-        .grid-modules { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
-        .module-card { height: 100px; border-radius: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: bold; cursor: pointer; }
-        .finance-card { background: white; margin: 20px 15px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
-        /* Nav Bar */
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #ddd; }
-        .nav-item { text-align: center; font-size: 0.7rem; color: #555; cursor: pointer; }
-    </style>
 </head>
 <body>
-
     <header>
-        <div><strong>Waat</strong> - Sama Gestion</div>
+        <div><strong>Sama</strong> - Gestion</div>
         <div>Admin</div>
     </header>
 
-    <div id="app-content">
-        </div>
+    <div id="app-content"></div>
 
     <nav class="nav-bottom">
         <div class="nav-item" onclick="loadDashboard()"><i class="fas fa-home"></i><br>Dashboard</div>
@@ -39,7 +22,6 @@
         <div class="nav-item" onclick="loadModule('visites')"><i class="fas fa-calendar-check"></i><br>Visites</div>
         <div class="nav-item" onclick="loadModule('admin')"><i class="fas fa-cog"></i><br>Admin</div>
     </nav>
-
     <script src="script.js"></script>
 </body>
 </html>
