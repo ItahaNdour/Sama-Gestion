@@ -2,10 +2,12 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sama Gestion - Premium</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <header id="app-header" style="display: none;">
         <div class="logo">Sama Gestion</div>
         <button onclick="logout()">Déconnexion</button>
@@ -28,6 +30,7 @@
             <select id="filter-type" onchange="filtrerEtAfficher()">
                 <option value="Tous">Tous types</option>
                 <option value="Appartement">Appartement</option>
+                <option value="Studio">Studio</option>
                 <option value="Villa">Villa</option>
             </select>
         </div>
@@ -37,13 +40,13 @@
 
     <section id="view-formulaire" style="display: none;">
         <button onclick="naviguerVers('view-liste')">Retour</button>
-        <h2>Nouveau Mandat</h2>
+        <h2>Ajouter un Mandat</h2>
         <form id="form-bien">
             <input type="text" id="nom" placeholder="Nom du bien" required>
-            <select id="type"><option value="Appartement">Appartement</option><option value="Villa">Villa</option></select>
-            <input type="number" id="loyer" placeholder="Loyer" required>
+            <select id="type"><option value="Appartement">Appartement</option><option value="Studio">Studio</option><option value="Villa">Villa</option></select>
+            <input type="number" id="loyer" placeholder="Loyer (FCFA)" required>
             <input type="file" id="photoInput" accept="image/*" capture="environment">
-            <button type="submit">Sauvegarder</button>
+            <button type="submit">Sauvegarder le mandat</button>
         </form>
     </section>
 
