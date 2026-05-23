@@ -2,38 +2,34 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>SAMA GESTION - Biens</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAMA GESTION PRO</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+
     <header>
-        <span>🏢 SAMA GESTION</span>
-        <button onclick="showForm()" class="btn-add">+</button>
+        <span class="logo">🏢 SAMA GESTION</span>
+        <i class="fas fa-plus-circle" onclick="openModal()"></i>
     </header>
 
-    <div class="filters">
-        <input type="text" id="search" placeholder="Rechercher (Quartier, Nom...)" oninput="renderBiens()">
-        <select id="filter-type" onchange="renderBiens()">
-            <option value="">Tous types</option>
-            <option value="Appartement">Appartement</option>
-            <option value="Villa">Villa</option>
-            <option value="Studio">Studio</option>
-        </select>
-    </div>
+    <div class="content" id="app-root">
+        </div>
 
-    <div id="biens-container" class="container"></div>
+    <nav class="nav-bottom">
+        <div class="nav-item" onclick="loadModule('biens')"><i class="fas fa-building"></i><span>Biens</span></div>
+        <div class="nav-item" onclick="loadModule('collecte')"><i class="fas fa-wallet"></i><span>Collecte</span></div>
+        <div class="nav-item" onclick="loadModule('visites')"><i class="fas fa-calendar-check"></i><span>Visites</span></div>
+        <div class="nav-item" onclick="loadModule('edl')"><i class="fas fa-clipboard-list"></i><span>EDL</span></div>
+        <div class="nav-item" onclick="loadModule('admin')"><i class="fas fa-user-shield"></i><span>Admin</span></div>
+    </nav>
 
-    <div id="form-modal" class="modal" style="display:none;">
+    <div id="modal" class="modal">
         <div class="modal-content">
-            <input type="text" id="nom" placeholder="Nom du bien">
-            <input type="text" id="quartier" placeholder="Quartier">
-            <input type="number" id="loyer" placeholder="Loyer">
-            <input type="text" id="superficie" placeholder="Superficie m²">
-            <input type="text" id="papier" placeholder="Type de papier (TF, Bail...)">
-            <select id="type"><option value="Appartement">Appartement</option><option value="Villa">Villa</option></select>
-            <input type="file" id="photo" accept="image/*">
-            <button onclick="saveBien()">Enregistrer</button>
+            <span onclick="closeModal()" style="float:right">&times;</span>
+            <h2 id="modal-title">Nouveau Bien</h2>
+            <div id="form-content"></div>
         </div>
     </div>
 
