@@ -3,13 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sama Gestion</title>
+    <title>Sama Gestion - Connexion</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- Vue : Login -->
+    <section id="view-login">
+        <div class="login-container">
+            <h1>Sama Gestion</h1>
+            <p>Connexion sécurisée</p>
+            <form id="form-login">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Mot de passe" required>
+                <button type="submit">Se connecter</button>
+            </form>
+        </div>
+    </section>
+
     <!-- Vue : Liste des biens -->
-    <section id="view-liste">
+    <section id="view-liste" style="display: none;">
         <header>
             <h1>Mes Biens</h1>
             <button onclick="naviguerVers('view-formulaire')">+ Ajouter</button>
