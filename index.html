@@ -2,19 +2,15 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Sama Gestion - Module Biens</title>
+    <title>Sama Gestion - Premium</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <header id="app-header" style="display: none;">
         <div class="logo">Sama Gestion</div>
-        <div class="user-actions">
-            <button onclick="logout()">Déconnexion</button>
-        </div>
+        <button onclick="logout()">Déconnexion</button>
     </header>
 
-    <!-- Vue Login -->
     <section id="view-login">
         <div class="login-container">
             <h1>Connexion</h1>
@@ -26,34 +22,28 @@
         </div>
     </section>
 
-    <!-- Vue Liste -->
     <section id="view-liste" style="display: none;">
-        <div class="content-header">
-            <h1>Catalogue des Biens</h1>
-            <button onclick="naviguerVers('view-formulaire')">+ Nouveau Mandat</button>
+        <div class="filter-bar">
+            <input type="text" id="search" placeholder="Rechercher..." oninput="filtrerEtAfficher()">
+            <select id="filter-type" onchange="filtrerEtAfficher()">
+                <option value="Tous">Tous types</option>
+                <option value="Appartement">Appartement</option>
+                <option value="Villa">Villa</option>
+            </select>
         </div>
         <div id="liste-biens-container"></div>
+        <button class="add-btn" onclick="naviguerVers('view-formulaire')">+</button>
     </section>
 
-    <!-- Vue Formulaire -->
     <section id="view-formulaire" style="display: none;">
         <button onclick="naviguerVers('view-liste')">Retour</button>
-        <h2>Ajouter un Mandat</h2>
+        <h2>Nouveau Mandat</h2>
         <form id="form-bien">
             <input type="text" id="nom" placeholder="Nom du bien" required>
-            <select id="type">
-                <option value="Appartement">Appartement</option>
-                <option value="Studio">Studio</option>
-                <option value="Villa">Villa</option>
-                <option value="Bureau">Bureau</option>
-            </select>
-            <input type="text" id="adresse" placeholder="Adresse et Quartier" required>
-            <input type="text" id="statutJuridique" placeholder="Statut juridique (Titre Foncier, Bail...)">
-            <input type="number" id="superficie" placeholder="Superficie (m²)">
-            <input type="number" id="loyer" placeholder="Loyer Mensuel (FCFA)" required>
-            <input type="number" id="fraisAgence" placeholder="Frais d'agence (FCFA)">
-            <input type="text" id="proprio" placeholder="Propriétaire (Mandant)" required>
-            <button type="submit">Sauvegarder le mandat</button>
+            <select id="type"><option value="Appartement">Appartement</option><option value="Villa">Villa</option></select>
+            <input type="number" id="loyer" placeholder="Loyer" required>
+            <input type="file" id="photoInput" accept="image/*" capture="environment">
+            <button type="submit">Sauvegarder</button>
         </form>
     </section>
 
