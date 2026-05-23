@@ -2,14 +2,28 @@
 const DataManager = {
     init: () => {
         if (!localStorage.getItem('sama_gestion_data')) {
-            localStorage.setItem('sama_gestion_data', JSON.stringify({ biens: [] }));
+            const initialData = {
+                users: [
+                    { id: 'admin', email: 'admin@sama.com', password: 'password', role: 'admin' },
+                    { id: 'courtier1', email: 'courtier@test.com', password: 'password', role: 'courtier' }
+                ],
+                biens: []
+            };
+            localStorage.setItem('sama_gestion_data', JSON.stringify(initialData));
         }
     },
     getCollection: (name) => JSON.parse(localStorage.getItem('sama_gestion_data'))[name] || [],
-    saveDocument: (collectionName, docData) => {
+    
+    // Sauvegarder un bien en lui associant le propriétaire (l'utilisateur connecté)
+    saveBien: (bienData) => {
         const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
-        docData.id = 'bien_' + Date.now();
-        data[collectionName].push(docData);
+        const user = JSON.parse(sessionStorage.getItem('user'));
+        
+        bienData.id = 'bien_' + Date.now();
+        bienData.createdBy = user.id; // L'ID de l'utilisateur qui crée
+        bienData.role = user.role;    // Le rôle de l'utilisateur
+        
+        data.biens.push(bienData);
         localStorage.setItem('sama_gestion_data', JSON.stringify(data));
     }
 };
@@ -17,53 +31,36 @@ const DataManager = {
 // --- AUTHENTIFICATION ---
 const Auth = {
     login: (email, password) => {
-        if (email === "admin@sama.com" && password === "password") {
-            sessionStorage.setItem('isLoggedIn', 'true');
-            return true;
+        const users = DataManager.getCollection('users');
+        const user = users.find(u => u.email === email && u.password === password);
+        if (user) {
+            sessionStorage.setItem('user', JSON.stringify(user));
+            return user;
         }
-        return false;
+        return null;
     }
 };
 
-// --- NAVIGATION ---
-function naviguerVers(viewId) {
-    if (viewId !== 'view-login' && !sessionStorage.getItem('isLoggedIn')) viewId = 'view-login';
-    document.querySelectorAll('section').forEach(s => s.style.display = 'none');
-    document.getElementById(viewId).style.display = 'block';
-    if (viewId === 'view-liste') afficherListeBiens();
-}
-
-// --- GESTION DES BIENS ---
+// --- LOGIQUE D'AFFICHAGE SÉCURISÉ ---
 function afficherListeBiens() {
     const conteneur = document.getElementById('liste-biens-container');
-    const biens = DataManager.getCollection('biens');
-    conteneur.innerHTML = biens.map(b => `
+    const allBiens = DataManager.getCollection('biens');
+    const currentUser = JSON.parse(sessionStorage.getItem('user'));
+    
+    // Filtrage : Admin voit tout, les autres ne voient que ce qu'ils ont créé
+    const biensAffiches = (currentUser.role === 'admin') 
+        ? allBiens 
+        : allBiens.filter(b => b.createdBy === currentUser.id);
+
+    conteneur.innerHTML = biensAffiches.map(b => `
         <div class="card-bien">
             <h3>${b.nom}</h3>
             <p>${b.adresse}</p>
-            <span>${b.type}</span>
+            <span class="com-badge">${b.type}</span>
+            <small>Propriétaire: ${b.proprio}</small>
         </div>
     `).join('');
 }
 
-// --- INITIALISATION ---
+// Initialisation
 DataManager.init();
-document.getElementById('form-login').addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (Auth.login(document.getElementById('email').value, document.getElementById('password').value)) {
-        naviguerVers('view-liste');
-    } else {
-        alert("Accès refusé");
-    }
-});
-
-document.getElementById('form-bien').addEventListener('submit', (e) => {
-    e.preventDefault();
-    DataManager.saveDocument('biens', {
-        nom: document.getElementById('nom').value,
-        adresse: document.getElementById('adresse').value,
-        type: document.getElementById('type').value,
-        proprio: document.getElementById('proprio').value
-    });
-    naviguerVers('view-liste');
-});
