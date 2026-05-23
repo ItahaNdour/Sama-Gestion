@@ -3,13 +3,13 @@
 // ==========================================
 let currentUserData = null;
 let localBiens = [];
+let localTransactions = [];
 let currentFilterStatus = "Disponible";
 
-// Liste des pièces par défaut pour l'État des Lieux (EDL)
 const ROOMS_LIST = ["Salon / Séjour", "Chambre Principale", "Cuisine", "Salle de Bain / WC", "Balcon / Extérieur"];
 
 // ==========================================
-// DEBARQUEMENT & ROUTING
+// DÉBARQUEMENT & SÉCURITÉ ROUTING
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     window.fbOnAuth(window.auth, async (user) => {
@@ -18,45 +18,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 const userDoc = await window.fsGetDoc(window.fsDoc(window.db, "users", user.uid));
                 if (userDoc.exists()) {
                     currentUserData = { id: user.uid, ...userDoc.data() };
-                    initialiserApplication();
+                    await initialiserApplication();
                 } else {
-                    document.getElementById("login-error").innerText = "Profil utilisateur introuvable.";
+                    document.getElementById("login-error").innerText = "Profil introuvable.";
                     document.getElementById("login-error").style.display = "block";
                     window.fbSignOut(window.auth);
                 }
             } catch (error) {
-                console.error("Erreur de récupération du profil:", error);
+                console.error(error);
                 deconnexion();
             }
         } else {
+            // VERROUILLAGE TOTAL : masquer la barre de navigation et forcer le login screen
             document.getElementById("login-screen").style.display = "flex";
+            document.getElementById("main-navbar").style.display = "none";
             document.getElementById("header-user-badge").innerText = "...";
         }
     });
 });
 
-// Initialisation globale après auth réussie
 async function initialiserApplication() {
     document.getElementById("login-screen").style.display = "none";
     
-    // UI Profil & Badges Header
-    const nameDisplay = currentUserData.fullname ? currentUserData.fullname.split(' ')[0] : "Utilisateur";
+    // Affichage Barre de navigation après auth réussie
+    const navbar = document.getElementById("main-navbar");
+    if (navbar) navbar.style.display = "flex";
+
+    const nameDisplay = currentUserData.fullname ? currentUserData.fullname.split(' ')[0] : "Agent";
     document.getElementById("header-user-badge").innerHTML = `<i class="fas fa-user-circle"></i> ${nameDisplay}`;
     
-    // SÉCURITÉ : Rôle SuperAdmin (avec ou sans majuscule) OU ton adresse email
-    if (currentUserData.role === "SuperAdmin" || currentUserData.role === "superadmin" || currentUserData.email === "19amadoundour@gmail.com") {
-        const adminSection = document.getElementById("admin-management-section");
-        if (adminSection) adminSection.style.display = "block";
-        
-        // On s'assure que la navigation principale est bien visible pour l'admin
-        const mainNav = document.querySelector("nav");
-        if (mainNav) mainNav.style.display = "flex";
-    } else {
-        const adminSection = document.getElementById("admin-management-section");
-        if (adminSection) adminSection.style.display = "none";
-    }
+    // Vérification Rôle Admin pour l'onglet de création d'agent
+    const isAdmin = currentUserData.role === "SuperAdmin" || currentUserData.role === "superadmin" || currentUserData.email === "19amadoundour@gmail.com";
+    const adminSection = document.getElementById("admin-management-section");
+    const navProfilItem = document.getElementById("nav-profil-item");
+    
+    if (adminSection) adminSection.style.display = isAdmin ? "block" : "none";
+    if (navProfilItem) navProfilItem.style.display = isAdmin ? "block" : "none";
 
-    // Chargement des données métier
+    // Chargement parallèle sans ralentir l'UI
+    await chargerTransactionsCloud();
     await chargerBiensCloud();
     chargerVisitesCloud();
     chargerEDLCloudList();
@@ -64,7 +64,6 @@ async function initialiserApplication() {
     showView("dashboard");
 }
 
-// Navigation entre les vues
 window.showView = function(viewId) {
     document.querySelectorAll(".view").forEach(v => v.style.display = "none");
     const targetView = document.getElementById(`view-${viewId}`);
@@ -94,7 +93,6 @@ window.verifierConnexion = async function() {
         errorEl.style.display = "none";
         await window.fbSignIn(window.auth, email, pin);
     } catch (error) {
-        console.error(error);
         errorEl.innerText = "Identifiants ou Code PIN incorrects.";
         errorEl.style.display = "block";
     }
@@ -107,7 +105,7 @@ window.deconnexion = function() {
 };
 
 // ==========================================
-// GESTION DU CATALOGUE DE BIENS
+// GESTION DU CATALOGUE DE BIENS & RELANCES
 // ==========================================
 async function chargerBiensCloud() {
     try {
@@ -120,8 +118,21 @@ async function chargerBiensCloud() {
         calculerKpiCommissions();
         renderBiens();
         remplirSelectsBiens();
+        genererRelancesPaiement();
     } catch (error) {
-        console.error("Erreur de chargement des biens:", error);
+        console.error("Erreur biens:", error);
+    }
+}
+
+async function chargerTransactionsCloud() {
+    try {
+        const querySnapshot = await window.fsGetDocs(window.fsCollection(window.db, "transactions"));
+        localTransactions = [];
+        querySnapshot.forEach(doc => {
+            localTransactions.push({ id: doc.id, ...doc.data() });
+        });
+    } catch (error) {
+        console.error("Erreur transactions:", error);
     }
 }
 
@@ -139,10 +150,48 @@ function calculerKpiCommissions() {
         }
     });
     const totalDisplay = document.getElementById("total-display");
-    if (totalDisplay) {
-        totalDisplay.innerText = new Intl.NumberFormat('fr-FR').format(cumul) + " CFA";
-    }
+    if (totalDisplay) totalDisplay.innerText = new Intl.NumberFormat('fr-FR').format(cumul) + " CFA";
 }
+
+function genererRelancesPaiement() {
+    const relancesContainer = document.getElementById("dashboard-relances");
+    if (!relancesContainer) return;
+    relancesContainer.innerHTML = "";
+
+    const biensLoues = localBiens.filter(b => b.statut === "Occupé");
+
+    if (biensLoues.length === 0) {
+        relancesContainer.innerHTML = `<p style="color:var(--text-light); font-size:0.85rem;">Aucun loyer en attente de relance.</p>`;
+        return;
+    }
+
+    biensLoues.forEach(b => {
+        const card = document.createElement("div");
+        card.className = "form-card";
+        card.style.borderLeft = "4px solid var(--gold)";
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <b>${b.nom}</b><br>
+                    <small>Locataire : ${b.locataireNom} (${b.locataireTel || 'Pas de numéro'})</small>
+                </div>
+                <button class="btn-danger" style="background:var(--gold); font-size:0.75rem; padding:5px 10px;" onclick="window.relancerPaiementWhatsApp('${b.id}')">
+                    <i class="fab fa-whatsapp"></i> Relancer
+                </button>
+            </div>
+        `;
+        relancesContainer.appendChild(card);
+    });
+}
+
+window.relancerPaiementWhatsApp = function(bienId) {
+    const b = localBiens.find(x => x.id === bienId);
+    if (!b) return;
+    let msg = `Bonjour ${b.locataireNom}, sauf erreur de notre part, le loyer mensuel pour le bien *${b.nom}* d'un montant de *${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA* est arrivé à échéance. Merci de régulariser via Wave, OM ou directement à l'agence.`;
+    let tel = b.locataireTel ? b.locataireTel.replace(/\s+/g, '') : "";
+    if (tel && !tel.startsWith("+") && tel.length === 9) tel = "221" + tel;
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+};
 
 window.filterBiens = function(status, event) {
     currentFilterStatus = status;
@@ -154,8 +203,7 @@ window.filterBiens = function(status, event) {
 window.renderBiens = function() {
     const listEl = document.getElementById("biens-list");
     if (!listEl) return;
-    const searchInput = document.getElementById("search-bien-input");
-    const searchVal = searchInput ? searchInput.value.toLowerCase() : "";
+    const searchVal = document.getElementById("search-bien-input").value.toLowerCase();
     listEl.innerHTML = "";
 
     const filtrés = localBiens.filter(b => {
@@ -167,7 +215,7 @@ window.renderBiens = function() {
     });
 
     if (filtrés.length === 0) {
-        listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:20px;">Aucun bien trouvé.</p>`;
+        listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:20px;">Aucun bien disponible.</p>`;
         return;
     }
 
@@ -176,13 +224,6 @@ window.renderBiens = function() {
         card.className = "form-card";
         card.style.cursor = "pointer";
         card.onclick = () => ouvrirModalBien(b);
-
-        let imageHTML = "";
-        if (b.photos && b.photos.length > 0) {
-            imageHTML = `<div class="bien-gallery">`;
-            b.photos.forEach(img => { imageHTML += `<img src="${img}" alt="bien">`; });
-            imageHTML += `</div>`;
-        }
 
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
@@ -194,10 +235,9 @@ window.renderBiens = function() {
                     ${b.statut}
                 </span>
             </div>
-            ${imageHTML}
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px solid var(--border); padding-top:8px;">
-                <b style="color:var(--gold); font-size:1rem;">${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA <small style="font-size:0.7rem; color:var(--text-light); font-weight:500;">/mois</small></b>
-                <span style="font-size:0.75rem; font-weight:600; background:var(--bg); padding:4px 8px; border-radius:6px;">📄 ${b.papier || 'Non spécifié'}</span>
+                <b style="color:var(--gold); font-size:1rem;">${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA /mois</b>
+                <span style="font-size:0.75rem; font-weight:600; background:var(--bg); padding:4px 8px; border-radius:6px;">📄 ${b.papier || 'N/A'}</span>
             </div>
         `;
         listEl.appendChild(card);
@@ -254,12 +294,12 @@ window.saveBien = async function() {
     const loyer = parseFloat(document.getElementById("new-bien-loyer").value) || 0;
 
     if (!nom || !loyer) {
-        alert("Le nom et le prix/loyer sont obligatoires.");
+        alert("Nom et Loyer obligatoires.");
         return;
     }
 
     btn.disabled = true;
-    btn.innerText = "Enregistrement...";
+    btn.innerText = "Sauvegarde...";
 
     const payload = {
         nom: nom,
@@ -272,8 +312,7 @@ window.saveBien = async function() {
         proprioNom: document.getElementById("new-bien-proprio").value.trim(),
         proprioTel: document.getElementById("new-bien-proprio-tel").value.trim(),
         photos: currentBienUploadedPhotos,
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentUserData ? currentUserData.fullname : "Admin System"
+        updatedAt: new Date().toISOString()
     };
 
     try {
@@ -282,95 +321,71 @@ window.saveBien = async function() {
             payload.locataireTel = document.getElementById("edit-bien-locataire-tel").value.trim();
             payload.dateEntree = document.getElementById("edit-bien-date-entree").value;
             payload.statut = (payload.locataireNom) ? "Occupé" : "Disponible";
-            
             await window.fsUpdateDoc(window.fsDoc(window.db, "biens", id), payload);
         } else {
             payload.statut = "Disponible";
             payload.createdAt = new Date().toISOString();
-            const newDocRef = window.fsDoc(window.fsCollection(window.db, "biens"));
-            await window.fsSetDoc(newDocRef, payload);
+            await window.fsSetDoc(window.fsDoc(window.fsCollection(window.db, "biens")), payload);
         }
-
         await chargerBiensCloud();
         showView("biens");
     } catch (e) {
         console.error(e);
-        alert("Erreur lors de la sauvegarde du bien.");
     } finally {
         btn.disabled = false;
         btn.innerText = "Enregistrer";
     }
 };
 
-window.previewAndCompressImage = function(input, type) {
-    const files = input.files;
-    const container = type === 'bien' ? document.getElementById("previews-container") : document.getElementById("edl-previews-container");
-    if (!container) return;
-    container.innerHTML = "";
-    
-    for (let i = 0; i < Math.min(files.length, 3); i++) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = document.createElement("img");
-            img.src = e.target.result;
-            img.style.width = "70px";
-            img.style.height = "60px";
-            img.style.borderRadius = "6px";
-            img.style.marginRight = "5px";
-            container.appendChild(img);
-            if (type === 'bien') currentBienUploadedPhotos.push(e.target.result);
-            else currentEDLUploadedPhotos.push(e.target.result);
-        }
-        reader.readAsDataURL(files[i]);
-    }
-};
-
 // ==========================================
-// MODAL DÉTAILS ET ACTIONS MULTIPLES
+// MODAL DÉTAILS & HISTORIQUE DES TRANSACTIONS
 // ==========================================
 window.ouvrirModalBien = function(bien) {
     const body = document.getElementById("modal-body");
-    if (!body) return;
-    
-    let photoGrid = "";
-    if (bien.photos && bien.photos.length > 0) {
-        photoGrid = `<div class="bien-gallery" style="margin-bottom:15px;">`;
-        bien.photos.forEach(p => { photoGrid += `<img src="${p}" style="width:80px; height:65px; border-radius:8px; margin-right:5px;">`; });
-        photoGrid += `</div>`;
-    }
-
-    const isSuperAdmin = currentUserData && (currentUserData.role === 'SuperAdmin' || currentUserData.role === 'superadmin' || currentUserData.email === '19amadoundour@gmail.com');
+    const historyBox = document.getElementById("modal-transactions-history");
+    if (!body || !historyBox) return;
 
     body.innerHTML = `
-        <h3 style="color:var(--dark); font-size:1.3rem; margin-bottom:2px;">${bien.nom}</h3>
-        <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;"><i class="fas fa-map-marker-alt"></i> ${bien.adresse || 'Pas d\'adresse'}</p>
+        <h3 style="color:var(--dark);">${bien.nom}</h3>
+        <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:10px;"><i class="fas fa-map-marker-alt"></i> ${bien.adresse || 'N/A'}</p>
         
-        ${photoGrid}
-
-        <table class="table-suivi" style="margin-bottom:15px; width:100%;">
-            <tr><th>Type</th><td><b>${bien.type}</b></td></tr>
-            <tr><th>Loyer / Prix</th><td><b style="color:var(--gold);">${new Intl.NumberFormat('fr-FR').format(bien.loyer)} CFA</b></td></tr>
-            <tr><th>Superficie</th><td>${bien.superficie || 'Inconnue'}</td></tr>
-            <tr><th>Documents</th><td><span style="font-size:0.75rem;" class="user-badge">${bien.papier}</span></td></tr>
+        <table class="table-suivi">
+            <tr><th>Type / Papier</th><td>${bien.type} (${bien.papier})</td></tr>
+            <tr><th>Loyer</th><td><b style="color:var(--gold);">${new Intl.NumberFormat('fr-FR').format(bien.loyer)} CFA</b></td></tr>
             <tr><th>Propriétaire</th><td>${bien.proprioNom || 'N/A'} (${bien.proprioTel || 'N/A'})</td></tr>
             <tr><th>Statut</th><td><b>${bien.statut}</b></td></tr>
             ${bien.statut === 'Occupé' ? `
                 <tr style="background:#F0FDF4;"><th style="color:var(--green);">Locataire</th><td><b>${bien.locataireNom}</b></td></tr>
                 <tr style="background:#F0FDF4;"><th style="color:var(--green);">Téléphone</th><td>${bien.locataireTel}</td></tr>
-                <tr style="background:#F0FDF4;"><th style="color:var(--green);">Entrée</th><td>${bien.dateEntree || 'Non définie'}</td></tr>
             ` : ''}
         </table>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <button class="btn-outline" style="font-size:0.85rem;" onclick="preparerEditionBien('${bien.id}')"><i class="fas fa-edit"></i> Modifier / Louer</button>
-            <button class="btn-primary" style="font-size:0.85rem; background:var(--dark);" onclick="partagerFicheWhatsApp('${bien.id}')"><i class="fab fa-whatsapp"></i> Fiche vitrine</button>
-            ${isSuperAdmin ? `
-                <button class="btn-outline" style="grid-column: span 2; border-color:var(--red); color:var(--red); font-size:0.8rem; padding:8px;" onclick="supprimerBien('${bien.id}')">
-                    <i class="fas fa-trash"></i> Supprimer définitivement du catalogue
-                </button>
-            ` : ''}
+        <div style="margin-top:15px;">
+            <button class="btn-primary" onclick="window.preparerEditionBien('${bien.id}')"><i class="fas fa-edit"></i> Modifier / Louer le bien</button>
         </div>
     `;
+
+    // Filtre et construction de l'historique financier réel du bien cliqué
+    const filtrées = localTransactions.filter(t => t.bienId === bien.id);
+    historyBox.innerHTML = "";
+    
+    if (filtrées.length === 0) {
+        historyBox.innerHTML = `<p style="font-size:0.8rem; color:var(--text-light);">Aucun encaissement enregistré.</p>`;
+    } else {
+        const table = document.createElement("table");
+        table.innerHTML = `<tr><th>Date</th><th>Nature</th><th>Montant</th><th>Mode</th></tr>`;
+        filtrées.forEach(t => {
+            table.innerHTML += `
+                <tr>
+                    <td>${new Date(t.dateEnregistrement).toLocaleDateString('fr-FR')}</td>
+                    <td><b>${t.nature}</b></td>
+                    <td style="color:var(--green); font-weight:700;">${new Intl.NumberFormat('fr-FR').format(t.montant)}</td>
+                    <td><span class="user-badge" style="background:var(--border);">${t.modePaiement}</span></td>
+                </tr>`;
+        });
+        historyBox.appendChild(table);
+    }
+
     document.getElementById("modal-bien").style.display = "flex";
 };
 
@@ -388,7 +403,7 @@ window.preparerEditionBien = function(bienId) {
     document.getElementById("new-bien-nom").value = b.nom;
     document.getElementById("new-bien-type").value = b.type;
     document.getElementById("new-bien-superficie").value = b.superficie || "";
-    document.getElementById("new-bien-papier").value = b.papier || "Non spécifié";
+    document.getElementById("new-bien-papier").value = b.papier || "";
     document.getElementById("new-bien-loyer").value = b.loyer;
     document.getElementById("new-bien-adresse").value = b.adresse || "";
     document.getElementById("new-bien-com").value = b.commission || "";
@@ -399,83 +414,12 @@ window.preparerEditionBien = function(bienId) {
     document.getElementById("edit-bien-locataire").value = b.locataireNom || "";
     document.getElementById("edit-bien-locataire-tel").value = b.locataireTel || "";
     document.getElementById("edit-bien-date-entree").value = b.dateEntree || "";
-    
-    currentBienUploadedPhotos = b.photos || [];
-    const prevContainer = document.getElementById("previews-container");
-    if (prevContainer) {
-        prevContainer.innerHTML = "";
-        currentBienUploadedPhotos.forEach(p => {
-            prevContainer.innerHTML += `<img src="${p}" alt="preview" style="width:70px; height:60px; border-radius:6px; margin-right:5px;">`;
-        });
-    }
 
-    calculerProrataAutomatique();
     showView("ajouter-bien");
 };
 
-window.partagerFicheWhatsApp = function(bienId) {
-    const b = localBiens.find(x => x.id === bienId);
-    if (!b) return;
-
-    let texte = `✨ *SAMA GESTION PRO - OFFRE IMMOBILIÈRE* ✨\n\n`;
-    texte += `🏢 *Bien :* ${b.nom}\n`;
-    texte += `📍 *Quartier/Adresse :* ${b.adresse || 'Sénégal'}\n`;
-    texte += `📐 *Superficie :* ${b.superficie || 'N/A'}\n`;
-    texte += `📄 *Statut Juridique :* ${b.papier}\n`;
-    texte += `💰 *Prix / Loyer :* ${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA / mois\n\n`;
-    texte += `📱 _Contactez notre réseau de partenaires certifiés pour planifier une visite immédiate._`;
-
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texte)}`, '_blank');
-};
-
-window.supprimerBien = async function(bienId) {
-    if (!confirm("Voulez-vous vraiment supprimer définitivement ce bien ? Cette action est irréversible.")) return;
-    try {
-        await window.fsDeleteDoc(window.fsDoc(window.db, "biens", bienId));
-        fermerModal();
-        await chargerBiensCloud();
-    } catch (e) {
-        alert("Erreur de suppression");
-    }
-};
-
 // ==========================================
-// CALCULATEUR DE PRORATA AUTOMATIQUE
-// ==========================================
-window.calculerProrataAutomatique = function() {
-    const loyer = parseFloat(document.getElementById("new-bien-loyer").value) || 0;
-    const dateStr = document.getElementById("edit-bien-date-entree").value;
-    const box = document.getElementById("prorata-box");
-    const res = document.getElementById("prorata-result");
-
-    if (!loyer || !dateStr) {
-        if (box) box.style.display = "none";
-        return;
-    }
-
-    const dateEntree = new Date(dateStr);
-    const jour = dateEntree.getDate();
-    const annee = dateEntree.getFullYear();
-    const mois = dateEntree.getMonth();
-    const totalJoursMois = new Date(annee, mois + 1, 0).getDate();
-
-    if (box && res) {
-        if (jour === 1) {
-            box.style.display = "block";
-            res.innerText = "Entrée le 1er du mois. Pas de prorata applicable (Loyer complet).";
-            return;
-        }
-
-        const joursDus = totalJoursMois - jour + 1;
-        const prorataCalculé = Math.round((loyer / totalJoursMois) * joursDus);
-
-        box.style.display = "block";
-        res.innerText = `${joursDus} jours d'occupation dus sur ${totalJoursMois} jours au total.\nMontant à percevoir : ${new Intl.NumberFormat('fr-FR').format(prorataCalculé)} CFA.`;
-    }
-};
-
-// ==========================================
-// COMPTABILITÉ & ENCAISSEMENT
+// AUTOMATISATION DE L'ENCAISSEUR
 // ==========================================
 window.analyserReliquatComptable = function() {
     const bienId = document.getElementById("c-bien-select").value;
@@ -490,21 +434,19 @@ window.analyserReliquatComptable = function() {
     const b = localBiens.find(x => x.id === bienId);
     if (!b) return;
 
-    if (statusBox) {
-        statusBox.style.display = "block";
-        statusBox.style.background = "var(--gold-light)";
-        statusBox.style.color = "#9A3412";
-        
-        if (typeFlux === "Loyer") {
-            statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>💰 <b>Loyer Standard :</b> ${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA`;
-            document.getElementById("c-montant").value = b.loyer;
-        } else if (typeFlux === "Caution") {
-            statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>🔑 <b>Montant Caution conseillé (2 mois) :</b> ${new Intl.NumberFormat('fr-FR').format(b.loyer * 2)} CFA`;
-            document.getElementById("c-montant").value = b.loyer * 2;
-        } else {
-            statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>⚙️ Saisissez le montant spécifique convenu pour le type : <b>${typeFlux}</b>.`;
-            document.getElementById("c-montant").value = "";
-        }
+    statusBox.style.display = "block";
+    statusBox.style.background = "var(--gold-light)";
+    statusBox.style.color = "#9A3412";
+    
+    if (typeFlux === "Loyer") {
+        statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>💰 <b>Montant Loyer :</b> ${new Intl.NumberFormat('fr-FR').format(b.loyer)} CFA`;
+        document.getElementById("c-montant").value = b.loyer;
+    } else if (typeFlux === "Caution") {
+        statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}<br>🔑 <b>Caution Standard (2 mois) :</b> ${new Intl.NumberFormat('fr-FR').format(b.loyer * 2)} CFA`;
+        document.getElementById("c-montant").value = b.loyer * 2;
+    } else {
+        statusBox.innerHTML = `👤 <b>Locataire :</b> ${b.locataireNom}`;
+        document.getElementById("c-montant").value = "";
     }
 };
 
@@ -512,196 +454,35 @@ window.validerCollecte = async function(cibleNotification) {
     const bienId = document.getElementById("c-bien-select").value;
     const typeFlux = document.getElementById("c-type").value;
     const montant = document.getElementById("c-montant").value;
-    const modeEl = document.querySelector('input[name="pay-mode"]:checked');
-    const mode = modeEl ? modeEl.value : "Espèces";
+    const mode = document.querySelector('input[name="pay-mode"]:checked').value;
 
-    if (!bienId || !montant) {
-        alert("Sélectionnez un bien et saisissez un montant.");
-        return;
-    }
+    if (!bienId || !montant) return alert("Données manquantes.");
 
     const b = localBiens.find(x => x.id === bienId);
     if (!b) return;
 
     try {
-        const transRef = window.fsDoc(window.fsCollection(window.db, "transactions"));
-        await window.fsSetDoc(transRef, {
-            bienId: bienId,
-            bienNom: b.nom,
-            locataireNom: b.locataireNom,
-            montant: parseFloat(montant),
-            nature: typeFlux,
-            modePaiement: mode,
-            dateEnregistrement: new Date().toISOString(),
-            percuPar: currentUserData ? currentUserData.fullname : "Admin System"
+        await window.fsSetDoc(window.fsDoc(window.fsCollection(window.db, "transactions")), {
+            bienId: bienId, bienNom: b.nom, locataireNom: b.locataireNom,
+            montant: parseFloat(montant), nature: typeFlux, modePaiement: mode,
+            dateEnregistrement: new Date().toISOString()
         });
-    } catch(e) {
-        console.error("Erreur log comptable:", e);
-    }
-
-    let recu = `🧾 *REÇU NUMÉRIQUE - SAMA GESTION PRO*\n`;
-    recu += `-------------------------------------------\n`;
-    recu += `🏠 *Bien immobilier :* ${b.nom}\n`;
-    recu += `👤 *Locataire :* ${b.locataireNom}\n`;
-    recu += `💵 *Montant Perçu :* ${new Intl.NumberFormat('fr-FR').format(montant)} CFA\n`;
-    recu += `🎯 *Nature de l'encaissement :* ${typeFlux}\n`;
-    recu += `💳 *Mode de règlement :* ${mode}\n`;
-    recu += `📅 *Date :* ${new Date().toLocaleDateString('fr-FR')}\n`;
-    recu += `✍️ *Gestionnaire :* ${currentUserData ? currentUserData.fullname : "Admin System"}\n`;
-    recu += `-------------------------------------------\n`;
-    recu += `✅ _Paiement validé avec succès. Merci pour votre confiance._`;
-
-    let numeroTel = (cibleNotification === "locataire") ? b.locataireTel : b.proprioTel;
-    
-    if (numeroTel) {
-        numeroTel = numeroTel.replace(/\s+/g, '');
-        if (!numeroTel.startsWith("+") && numeroTel.length === 9) {
-            numeroTel = "221" + numeroTel;
-        }
-        window.open(`https://wa.me/${numeroTel}?text=${encodeURIComponent(recu)}`, '_blank');
-    } else {
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(recu)}`, '_blank');
-    }
-    
-    showView("dashboard");
-};
-
-// ==========================================
-// ÉTATS DES LIEUX (EDL) & CONSTATS
-// ==========================================
-let currentEDLUploadedPhotos = [];
-
-window.ouvrirFormulaireEDL = function() {
-    remplirSelectsBiens();
-    const container = document.getElementById("edl-rooms-container");
-    if (!container) return;
-    container.innerHTML = "";
-
-    ROOMS_LIST.forEach((piece) => {
-        const div = document.createElement("div");
-        div.style.marginBottom = "10px";
-        div.style.background = "var(--bg)";
-        div.style.padding = "10px";
-        div.style.borderRadius = "8px";
-        div.innerHTML = `
-            <span style="font-weight:700; font-size:0.85rem; display:block; margin-bottom:4px;">${piece}</span>
-            <select class="edl-state-select" data-room="${piece}">
-                <option value="Neuf / Excellent état">✨ Neuf / Excellent</option>
-                <option value="Bon état général">👍 Bon état</option>
-                <option value="État d'usage / Moyen">⚠️ État moyen</option>
-                <option value="Mauvais état / Dégradé">🚨 Mauvais état</option>
-            </select>
-        `;
-        container.appendChild(div);
-    });
-
-    document.getElementById("edl-eau").value = "";
-    document.getElementById("edl-elec").value = "";
-    document.getElementById("edl-cles").value = "";
-    document.getElementById("edl-notes").value = "";
-    document.getElementById("edl-previews-container").innerHTML = "";
-    currentEDLUploadedPhotos = [];
-
-    showView("nouveau-edl");
-};
-
-window.saveEDLCloud = async function() {
-    const btn = document.getElementById("btn-save-edl");
-    const bienId = document.getElementById("edl-bien-select").value;
-    const typeConstat = document.getElementById("edl-type").value;
-    
-    if (!bienId) {
-        alert("Veuillez assigner un bien.");
-        return;
-    }
-
-    const b = localBiens.find(x => x.id === bienId);
-    if (!b) return;
-
-    btn.disabled = true;
-    btn.innerText = "Signature cloud...";
-
-    let piecesEtats = {};
-    document.querySelectorAll(".edl-state-select").forEach(sel => {
-        piecesEtats[sel.getAttribute("data-room")] = sel.value;
-    });
-
-    const edlData = {
-        bienId: bienId,
-        bienNom: b.nom,
-        type: typeConstat,
-        etats: piecesEtats,
-        compteurEau: document.getElementById("edl-eau").value.trim(),
-        compteurElec: document.getElementById("edl-elec").value.trim(),
-        nombreCles: document.getElementById("edl-cles").value.trim(),
-        notes: document.getElementById("edl-notes").value.trim(),
-        photos: currentEDLUploadedPhotos,
-        dateCertificat: new Date().toISOString(),
-        signataire: currentUserData ? currentUserData.fullname : "Admin System"
-    };
-
-    try {
-        const docRef = window.fsDoc(window.fsCollection(window.db, "etats_lieux"));
-        await window.fsSetDoc(docRef, edlData);
         
-        let msg = `📝 *CERTIFICAT DE CONSTAT D'ÉTAT DES LIEUX*\n`;
-        msg += `-------------------------------------------\n`;
-        msg += `🏠 *Bien :* ${b.nom}\n`;
-        msg += `🎯 *Type :* Constat d'${typeConstat}\n`;
-        msg += `🔑 *Clés remises :* ${edlData.nombreCles} jeu(x)\n`;
-        msg += `💧 *Index Eau :* ${edlData.compteurEau || 'Non relevé'} m3\n`;
-        msg += `⚡ *Index Élec/Woyofal :* ${edlData.compteurElec || 'Non relevé'}\n`;
-        msg += `✍️ *Signé numériquement par :* ${currentUserData ? currentUserData.fullname : "Admin System"}\n`;
-        msg += `-------------------------------------------\n`;
-        msg += `✅ _L'historique complet ainsi que les photos de preuve associées ont été synchronisés sur le réseau SAMA GESTION._`;
-
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-
-        chargerEDLCloudList();
-        showView("etat-lieux");
-    } catch (e) {
-        console.error(e);
-        alert("Erreur réseau lors de la sauvegarde de l'état des lieux.");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Signer & Envoyer WhatsApp";
-    }
+        let recu = `🧾 *REÇU NUMÉRIQUE - SAMA GESTION PRO*\n-------------------------------------------\n🏠 *Bien :* ${b.nom}\n👤 *Locataire :* ${b.locataireNom}\n💵 *Montant Perçu :* ${new Intl.NumberFormat('fr-FR').format(montant)} CFA\n🎯 *Nature :* ${typeFlux}\n💳 *Mode :* ${mode}\n📅 *Date :* ${new Date().toLocaleDateString('fr-FR')}\n-------------------------------------------\n✅ _Paiement validé avec succès._`;
+        let tel = (cibleNotification === "locataire") ? b.locataireTel : b.proprioTel;
+        if (tel) {
+            tel = tel.replace(/\s+/g, '');
+            if (!tel.startsWith("+") && tel.length === 9) tel = "221" + tel;
+            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(recu)}`, '_blank');
+        }
+        await chargerTransactionsCloud();
+        await chargerBiensCloud();
+        showView("dashboard");
+    } catch(e) { console.error(e); }
 };
 
-async function chargerEDLCloudList() {
-    const listEl = document.getElementById("edl-list");
-    if (!listEl) return;
-    listEl.innerHTML = "";
-
-    try {
-        const snap = await window.fsGetDocs(window.fsCollection(window.db, "etats_lieux"));
-        if (snap.empty) {
-            listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:20px;">Aucun procès-verbal signé.</p>`;
-            return;
-        }
-
-        snap.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement("div");
-            div.className = "form-card";
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--dark);">${data.bienNom}</b>
-                    <span class="user-badge" style="background:var(--gold-light); color:var(--gold); font-size:0.75rem; border:none;">${data.type}</span>
-                </div>
-                <p style="font-size:0.8rem; color:var(--text-light); margin-top:5px;">
-                    📅 ${new Date(data.dateCertificat).toLocaleDateString('fr-FR')} • Signé par: ${data.signataire}
-                </p>
-            `;
-            listEl.appendChild(div);
-        });
-    } catch (e) {
-        console.error(e);
-    }
-}
-
 // ==========================================
-// AGENDA DES VISITES & PROSPECTS
+// PIPELINE DES VISITES PROSPECTS
 // ==========================================
 window.sauverVisite = async function() {
     const nom = document.getElementById("p-name").value.trim();
@@ -709,42 +490,18 @@ window.sauverVisite = async function() {
     const bienId = document.getElementById("p-bien-select").value;
     const dateVisite = document.getElementById("p-date").value;
 
-    if (!nom || !bienId || !dateVisite) {
-        alert("Nom du visiteur, bien et date requis.");
-        return;
-    }
-
+    if (!nom || !bienId || !dateVisite) return alert("Données requises.");
     const b = localBiens.find(x => x.id === bienId);
-    if (!b) return;
-
-    const visitePayload = {
-        prospectNom: nom,
-        prospectTel: tel,
-        bienId: bienId,
-        bienNom: b.nom,
-        dateRendezVous: dateVisite,
-        agentAssigné: currentUserData ? currentUserData.fullname : "Admin System",
-        createdAt: new Date().toISOString()
-    };
 
     try {
-        const docRef = window.fsDoc(window.fsCollection(window.db, "visites"));
-        await window.fsSetDoc(docRef, visitePayload);
-
-        if (tel) {
-            let msgVisite = `Bonjour ${nom}, votre visite pour le bien immobilier *${b.nom}* est bien confirmée pour le 📅 *${new Date(dateVisite).toLocaleString('fr-FR')}*.\n\n📍 *Lieu de RDV :* ${b.adresse || 'Sur place'}\n🤝 *Agent en charge :* ${currentUserData ? currentUserData.fullname : "Admin System"}.\n\nMerci de nous notifier en cas de retard ou d'empêchement.`;
-            let telClean = tel.replace(/\s+/g, '');
-            if (!telClean.startsWith("+") && telClean.length === 9) telClean = "221" + telClean;
-            window.open(`https://wa.me/${telClean}?text=${encodeURIComponent(msgVisite)}`, '_blank');
-        }
-
+        await window.fsSetDoc(window.fsDoc(window.fsCollection(window.db, "visites")), {
+            prospectNom: nom, prospectTel: tel, bienId: bienId, bienNom: b.nom,
+            dateRendezVous: dateVisite, statutPipeline: "Planifié", createdAt: new Date().toISOString()
+        });
         document.getElementById("p-name").value = "";
         document.getElementById("p-tel").value = "";
-        
         chargerVisitesCloud();
-    } catch(e) {
-        alert("Erreur de sauvegarde de la visite.");
-    }
+    } catch(e) { console.error(e); }
 };
 
 async function chargerVisitesCloud() {
@@ -754,29 +511,157 @@ async function chargerVisitesCloud() {
 
     try {
         const snap = await window.fsGetDocs(window.fsCollection(window.db, "visites"));
-        if (snap.empty) {
-            listEl.innerHTML = `<p style="text-align:center; color:var(--text-light); padding:15px;">Aucune visite planifiée à l'agenda.</p>`;
-            return;
-        }
-
         snap.forEach(doc => {
             const data = doc.data();
-            const div = document.createElement("div");
-            div.className = "form-card";
-            div.innerHTML = `
+            const id = doc.id;
+            const card = document.createElement("div");
+            card.className = "form-card";
+            card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--dark);">${data.prospectNom}</b>
-                    <span class="user-badge" style="background:var(--bg); font-size:0.75rem;">🗓️ Visite</span>
+                    <b>${data.prospectNom} (${data.prospectTel || 'Pas de numéro'})</b>
+                    <span class="user-badge" style="background:var(--gold-light); color:var(--gold);">${data.statutPipeline}</span>
                 </div>
-                <p style="font-size:0.8rem; color:var(--text-light); margin-top:5px;">
-                    🏠 <b>Bien :</b> ${data.bienNom}<br>
-                    📅 <b>RDV :</b> ${new Date(data.dateRendezVous).toLocaleString('fr-FR')}<br>
-                    👤 <b>Agent :</b> ${data.agentAssigné}
-                </p>
+                <p style="font-size:0.8rem; margin: 5px 0;">🏠 Bien : ${data.bienNom} | 📅 RDV : ${new Date(data.dateRendezVous).toLocaleString('fr-FR')}</p>
+                <div style="display:flex; gap:5px; margin-top:8px;">
+                    <button class="btn-outline" style="font-size:0.75rem; padding:4px;" onclick="window.changerStatutProspect('${id}', 'Débuté')">🏁 Débuter</button>
+                    <button class="btn-outline" style="font-size:0.75rem; padding:4px;" onclick="window.changerStatutProspect('${id}', 'Qualifié')">💎 Qualifier</button>
+                    <button class="btn-outline" style="font-size:0.75rem; padding:4px;" onclick="window.relancerProspect('${id}')"><i class="fab fa-whatsapp"></i> Relancer</button>
+                </div>
             `;
-            listEl.appendChild(div);
+            listEl.appendChild(card);
         });
-    } catch (e) {
-        console.error("Erreur de chargement des visites:", e);
+    } catch (e) { console.error(e); }
+}
+
+window.changerStatutProspect = async function(docId, nouveauStatut) {
+    try {
+        await window.fsUpdateDoc(window.fsDoc(window.db, "visites", docId), { statutPipeline: nouveauStatut });
+        chargerVisitesCloud();
+    } catch(e) { console.error(e); }
+};
+
+window.relancerProspect = async function(docId) {
+    try {
+        const docRef = await window.fsGetDoc(window.fsDoc(window.db, "visites", docId));
+        if (!docRef.exists()) return;
+        const data = docRef.data();
+        let msg = `Bonjour ${data.prospectNom}, nous revenons vers vous concernant votre intérêt pour le bien immobilier *${data.bienNom}*. Avez-vous des questions ou souhaitez-vous bloquer la location ?`;
+        let tel = data.prospectTel ? data.prospectTel.replace(/\s+/g, '') : "";
+        if (tel && !tel.startsWith("+") && tel.length === 9) tel = "221" + tel;
+        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    } catch(e) { console.error(e); }
+};
+
+// ==========================================
+// GESTION DES PROFILS AGENTS
+// ==========================================
+window.creerProfilAgent = async function() {
+    const name = document.getElementById("new-agent-name").value.trim();
+    const email = document.getElementById("new-agent-email").value.trim();
+    const role = document.getElementById("new-agent-role").value;
+
+    if (!name || !email) return alert("Veuillez remplir les informations de l'agent.");
+
+    try {
+        alert("Pour des raisons de sécurité Firebase Auth, créez d'abord l'authentification de l'agent sur votre console Firebase. Ce bouton va maintenant initialiser sa fiche Firestore.");
+        const fakeUid = "agent_" + Math.random().toString(36).substr(2, 9);
+        await window.fsSetDoc(window.fsDoc(window.db, "users", fakeUid), {
+            fullname: name,
+            email: email,
+            role: role,
+            createdAt: new Date().toISOString()
+        });
+        alert(`Fiche profil de l'agent ${name} créée avec succès dans Firestore.`);
+        document.getElementById("new-agent-name").value = "";
+        document.getElementById("new-agent-email").value = "";
+    } catch(e) { alert("Erreur de création de profil agent."); }
+};
+
+// ==========================================
+// IMAGE COMPRESSION & UTILS PRORATA
+// ==========================================
+window.previewAndCompressImage = function(input, type) {
+    const files = input.files;
+    const container = type === 'bien' ? document.getElementById("previews-container") : document.getElementById("edl-previews-container");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    for (let i = 0; i < Math.min(files.length, 3); i++) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            img.style.width = "65px"; img.style.height = "55px"; img.style.borderRadius = "4px";
+            container.appendChild(img);
+            if (type === 'bien') currentBienUploadedPhotos.push(e.target.result);
+        };
+        reader.readAsDataURL(files[i]);
     }
+};
+
+window.calculerProrataAutomatique = function() {
+    const loyer = parseFloat(document.getElementById("new-bien-loyer").value) || 0;
+    const dateStr = document.getElementById("edit-bien-date-entree").value;
+    const box = document.getElementById("prorata-box");
+    const res = document.getElementById("prorata-result");
+
+    if (!loyer || !dateStr) return;
+    const d = new Date(dateStr);
+    const jour = d.getDate();
+    const totalJours = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
+    if (box && res) {
+        box.style.display = "block";
+        if (jour === 1) {
+            res.innerText = "Entrée le 1er du mois : Plein tarif.";
+        } else {
+            const dus = totalJours - jour + 1;
+            const prorata = Math.round((loyer / totalJours) * dus);
+            res.innerText = `Prorata (${dus} jours restants) : ${new Intl.NumberFormat('fr-FR').format(prorata)} CFA.`;
+        }
+    }
+};
+
+// ==========================================
+// AUTRES FONCTIONS COMPLÉMENTAIRES EDL
+// ==========================================
+window.ouvrirFormulaireEDL = function() {
+    remplirSelectsBiens();
+    const container = document.getElementById("edl-rooms-container");
+    if (!container) return;
+    container.innerHTML = "";
+    ROOMS_LIST.forEach((piece) => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "5px";
+        div.innerHTML = `<small><b>${piece}</b></small><select class="edl-state-select" data-room="${piece}"><option value="Excellent">✨ Excellent</option><option value="Bon état">👍 Bon état</option><option value="Moyen">⚠️ Moyen</option><option value="Dégradé">🚨 Dégradé</option></select>`;
+        container.appendChild(div);
+    });
+    showView("nouveau-edl");
+};
+
+window.saveEDLCloud = async function() {
+    const bienId = document.getElementById("edl-bien-select").value;
+    if (!bienId) return alert("Sélectionnez un bien.");
+    const b = localBiens.find(x => x.id === bienId);
+    try {
+        await window.fsSetDoc(window.fsDoc(window.fsCollection(window.db, "etats_lieux")), {
+            bienId: bienId, bienNom: b.nom, type: document.getElementById("edl-type").value,
+            dateCertificat: new Date().toISOString()
+        });
+        chargerEDLCloudList();
+        showView("edl");
+    } catch(e) { console.error(e); }
+};
+
+async function chargerEDLCloudList() {
+    const listEl = document.getElementById("edl-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    try {
+        const snap = await window.fsGetDocs(window.fsCollection(window.db, "etats_lieux"));
+        snap.forEach(doc => {
+            const data = doc.data();
+            listEl.innerHTML += `<div class="form-card"><b>${data.bienNom}</b> - Constat d'${data.type}</div>`;
+        });
+    } catch(e) { console.error(e); }
 }
