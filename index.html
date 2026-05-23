@@ -3,49 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAMA GESTION PRO - Agence Immobilière</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --dark: #1E293B; --gold: #D97706; --bg: #F8FAFC; --card-bg: #FFFFFF; --text: #334155; --border: #E2E8F0; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding-bottom: 70px; }
-        .view { display: none; padding: 15px; }
-        .form-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; }
-        .btn-primary { background: var(--gold); color: white; padding: 12px; border: none; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--dark); display: flex; justify-content: space-around; padding: 10px; color: white; }
-        .nav-item { cursor: pointer; text-align: center; font-size: 0.75rem; }
-    </style>
+    <title>Sama Gestion</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <header style="background: var(--dark); color: white; padding: 15px; text-align: center;">
-        🏢 SAMA GESTION HUB
-    </header>
+    <!-- Vue : Liste des biens -->
+    <section id="view-liste">
+        <header>
+            <h1>Mes Biens</h1>
+            <button onclick="naviguerVers('view-formulaire')">+ Ajouter</button>
+        </header>
+        <div id="liste-biens-container"></div>
+    </section>
 
-    <div id="view-dashboard" class="view" style="display:block;">
-        <h2>Suivi Agence</h2>
-        <div class="form-card">
-            <h3>Commissions Totales</h3>
-            <h1 id="total-display">0 CFA</h1>
-        </div>
-        <button class="btn-primary" onclick="showView('ajouter-bien')">+ Mandater un Bien</button>
-    </div>
-
-    <div id="view-biens" class="view">
-        <h2>Catalogue Biens</h2>
-        <div id="biens-list"></div>
-    </div>
-
-    <div id="view-ajouter-bien" class="view">
-        <h2>Fiche Mandat</h2>
-        <input type="text" id="new-bien-nom" placeholder="Nom du bien" style="width:100%; padding:10px; margin:5px 0;">
-        <input type="number" id="new-bien-loyer" placeholder="Loyer (CFA)" style="width:100%; padding:10px; margin:5px 0;">
-        <button class="btn-primary" onclick="saveBien()">Enregistrer Mandat</button>
-    </div>
-
-    <nav>
-        <div class="nav-item" onclick="showView('dashboard')"><i class="fas fa-chart-pie"></i><br>Dashboard</div>
-        <div class="nav-item" onclick="showView('biens')"><i class="fas fa-building"></i><br>Biens</div>
-    </nav>
+    <!-- Vue : Formulaire d'ajout -->
+    <section id="view-formulaire" style="display: none;">
+        <header>
+            <button onclick="naviguerVers('view-liste')">Retour</button>
+            <h1>Ajouter un bien</h1>
+        </header>
+        <form id="form-bien">
+            <input type="text" id="nom" placeholder="Nom du bien" required>
+            <input type="text" id="adresse" placeholder="Adresse" required>
+            <input type="text" id="type" placeholder="Type (Appartement, Villa...)" required>
+            <input type="text" id="proprio" placeholder="Propriétaire" required>
+            <button type="submit">Enregistrer</button>
+        </form>
+    </section>
 
     <script src="script.js"></script>
 </body>
