@@ -1,55 +1,65 @@
-// --- INITIALISATION DES DONNÉES LOCALES ---
-let biens = JSON.parse(localStorage.getItem('biens')) || [];
+// ==============================================================================
+// 1. MOTEUR DE STOCKAGE LOCAL (Data Manager)
+// ==============================================================================
+const DataManager = {
+    init: () => {
+        if (!localStorage.getItem('sama_gestion_data')) {
+            const defaultData = {
+                profils: [],
+                biens: [],
+                visites: [],
+                etats_des_lieux: [],
+                config: { finance: { comTotaleGlobal: 0 } }
+            };
+            localStorage.setItem('sama_gestion_data', JSON.stringify(defaultData));
+        }
+    },
 
-// --- NAVIGATION ---
-function showView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.getElementById('view-' + viewId).style.display = 'block';
-    if(viewId === 'biens') renderBiens();
-    if(viewId === 'dashboard') calculerKPI();
-}
+    getCollection: (name) => {
+        const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
+        return data[name] || [];
+    },
 
-// --- GESTION DES BIENS ---
-function saveBien() {
-    const nom = document.getElementById('new-bien-nom').value;
-    const loyer = parseFloat(document.getElementById('new-bien-loyer').value);
+    saveCollection: (name, array) => {
+        const data = JSON.parse(localStorage.getItem('sama_gestion_data'));
+        data[name] = array;
+        localStorage.setItem('sama_gestion_data', JSON.stringify(data));
+    },
 
-    if(!nom || !loyer) return alert("Veuillez remplir les champs obligatoires.");
+    saveDocument: (collectionName, id, docData) => {
+        const collection = DataManager.getCollection(collectionName);
+        const index = collection.findIndex(item => String(item.id) === String(id));
+        if (index !== -1) {
+            collection[index] = { ...collection[index], ...docData };
+        } else {
+            collection.push({ ...docData, id });
+        }
+        DataManager.saveCollection(collectionName, collection);
+    }
+};
 
-    biens.push({ id: Date.now(), nom, loyer, statut: 'Disponible' });
-    localStorage.setItem('biens', JSON.stringify(biens));
-    
-    document.getElementById('new-bien-nom').value = "";
-    document.getElementById('new-bien-loyer').value = "";
-    
-    alert("Mandat enregistré avec succès !");
-    showView('biens');
-}
+// Initialisation au chargement de la page
+DataManager.init();
 
-function renderBiens() {
-    const list = document.getElementById('biens-list');
-    list.innerHTML = biens.map(b => `
-        <div class="form-card">
-            <h3>${b.nom}</h3>
-            <p>Loyer : ${b.loyer.toLocaleString()} CFA</p>
-            <button class="btn-primary" style="background:red;" onclick="supprimerBien(${b.id})">Supprimer</button>
-        </div>
-    `).join('');
-}
-
-function supprimerBien(id) {
-    if(confirm("Supprimer ce mandat ?")) {
-        biens = biens.filter(b => b.id !== id);
-        localStorage.setItem('biens', JSON.stringify(biens));
-        renderBiens();
+// ==============================================================================
+// 2. LOGIQUE DE CHARGEMENT DES DONNÉES (Remplacement de Firebase)
+// ==============================================================================
+/**
+ * Charge les données depuis le stockage local vers l'interface
+ * @param {string} collection - Nom de la collection à charger
+ * @param {Function} callback - Fonction pour traiter les données après récupération
+ */
+function chargerDonnees(collection, callback) {
+    console.log(`Chargement de la collection : ${collection}`);
+    try {
+        const data = DataManager.getCollection(collection);
+        if (callback) {
+            callback(data);
+        }
+    } catch (error) {
+        console.error("Erreur lors du chargement des données locales :", error);
     }
 }
 
-// --- KPI & CALCULS ---
-function calculerKPI() {
-    const total = biens.reduce((acc, b) => acc + b.loyer, 0);
-    document.getElementById('total-display').innerText = total.toLocaleString() + " CFA";
-}
-
-// Lancement automatique
-calculerKPI();
+// Exemple d'utilisation : 
+// chargerDonnees('biens', (biens) => { afficherListeBiens(biens); });
