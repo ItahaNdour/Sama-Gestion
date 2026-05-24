@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ImmoHub Sénégal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">IH</div>
+        <div>
+          <h1>ImmoHub</h1>
+          <p>Sénégal</p>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-btn active" data-view="dashboard">🏠 Tableau</button>
+        <button class="nav-btn" data-view="properties">🏘️ Biens</button>
+        <button class="nav-btn" data-view="payments">💰 Recouvrement</button>
+        <button class="nav-btn" data-view="visits">📅 Visites</button>
+        <button class="nav-btn" data-view="edl">🧾 État des lieux</button>
+        <button class="nav-btn" data-view="admin">🔐 Admin</button>
+      </nav>
+
+      <div class="sidebar-card">
+        <span class="dot"></span>
+        <div>
+          <strong>Mode LocalStorage</strong>
+          <small>Données sauvegardées sur cet appareil</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Hub immobilier tout-en-un</p>
+          <h2 id="pageTitle">Tableau de bord</h2>
+        </div>
+        <div class="top-actions">
+          <select id="roleSelect" class="input compact">
+            <option value="SuperAdmin">SuperAdmin</option>
+            <option value="Agent">Agent</option>
+          </select>
+          <button id="seedBtn" class="btn ghost">Démo</button>
+          <button id="resetBtn" class="btn danger">Reset</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <span>Chiffre encaissé</span>
+            <strong id="kpiRevenue">0 FCFA</strong>
+            <small>Total paiements confirmés</small>
+          </article>
+          <article class="kpi-card">
+            <span>Commissions estimées</span>
+            <strong id="kpiCommissions">0 FCFA</strong>
+            <small>Frais agence + commissions</small>
+          </article>
+          <article class="kpi-card">
+            <span>Biens actifs</span>
+            <strong id="kpiProperties">0</strong>
+            <small>Disponibles / loués / vente</small>
+          </article>
+          <article class="kpi-card warning">
+            <span>Relances à faire</span>
+            <strong id="kpiAlerts">0</strong>
+            <small>Paiements en attente</small>
+          </article>
+        </div>
+
+        <div class="grid-2">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Activité récente</h3>
+            </div>
+            <div id="recentActivity" class="activity-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Actions rapides</h3>
+            </div>
+            <div class="quick-actions">
+              <button class="quick-card" data-view-target="properties">+ Ajouter un bien</button>
+              <button class="quick-card" data-view-target="payments">+ Encaisser un paiement</button>
+              <button class="quick-card" data-view-target="visits">+ Planifier une visite</button>
+              <button class="quick-card" data-view-target="edl">+ Créer un PV EDL</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="properties" class="view">
+        <div class="module-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <h3>Ajouter / modifier un bien</h3>
+            </div>
+            <form id="propertyForm" class="form">
+              <input type="hidden" id="propertyId">
+              <label>Nom du bien<input id="propertyName" class="input" placeholder="Villa Almadies, Studio Plateau..." required></label>
+              <label>Quartier<input id="propertyArea" class="input" placeholder="Ouakam, Plateau, Mermoz..." required></label>
+              <div class="form-row">
+                <label>Type
+                  <select id="propertyType" class="input">
+                    <option>Appartement</option>
+                    <option>Villa</option>
+                    <option>Studio</option>
+                    <option>Terrain</option>
+                    <option>Bureau</option>
+                    <option>Local commercial</option>
+                  </select>
+                </label>
+                <label>Statut
+                  <select id="propertyStatus" class="input">
+                    <option>Disponible</option>
+                    <option>Loué</option>
+                    <option>En vente</option>
+                    <option>Réservé</option>
+                  </select>
+                </label>
+              </div>
+              <div class="form-row">
+                <label>Loyer / Prix<input id="propertyPrice" class="input" type="number" min="0" placeholder="350000" required></label>
+                <label>Charges<input id="propertyCharges" class="input" type="number" min="0" placeholder="25000"></label>
+              </div>
+              <label>Propriétaire<input id="propertyOwner" class="input" placeholder="Nom propriétaire"></label>
+              <label>Téléphone propriétaire<input id="propertyOwnerPhone" class="input" placeholder="22177xxxxxxx"></label>
+              <label>Description<textarea id="propertyDescription" class="input" rows="3" placeholder="Détails, équipements, conditions..."></textarea></label>
+              <button class="btn primary" type="submit">Enregistrer le bien</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header split">
+              <h3>Portefeuille</h3>
+              <select id="propertyFilter" class="input compact">
+                <option value="Tous">Tous</option>
+                <option>Disponible</option>
+                <option>Loué</option>
+                <option>En vente</option>
+                <option>Réservé</option>
+              </select>
+            </div>
+            <div id="propertiesList" class="cards-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="payments" class="view">
+        <div class="module-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <h3>Nouvel encaissement</h3>
+            </div>
+            <form id="paymentForm" class="form">
+              <label>Bien concerné<select id="paymentProperty" class="input" required></select></label>
+              <label>Payeur<input id="paymentPayer" class="input" placeholder="Nom locataire / client" required></label>
+              <label>Téléphone WhatsApp<input id="paymentPhone" class="input" placeholder="22177xxxxxxx" required></label>
+              <div class="form-row">
+                <label>Type
+                  <select id="paymentType" class="input">
+                    <option>Loyer</option>
+                    <option>Caution</option>
+                    <option>Frais d'agence</option>
+                    <option>Commission</option>
+                    <option>Autre</option>
+                  </select>
+                </label>
+                <label>Montant<input id="paymentAmount" class="input" type="number" min="0" required></label>
+              </div>
+              <label>Statut
+                <select id="paymentStatus" class="input">
+                  <option>Confirmé</option>
+                  <option>En attente</option>
+                  <option>Partiel</option>
+                </select>
+              </label>
+              <button class="btn primary" type="submit">Enregistrer paiement</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Historique des paiements</h3>
+            </div>
+            <div id="paymentsList" class="cards-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="visits" class="view">
+        <div class="module-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <h3>Planifier une visite</h3>
+            </div>
+            <form id="visitForm" class="form">
+              <label>Prospect<input id="visitName" class="input" placeholder="Nom prospect" required></label>
+              <label>Téléphone<input id="visitPhone" class="input" placeholder="22177xxxxxxx" required></label>
+              <label>Bien<select id="visitProperty" class="input" required></select></label>
+              <div class="form-row">
+                <label>Date<input id="visitDate" class="input" type="date" required></label>
+                <label>Heure<input id="visitTime" class="input" type="time" required></label>
+              </div>
+              <label>Statut
+                <select id="visitStatus" class="input">
+                  <option>Planifié</option>
+                  <option>Débuté</option>
+                  <option>Qualifié</option>
+                  <option>Annulé</option>
+                </select>
+              </label>
+              <button class="btn primary" type="submit">Ajouter la visite</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Pipeline des visites</h3>
+            </div>
+            <div id="visitsBoard" class="kanban"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="edl" class="view">
+        <div class="module-layout">
+          <section class="panel form-panel">
+            <div class="panel-header">
+              <h3>Créer un état des lieux</h3>
+            </div>
+            <form id="edlForm" class="form">
+              <label>Bien<select id="edlProperty" class="input" required></select></label>
+              <label>Type
+                <select id="edlType" class="input">
+                  <option>Entrée</option>
+                  <option>Sortie</option>
+                </select>
+              </label>
+              <div class="form-row">
+                <label>Compteur eau<input id="edlWater" class="input" placeholder="Ex: 1245"></label>
+                <label>Compteur électricité<input id="edlPower" class="input" placeholder="Ex: 45211"></label>
+              </div>
+              <label>État général<textarea id="edlNotes" class="input" rows="4" placeholder="Salon, chambres, cuisine, clés, observations..."></textarea></label>
+              <button class="btn primary" type="submit">Enregistrer le PV</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>P.V. enregistrés</h3>
+            </div>
+            <div id="edlList" class="cards-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="admin" class="view">
+        <div class="grid-2">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Droits & sécurité</h3>
+            </div>
+            <div class="admin-box">
+              <p><strong>SuperAdmin</strong> : accès total, reset, vision globale, suppression.</p>
+              <p><strong>Agent</strong> : consultation + création, suppression bloquée.</p>
+              <p class="muted">Cette V1 simule les rôles côté interface. La vraie sécurité sera gérée avec Firebase Auth + règles Firestore.</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Export local</h3>
+            </div>
+            <p class="muted">Sauvegarde JSON utile avant migration Firebase.</p>
+            <button id="exportBtn" class="btn primary">Exporter les données</button>
+            <textarea id="exportOutput" class="input codebox" rows="8" readonly></textarea>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="dashboard">🏠<span>Tableau</span></button>
+    <button class="nav-btn" data-view="properties">🏘️<span>Biens</span></button>
+    <button class="nav-btn" data-view="payments">💰<span>Paiements</span></button>
+    <button class="nav-btn" data-view="visits">📅<span>Visites</span></button>
+    <button class="nav-btn" data-view="edl">🧾<span>EDL</span></button>
+  </nav>
+
+  <script src="script.js"></script>
+</body>
+</html>
