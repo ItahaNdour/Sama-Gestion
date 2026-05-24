@@ -1,72 +1,27 @@
-let appData = JSON.parse(localStorage.getItem('sama_data')) || { biens: [] };
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sama Gestion</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div><strong>Sama</strong> - Gestion</div>
+        <div>Admin</div>
+    </header>
 
-function loadDashboard() {
-    document.getElementById('app-content').innerHTML = `
-        <div class="today-container">
-            <div class="card-small">Visite : 0</div>
-            <div class="card-small">EDL : 0</div>
-        </div>
-        <div class="grid-modules">
-            <div class="module-card" style="background: #2563EB;" onclick="loadModule('visites')">Visite</div>
-            <div class="module-card" style="background: #D97706;" onclick="loadModule('edl')">EDL</div>
-            <div class="module-card" style="background: #059669;" onclick="loadModule('collecte')">Collecter</div>
-            <div class="module-card" style="background: #DC2626;" onclick="loadModule('biens')">Biens</div>
-        </div>
-        <div class="finance-card">
-            <p>Total Loyers</p>
-            <h3>0 CFA</h3>
-        </div>
-    `;
-}
+    <div id="app-content"></div>
 
-function loadModule(module) {
-    const root = document.getElementById('app-content');
-    if (module === 'biens') {
-        renderBiensUI();
-    } else {
-        root.innerHTML = `<div class="content-box"><h2>Module ${module}</h2><p>En construction...</p></div>`;
-    }
-}
-
-function renderBiensUI(filter = '') {
-    const root = document.getElementById('app-content');
-    const libres = appData.biens.filter(b => b.statut === 'Libre' && b.nom.toLowerCase().includes(filter.toLowerCase()));
-    const occupes = appData.biens.filter(b => b.statut === 'Occupé' && b.nom.toLowerCase().includes(filter.toLowerCase()));
-
-    root.innerHTML = `
-        <div class="content-box">
-            <input type="text" placeholder="Rechercher un bien..." oninput="renderBiensUI(this.value)">
-            <div class="stats-container">
-                <div class="stat-card"><strong>Libres</strong><br>${libres.length}</div>
-                <div class="stat-card"><strong>Occupés</strong><br>${occupes.length}</div>
-            </div>
-            <button class="btn" onclick="showAddForm()">+ Ajouter Bien</button>
-            <div id="list" style="margin-top:20px;"></div>
-        </div>
-    `;
-    document.getElementById('list').innerHTML = [...libres, ...occupes].map(b => `
-        <div class="card" onclick="showFiche(${b.id})">
-            <strong>${b.nom}</strong> - ${b.statut}
-        </div>
-    `).join('');
-}
-
-function showAddForm() {
-    document.getElementById('app-content').innerHTML = `
-        <div class="content-box">
-            <h2>Nouveau Bien</h2>
-            <input type="text" id="nom" placeholder="Nom/Référence">
-            <select id="statut"><option value="Libre">Libre</option><option value="Occupé">Occupé</option></select>
-            <button class="btn" onclick="saveBien()">Enregistrer</button>
-        </div>
-    `;
-}
-
-function saveBien() {
-    const b = { id: Date.now(), nom: document.getElementById('nom').value, statut: document.getElementById('statut').value };
-    appData.biens.push(b);
-    localStorage.setItem('sama_data', JSON.stringify(appData));
-    loadModule('biens');
-}
-
-document.addEventListener('DOMContentLoaded', loadDashboard);
+    <nav class="nav-bottom">
+        <div class="nav-item" onclick="loadDashboard()"><i class="fas fa-home"></i><br>Dashboard</div>
+        <div class="nav-item" onclick="loadModule('biens')"><i class="fas fa-building"></i><br>Biens</div>
+        <div class="nav-item" onclick="loadModule('collecte')"><i class="fas fa-wallet"></i><br>Collecte</div>
+        <div class="nav-item" onclick="loadModule('visites')"><i class="fas fa-calendar-check"></i><br>Visites</div>
+        <div class="nav-item" onclick="loadModule('admin')"><i class="fas fa-cog"></i><br>Admin</div>
+    </nav>
+    <script src="script.js"></script>
+</body>
+</html>
