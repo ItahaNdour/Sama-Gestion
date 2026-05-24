@@ -48,6 +48,11 @@
         <div><span>🏙️ Hub immobilier</span><h1>Gérez vos biens simplement.</h1><p>Biens, clients, visites, paiements, reçus WhatsApp et états des lieux.</p></div>
         <div class="building-visual"><div></div><div></div><div></div></div>
       </div>
+      <div class="kpi-row kpi-row-main">
+        <article class="big-kpi"><span>Total encaissé</span><strong id="kpiRevenue">0 FCFA</strong></article>
+        <article class="big-kpi"><span>Total commissions</span><strong id="kpiCommissions">0 FCFA</strong></article>
+      </div>
+
       <div class="kpi-row">
         <article><span>Biens</span><strong id="kpiProperties">0</strong></article>
         <article><span>À encaisser</span><strong id="kpiDue">0</strong></article>
@@ -120,6 +125,7 @@
     <div class="two"><label>Type<select id="propertyType" class="input"><option>Appartement</option><option>Villa</option><option>Studio</option><option>Terrain</option><option>Bureau</option><option>Local commercial</option></select></label><label>Quartier<input id="propertyArea" class="input" required></label></div>
     <div class="two"><label>Loyer / prix<input id="propertyPrice" type="number" class="input" required></label><label>Charges<input id="propertyCharges" type="number" class="input"></label></div>
     <div class="two"><label>Date entrée locataire<input id="propertyMoveInDate" type="date" class="input"></label><label>Commission gestion %<input id="propertyManagementRate" type="number" min="0" max="100" step="0.1" class="input"></label></div>
+    <small class="hint strong-hint">Si le bien est occupé/loué, renseigne la date d’entrée : elle sert au prorata et au suivi des loyers.</small>
     <label>Propriétaire<select id="propertyOwner" class="input"></select></label>
     <label>Locataire / acheteur actuel<select id="propertyOccupant" class="input"></select></label>
     <div class="photo-choice">
@@ -175,6 +181,11 @@
     <label>Échéance prochaine<input id="paymentDueDate" type="date" class="input"></label>
     <div id="paymentWarning" class="warning-box hidden"></div>
     <button class="btn primary" type="submit">Enregistrer paiement</button>
+    <div id="paymentShareBox" class="share-box hidden">
+      <p>Paiement enregistré. Partage rapide :</p>
+      <a id="shareTenantBtn" class="mini-btn green" target="_blank">Reçu locataire</a>
+      <a id="shareOwnerBtn" class="mini-btn blue" target="_blank">Info propriétaire</a>
+    </div>
   </form>
 </div></div>
 

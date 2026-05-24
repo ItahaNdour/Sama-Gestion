@@ -14,3 +14,12 @@
 .modal{position:fixed;inset:0;background:rgba(4,19,34,.52);z-index:100;display:none;align-items:end}.modal.open{display:flex}.modal-card{background:#fff;width:100%;max-height:91vh;overflow:auto;border-radius:26px 26px 0 0;padding:18px;animation:rise .18s ease}.modal-card h2{margin:0 0 14px;font-size:20px}.close{float:right;border:0;background:#eef3f8;border-radius:12px;width:34px;height:34px;font-size:20px}.form{display:grid;gap:11px}.form label{display:grid;gap:6px;font-size:12px;font-weight:850;color:#344252}.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}.hint{font-size:11px;color:var(--muted)}
 .timeline{display:grid;gap:9px;margin-top:10px}.timeline-item{border-left:4px solid var(--blue);padding:10px 12px;background:#fff;border-radius:14px;border:1px solid var(--border)}.timeline-item.warning{border-left-color:var(--danger);background:#fff8f8}
 @keyframes rise{from{transform:translateY(18px);opacity:.7}to{transform:translateY(0);opacity:1}}@media(min-width:760px){.modal{align-items:center;justify-content:center}.modal-card{max-width:580px;border-radius:26px}.main{padding:24px}.hero-card h1{font-size:34px}.cards-list{grid-template-columns:repeat(2,1fr)}}@media(max-width:390px){.hero-card{padding:16px}.building-visual{display:none}.kpi-row strong{font-size:15px}.two,.photo-choice{grid-template-columns:1fr}.nav span{font-size:7px}}
+
+.kpi-row-main{grid-template-columns:1fr 1fr}
+.big-kpi{background:linear-gradient(135deg,#ffffff,#eef7ff)!important;border-color:#d7e8f8!important}
+.big-kpi span{font-size:12px!important;color:var(--blue)!important}
+.big-kpi strong{font-size:22px!important}
+.strong-hint{display:block;background:#eef7ff;border:1px solid #d7e8f8;border-radius:12px;padding:10px;color:var(--blue);font-weight:800}
+.share-box{background:#f4fbff;border:1px solid #d7e8f8;border-radius:16px;padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.share-box p{width:100%;margin:0;color:var(--blue);font-weight:900;font-size:13px}
+@media(max-width:390px){.kpi-row-main{grid-template-columns:1fr}.big-kpi strong{font-size:20px!important}}
