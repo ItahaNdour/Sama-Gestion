@@ -1,10 +1,7 @@
-// Initialisation des données
 let appData = JSON.parse(localStorage.getItem('sama_data')) || { biens: [] };
 
-// Fonction pour charger le Dashboard (l'écran d'accueil)
 function loadDashboard() {
-    const root = document.getElementById('app-content');
-    root.innerHTML = `
+    document.getElementById('app-content').innerHTML = `
         <div class="today-container">
             <div class="card-small">Visite : 0</div>
             <div class="card-small">EDL : 0</div>
@@ -22,14 +19,13 @@ function loadDashboard() {
     `;
 }
 
-// Moteur de navigation
 function loadModule(module) {
     const root = document.getElementById('app-content');
     if (module === 'biens') {
         root.innerHTML = `
             <div class="content-box">
                 <h2>Ajouter un Bien</h2>
-                <input type="text" id="nom" placeholder="Nom/Référence">
+                <input type="text" id="nom" placeholder="Nom du bien">
                 <input type="text" id="proprio" placeholder="Nom Propriétaire">
                 <input type="tel" id="telProprio" placeholder="Tel Propriétaire">
                 <select id="statut" onchange="toggleLocataire()">
@@ -42,8 +38,7 @@ function loadModule(module) {
                     <input type="date" id="dateEntree">
                 </div>
                 <button class="btn" onclick="saveBien()">Enregistrer</button>
-                <hr>
-                <div id="list"></div>
+                <div id="list" style="margin-top:20px;"></div>
             </div>
         `;
         renderBiens();
@@ -53,17 +48,12 @@ function loadModule(module) {
 }
 
 function toggleLocataire() {
-    const statut = document.getElementById('statut').value;
-    const fields = document.getElementById('locataire-fields');
-    if(statut === 'Occupé') {
-        fields.classList.remove('hidden');
-    } else {
-        fields.classList.add('hidden');
-    }
+    const s = document.getElementById('statut').value;
+    document.getElementById('locataire-fields').className = (s === 'Occupé') ? '' : 'hidden';
 }
 
 function saveBien() {
-    const bien = {
+    const b = {
         nom: document.getElementById('nom').value,
         proprio: document.getElementById('proprio').value,
         telProprio: document.getElementById('telProprio').value,
@@ -72,22 +62,17 @@ function saveBien() {
         telLocataire: document.getElementById('telLocataire').value,
         dateEntree: document.getElementById('dateEntree').value
     };
-    appData.biens.push(bien);
+    appData.biens.push(b);
     localStorage.setItem('sama_data', JSON.stringify(appData));
     renderBiens();
-    alert('Bien enregistré !');
 }
 
 function renderBiens() {
     const list = document.getElementById('list');
-    if (!list) return;
-    list.innerHTML = appData.biens.map(b => `
+    if(list) list.innerHTML = appData.biens.map(b => `
         <div class="card">
-            <strong>${b.nom}</strong><br>Proprio: ${b.proprio} (${b.telProprio})<br>
-            Statut: ${b.statut} ${b.statut === 'Occupé' ? `<br>Locataire: ${b.locataire} (${b.telLocataire}) - Entrée: ${b.dateEntree}` : ''}
-        </div>
-    `).join('');
+            <strong>${b.nom}</strong><br>Proprio: ${b.proprio}<br>Statut: ${b.statut}
+        </div>`).join('');
 }
 
-// IMPORTANT : Cette ligne lance le Dashboard au démarrage
 document.addEventListener('DOMContentLoaded', loadDashboard);
