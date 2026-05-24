@@ -196,3 +196,49 @@ body.courtier-mode #workspaceSelect{display:none!important}
   .transaction-row,.transaction-row.has-rest{grid-template-columns:1fr auto}
   .transaction-row.has-rest .tiny-btn{grid-column:1/-1;text-align:center}
 }
+
+.compact-payment-card{
+  padding:12px;
+}
+.compact-payment-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.compact-payment-top h3{
+  margin:0;
+  font-size:14px;
+}
+.compact-payment-top small{
+  font-size:10px;
+  color:var(--muted);
+}
+.compact-payment-top strong{
+  color:var(--blue);
+  font-size:13px;
+}
+.compact-payment-meta{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+.compact-payment-meta span{
+  background:#f6f9fc;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:10px;
+  font-weight:900;
+}
+.reste-inline{
+  background:#fff0f0!important;
+  border-color:#ffcaca!important;
+  color:var(--danger)!important;
+}
+.paid-inline{
+  background:#ebfff5!important;
+  border-color:#cbf1de!important;
+  color:var(--green)!important;
+}

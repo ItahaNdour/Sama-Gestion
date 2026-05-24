@@ -197,17 +197,43 @@ ${paymentMethodsText(pmt.agentId)}${sig(pmt.agentId)}`)}
 function paymentShareLinks(pmt){
   const pr=prop(pmt.propertyId), tenant=client(pmt.clientId), owner=client(pr?.ownerId);
   const net=Number(pmt.amount||0)-Number(pmt.agencyCommission||0)-Number(pmt.managementCommission||0);
-  const tenantMsg=`Bonjour ${tenant?.name||""},\n\nNous confirmons la bonne réception de votre paiement pour ${pr?.name||"le bien"}.\nMois concerné : ${monthLabel(pmt.month)}\nMontant payé : ${money(pmt.amount)}\nMontant attendu : ${money(pmt.expected)}\nReste à payer : ${money(pmt.remaining)}\nStatut : ${pmt.status}.\n\nMoyens de paiement pour un complément éventuel :\n${paymentMethodsText(pmt.agentId)}\n\nMerci.${sig(pmt.agentId)}`;
+  const tenantMsg=`Bonjour ${tenant?.name||""},\n\nNous confirmons la bonne réception de votre paiement pour ${pr?.name||"le bien"}.\nMois concerné : ${monthLabel(pmt.month)}\nMontant payé : ${money(pmt.amount)}\nMoyen de paiement : ${pmt.paymentMethod||"Non renseigné"}\nMontant attendu : ${money(pmt.expected)}\nReste à payer : ${money(pmt.remaining)}\nStatut : ${pmt.status}.\n\nMoyens de paiement pour un complément éventuel :\n${paymentMethodsText(pmt.agentId)}\n\nMerci.${sig(pmt.agentId)}`;
   const ownerMsg=`Bonjour ${owner?.name||""},\n\nNous vous informons qu’un paiement a été reçu pour ${pr?.name||"votre bien"}.\nMois concerné : ${monthLabel(pmt.month)}\nMontant brut reçu : ${money(pmt.amount)}\nCommission agence/courtier : ${money(pmt.agencyCommission||0)}\nCommission gestion : ${money(pmt.managementCommission||0)}\nMontant net propriétaire : ${money(net)}\nReste éventuel côté locataire : ${money(pmt.remaining)}.\n\n${sig(pmt.agentId)}`;
   return {tenant:wa(tenant?.phone,tenantMsg), owner:wa(owner?.phone,ownerMsg)};
 }
 
 function renderPayments(){
   const list=scoped(state.payments);
-  $("#paymentsList").innerHTML=list.length?list.map(p=>{const pr=prop(p.propertyId), c=client(p.clientId), owner=client(pr?.ownerId); const net=p.amount-(p.agencyCommission||0)-(p.managementCommission||0);
-    const receipt=`Bonjour ${c?.name||""}, nous confirmons la réception de votre paiement de ${money(p.amount)} pour ${pr?.name||"le bien"} (${monthLabel(p.month)}). Reste à payer : ${money(p.remaining)}. Merci.${sig(p.agentId)}`;
-    const ownerMsg=`Bonjour ${owner?.name||""}, paiement reçu pour ${pr?.name||"votre bien"}.\nMois : ${monthLabel(p.month)}\nMontant brut : ${money(p.amount)}\nCommission agence/courtier : ${money(p.agencyCommission||0)}\nCommission gestion : ${money(p.managementCommission||0)}\nMontant net propriétaire : ${money(net)}.${sig(p.agentId)}`;
-    return `<article class="card"><div class="card-top"><div><h3>💳 ${p.type}</h3><p>${pr?.name||"Bien"} • ${monthLabel(p.month)}</p></div>${badge(p.status)}</div><p>Attendu : ${money(p.expected)} • Payé : ${money(p.amount)} • Reste : <strong>${money(p.remaining)}</strong></p><p>Commission entrée : ${money(p.agencyCommission||0)} • Gestion : ${money(p.managementCommission||0)}</p><div class="actions"><a class="mini-btn green" target="_blank" href="${wa(c?.phone,receipt)}">Reçu locataire</a><a class="mini-btn blue" target="_blank" href="${wa(owner?.phone,ownerMsg)}">Info propriétaire</a><a class="mini-btn red" target="_blank" href="${relanceLink(p.id)}">Relance</a></div></article>`}).join(""):'<div class="card"><p>Aucun paiement.</p></div>';
+  $("#paymentsList").innerHTML=list.length?list.map(p=>{
+    const pr=prop(p.propertyId);
+    const links=paymentShareLinks(p);
+
+    return `<article class="card compact-payment-card">
+      <div class="compact-payment-top">
+        <div>
+          <h3>${pr?.name||"Bien"}</h3>
+          <small>${monthLabel(p.month)} • ${p.type}</small>
+        </div>
+
+        <strong>${money(p.amount)}</strong>
+      </div>
+
+      <div class="compact-payment-meta">
+        <span>💳 ${p.paymentMethod||"Non renseigné"}</span>
+        ${p.remaining>0
+          ? `<span class="reste-inline">Reste : ${money(p.remaining)}</span>`
+          : `<span class="paid-inline">Payé</span>`}
+      </div>
+
+      <div class="actions">
+        <a class="mini-btn green" target="_blank" href="${links.tenant}">Locataire</a>
+        <a class="mini-btn blue" target="_blank" href="${links.owner}">Proprio</a>
+        ${p.remaining>0
+          ? `<a class="mini-btn red" target="_blank" href="${relanceLink(p.id)}">Relance</a>`
+          : ""}
+      </div>
+    </article>`
+  }).join(""):'<div class="card"><p>Aucun paiement.</p></div>';
 }
 
 function renderEdl(){$("#edlList").innerHTML=scoped(state.edls).length?scoped(state.edls).map(e=>`<article class="card"><div class="card-top"><div><h3>🧾 PV ${e.type}</h3><p>${prop(e.propertyId)?.name||"Bien"}</p></div>${badge(e.type)}</div><p>Eau: ${e.water||"-"} • Électricité: ${e.power||"-"}</p><p>${(e.notes||"").replaceAll("\n","<br>")}</p></article>`).join(""):'<div class="card"><p>Aucun état des lieux. Clique sur + pour créer un PV.</p></div>';}
@@ -284,7 +310,7 @@ function bind(){
     let duplicate=state.payments.find(x=>x.propertyId===p.id&&x.month===ym&&x.type==="Loyer mensuel"&&x.remaining===0&&x.status==="Confirmé");
     if(duplicate&&type==="Loyer mensuel"){calculatePayment();return;}
     let agency=type==="Entrée location 3 mois"?Math.round((p.price||0)):0;
-    const newPayment={id:uid("pay"),agentId:p?.agentId||"main",propertyId:p?.id,clientId:$("#paymentClient").value,type,month:ym,expected,amount,status:remaining>0?"Partiel":"Confirmé",remaining,agencyCommission:agency,managementCommission:Math.round(amount*rate/100),dueDate:$("#paymentDueDate").value,date:new Date().toISOString()};
+    const newPayment={id:uid("pay"),agentId:p?.agentId||"main",propertyId:p?.id,clientId:$("#paymentClient").value,type,month:ym,expected,amount,paymentMethod:$("#paymentMethod").value,status:remaining>0?"Partiel":"Confirmé",remaining,agencyCommission:agency,managementCommission:Math.round(amount*rate/100),dueDate:$("#paymentDueDate").value,date:new Date().toISOString()};
     state.payments.unshift(newPayment);
     save();
     render();

@@ -176,6 +176,17 @@
     <label>Type<select id="paymentType" class="input"><option>Loyer mensuel</option><option>Entrée location 3 mois</option><option>Caution</option><option>Frais d'agence</option><option>Commission gestion</option><option>Prix de vente</option><option>Autre</option></select></label>
     <div class="two"><label>Loyer mensuel<input id="paymentRent" type="number" class="input"></label><label>Montant à payer<input id="paymentExpected" type="number" class="input"></label></div>
     <div class="two"><label>Montant payé maintenant<input id="paymentAmount" type="number" class="input" required></label><label>Reste à payer<input id="paymentRemaining" type="number" class="input" readonly></label></div>
+    <label>Moyen de paiement du locataire
+      <select id="paymentMethod" class="input">
+        <option>Wave</option>
+        <option>Orange Money</option>
+        <option>Free Money</option>
+        <option>Espèces</option>
+        <option>Virement bancaire</option>
+        <option>Chèque</option>
+        <option>Autre</option>
+      </select>
+    </label>
     <div class="two"><label><input id="paymentProrata" type="checkbox"> Calculer prorata</label><label>Date entrée<input id="paymentMoveInDate" type="date" class="input"></label></div>
     <label>Commission gestion %<input id="paymentManagementRate" type="number" class="input" min="0" max="100" step="0.1"></label>
     <label>Échéance prochaine<input id="paymentDueDate" type="date" class="input"></label>
