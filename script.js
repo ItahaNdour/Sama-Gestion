@@ -111,6 +111,8 @@ function opts(){
   $("#propertyOwner").innerHTML='<option value="">Non renseigné</option>'+owners.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
   $("#propertyOccupant").innerHTML='<option value="">Non renseigné</option>'+occupants.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
   $("#paymentClient").innerHTML='<option value="">Non renseigné</option>'+payers.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
+  const allRecipients=contacts.filter(c=>c.phone);
+  if($("#paymentMethodsRecipient")) $("#paymentMethodsRecipient").innerHTML='<option value="">Choisir un destinataire</option>'+allRecipients.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
   const ps=scoped(state.properties).map(p=>`<option value="${p.id}">${p.name} — ${p.area}</option>`).join("");
   ["#visitProperty","#paymentProperty","#edlProperty"].forEach(id=>$(id).innerHTML=ps||'<option value="">Créer un bien d’abord</option>');
 }
@@ -135,7 +137,7 @@ function renderProperties(){
   if(state.filter!=="Tous") list=list.filter(p=>p.dealType===state.filter);
   if(q) list=list.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
   $("#propertiesList").innerHTML=list.length?list.map(p=>`<article class="card">
-    <div class="card-top"><div><h3>${p.name}</h3><p>📍 ${p.area} • ${p.type}</p></div>${badge(p.status)}</div>
+    <div class="card-top"><div><h3>${p.name}</h3><p>📍 ${p.area} • ${p.type}</p></div></div>
     ${(p.photos||[]).length?`<div class="photo-strip">${p.photos.map(x=>`<img src="${x}">`).join("")}</div>`:""}
     <p>💼 ${p.dealType} • <strong>${money(p.price)}</strong></p>
     <p>👤 Proprio : ${client(p.ownerId)?.name||"Non renseigné"}</p>
@@ -246,10 +248,17 @@ function bind(){
   $("#propertyPhotosUpload").onchange=photoInput; $("#propertyPhotosCamera").onchange=photoInput;
   $("#demoBtn").onclick=seed; 
   $("#sharePaymentMethodsBtn").onclick=()=>{
+    opts();
     const agentId=currentResponsibleAgent();
-    const a=agent(agentId);
-    const msg=`Bonjour,\n\nVoici les moyens de paiement disponibles :\n${paymentMethodsText(agentId)}${sig(agentId)}`;
-    window.open(wa(a?.phone||"",msg),"_blank");
+    $("#paymentMethodsMessage").value=`Bonjour,\n\nVoici les moyens de paiement disponibles :\n${paymentMethodsText(agentId)}${sig(agentId)}`;
+    $("#paymentMethodsModal").classList.add("open");
+  };
+  $("#paymentMethodsForm").onsubmit=e=>{
+    e.preventDefault();
+    const c=client($("#paymentMethodsRecipient").value);
+    if(!c?.phone){alert("Choisis un destinataire avec un numéro WhatsApp.");return;}
+    window.open(wa(c.phone,$("#paymentMethodsMessage").value),"_blank");
+    closeModals();
   };
   $("#resetBtn").onclick=()=>{if(confirm("Tout effacer ?")){localStorage.removeItem(KEY);location.reload()}};
   ["paymentProperty","paymentMonth","paymentType","paymentAmount","paymentProrata","paymentMoveInDate"].forEach(id=>$("#"+id).oninput=calculatePayment);

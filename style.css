@@ -84,3 +84,42 @@ body.courtier-mode #workspaceSelect{display:none!important}
 .payment-methods{display:grid;gap:6px;margin-top:8px}
 .payment-methods span{display:block;background:#f7fbff;border:1px solid #dbeaf8;border-radius:12px;padding:8px;color:var(--blue);font-weight:800}
 @media(max-width:420px){.head-actions{gap:6px}.small-action{padding:9px 10px;font-size:11px}.floating-add{width:44px;height:44px}}
+
+.close{
+  position:sticky!important;
+  top:0!important;
+  float:none!important;
+  margin-left:auto!important;
+  display:grid!important;
+  place-items:center!important;
+  width:48px!important;
+  height:48px!important;
+  min-width:48px!important;
+  border-radius:18px!important;
+  font-size:30px!important;
+  line-height:1!important;
+  background:#eef3f8!important;
+  color:var(--blue)!important;
+  z-index:20!important;
+}
+.modal-card h2{
+  margin-top:-42px!important;
+  padding-right:56px!important;
+}
+@media(max-width:520px){
+  .modal-card{
+    max-height:94vh!important;
+    padding-top:12px!important;
+  }
+  .close{
+    position:sticky!important;
+    top:8px!important;
+  }
+  .modal-card h2{
+    position:static!important;
+    margin-top:-42px!important;
+    padding-top:0!important;
+    padding-bottom:12px!important;
+    background:transparent!important;
+  }
+}
