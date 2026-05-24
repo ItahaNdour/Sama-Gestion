@@ -23,3 +23,64 @@
 .share-box{background:#f4fbff;border:1px solid #d7e8f8;border-radius:16px;padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .share-box p{width:100%;margin:0;color:var(--blue);font-weight:900;font-size:13px}
 @media(max-width:390px){.kpi-row-main{grid-template-columns:1fr}.big-kpi strong{font-size:20px!important}}
+
+.auto-agent-note{
+  background:#eef7ff;
+  border:1px solid #d7e8f8;
+  color:var(--blue);
+  border-radius:14px;
+  padding:10px 12px;
+  font-size:12px;
+  font-weight:900;
+}
+.clickable-alert{cursor:pointer;transition:.18s ease}
+.clickable-alert:hover{transform:translateY(-1px);border-color:var(--blue2)}
+.modal-card .form{
+  gap:13px;
+}
+@media(max-width:520px){
+  .modal-card{
+    padding:16px;
+  }
+  .modal-card h2{
+    position:sticky;
+    top:0;
+    z-index:3;
+    background:#fff;
+    padding:4px 44px 12px 0;
+    margin-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+  .form label{
+    background:#fbfdff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:10px;
+  }
+  .form label:has(input[type="checkbox"]){
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .form label:has(input[type="checkbox"]) input{
+    width:auto;
+  }
+  .two{
+    gap:10px;
+  }
+  .photo-choice{
+    background:#fbfdff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:10px;
+  }
+}
+
+body.courtier-mode .admin-only{display:none!important}
+body.courtier-mode #workspaceSelect{display:none!important}
+.head-actions{display:flex;align-items:center;gap:8px}
+.small-action{border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:14px;padding:10px 12px;font-weight:900;font-size:12px}
+.compact-info{font-size:12px;margin-top:0;padding:11px}
+.payment-methods{display:grid;gap:6px;margin-top:8px}
+.payment-methods span{display:block;background:#f7fbff;border:1px solid #dbeaf8;border-radius:12px;padding:8px;color:var(--blue);font-weight:800}
+@media(max-width:420px){.head-actions{gap:6px}.small-action{padding:9px 10px;font-size:11px}.floating-add{width:44px;height:44px}}
