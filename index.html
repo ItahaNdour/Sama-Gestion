@@ -3,98 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImmoHub Sénégal V3</title>
+  <title>ImmoHub Sénégal V3.2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <section id="loginScreen" class="login-screen">
-    <div class="login-card">
-      <div class="logo-big">IH</div>
-      <h1>ImmoHub Sénégal</h1>
-      <p>Connexion à votre espace immobilier</p>
-      <form id="loginForm" class="form">
-        <label>Email / identifiant<input id="loginEmail" class="input" value="admin@immohub.sn" required></label>
-        <label>Mot de passe<input id="loginPassword" class="input" type="password" value="1234" required></label>
-        <button class="btn primary" type="submit">Se connecter</button>
-        <small class="hint">Démo locale : admin@immohub.sn / 1234</small>
-      </form>
+<section id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="logo-big">IH</div>
+    <h1>ImmoHub Sénégal</h1>
+    <p>Connexion à votre espace immobilier</p>
+    <form id="loginForm" class="form">
+      <label>Email / identifiant<input id="loginEmail" class="input" value="admin@immohub.sn" required></label>
+      <label>Mot de passe<input id="loginPassword" class="input" type="password" value="1234" required></label>
+      <button class="btn primary" type="submit">Se connecter</button>
+      <small class="hint">Démo locale : admin@immohub.sn / 1234</small>
+    </form>
+  </div>
+</section>
+
+<div id="app" class="app hidden">
+  <header class="app-top">
+    <div class="brand"><div class="brand-mark">IH</div><div><strong>ImmoHub</strong><small id="scopeLabel">Vue globale</small></div></div>
+    <div class="top-actions">
+      <select id="workspaceSelect" class="input tiny"></select>
+      <button id="demoBtn" class="icon-btn demo">Démo</button>
+      <button id="moreBtn" class="icon-btn">☰</button>
+      <button id="logoutBtn" class="icon-btn logout">⏻</button>
     </div>
-  </section>
+  </header>
 
-  <div id="app" class="app hidden">
-    <header class="app-top">
-      <div class="brand"><div class="brand-mark">IH</div><div><strong>ImmoHub</strong><small id="scopeLabel">Vue globale</small></div></div>
-      <div class="top-actions"><select id="workspaceSelect" class="input tiny"></select><button id="logoutBtn" class="icon-btn">⏻</button></div>
-    </header>
-
-    <main class="main">
-      <section id="dashboard" class="view active">
-        <div class="hero-card"><div><span>🏙️ Hub immobilier</span><h1>Gérez vos biens simplement.</h1><p>Biens, clients, visites, paiements, reçus WhatsApp et états des lieux.</p></div><div class="building-visual"><div></div><div></div><div></div></div></div>
-        <div class="kpi-row"><article><span>Biens</span><strong id="kpiProperties">0</strong></article><article><span>À relancer</span><strong id="kpiAlerts">0</strong></article><article><span>Com.</span><strong id="kpiCommissions">0</strong></article></div>
-        <div class="mini-section"><h2>Échéances proches</h2><div id="dueList" class="compact-list"></div></div>
-      </section>
-
-      <section id="properties" class="view">
-        <div class="page-head"><div><h1>Biens</h1><p>Portefeuille immobilier</p></div><button class="floating-add" data-open="propertyModal">+</button></div>
-        <input id="propertySearch" class="input search" placeholder="🔎 Rechercher un bien, quartier, statut...">
-        <div class="chip-row"><button class="chip active" data-prop-filter="Tous">Tous</button><button class="chip" data-prop-filter="Location mensuelle">Location</button><button class="chip" data-prop-filter="Vente">Vente</button></div>
-        <div id="propertiesList" class="cards-list"></div>
-      </section>
-
-      <section id="clients" class="view">
-        <div class="page-head"><div><h1>Clients</h1><p>Clients, propriétaires, prospects</p></div><button class="floating-add" data-open="clientModal">+</button></div>
-        <input id="clientSearch" class="input search" placeholder="🔎 Rechercher un contact...">
-        <div id="clientsList" class="cards-list"></div>
-      </section>
-
-      <section id="visits" class="view">
-        <div class="page-head"><div><h1>Visites</h1><p>Planning & qualification</p></div><button class="floating-add" data-open="visitModal">+</button></div>
-        <div id="visitsList" class="cards-list"></div>
-      </section>
-
-      <section id="payments" class="view">
-        <div class="page-head"><div><h1>Collecte</h1><p>Paiements, reçus, relances</p></div><button class="floating-add" data-open="paymentModal">+</button></div>
-        <div class="info-box">Au Sénégal, à l’entrée : le locataire paie souvent 3 mois. La commission courtier/agence est calculée ici comme <strong>1 mois</strong>.</div>
-        <div id="paymentsList" class="cards-list"></div>
-      </section>
-
-      <section id="edl" class="view">
-        <div class="page-head"><div><h1>État des lieux</h1><p>Entrée, sortie, compteurs, clés</p></div><button class="floating-add" data-open="edlModal">+</button></div>
-        <div id="edlList" class="cards-list"></div>
-      </section>
-
-      <section id="profile" class="view">
-        <div class="page-head"><div><h1>Profils</h1><p>Agents & courtiers</p></div><button class="floating-add" data-open="agentModal">+</button></div>
-        <div id="agentsList" class="cards-list"></div>
-        <button id="demoBtn" class="btn ghost full">Charger données démo</button>
-        <button id="resetBtn" class="btn danger full">Réinitialiser localStorage</button>
-      </section>
-    </main>
-
-    <nav class="bottom-nav">
-      <button class="nav active" data-view="dashboard">🏠<span>Accueil</span></button><button class="nav" data-view="properties">🏢<span>Biens</span></button><button class="nav" data-view="clients">👥<span>Clients</span></button><button class="nav" data-view="payments">💳<span>Cash</span></button><button class="nav" data-view="profile">👤<span>Profil</span></button>
-    </nav>
+  <div id="moreMenu" class="more-menu hidden">
+    <button class="menu-item" data-view="visits">📅 Visites</button>
+    <button class="menu-item" data-view="edl">🧾 État des lieux</button>
+    <button class="menu-item" data-view="profile">👤 Profils</button>
+    <button class="menu-item danger-text" id="resetBtn">🗑️ Reset local</button>
   </div>
 
-  <div id="propertyModal" class="modal"><div class="modal-card"><button class="close" data-close>×</button><h2>Nouveau bien</h2><form id="propertyForm" class="form"><input type="hidden" id="propertyId"><label>Agent responsable<select id="propertyAgent" class="input"></select></label><label>Nom du bien<input id="propertyName" class="input" required placeholder="Appartement Ngor"></label><div class="two"><label>Mode<select id="propertyDealType" class="input"><option>Location mensuelle</option><option>Vente</option></select></label><label>Statut<select id="propertyStatus" class="input"><option>Disponible</option><option>Loué</option><option>En vente</option><option>Vendu</option><option>Réservé</option></select></label></div><div class="two"><label>Type<select id="propertyType" class="input"><option>Appartement</option><option>Villa</option><option>Studio</option><option>Terrain</option><option>Bureau</option><option>Local commercial</option></select></label><label>Quartier<input id="propertyArea" class="input" required></label></div><div class="two"><label>Loyer / prix<input id="propertyPrice" type="number" class="input" required></label><label>Charges<input id="propertyCharges" type="number" class="input"></label></div><label>Commission gestion mensuelle %<input id="propertyManagementRate" type="number" min="0" max="100" step="0.1" class="input" placeholder="Ex : 5"></label><label>Propriétaire<select id="propertyOwner" class="input"></select></label><label>Locataire / acheteur<select id="propertyOccupant" class="input"></select></label><label>Photos max 3<input id="propertyPhotos" type="file" accept="image/*" capture="environment" multiple class="input"></label><div id="photoPreview" class="photo-grid"></div><label>Description<textarea id="propertyDescription" class="input" rows="3"></textarea></label><button class="btn primary" type="submit">Enregistrer le bien</button></form></div></div>
+  <main class="main">
+    <section id="dashboard" class="view active">
+      <div class="hero-card">
+        <div><span>🏙️ Hub immobilier</span><h1>Gérez vos biens simplement.</h1><p>Biens, clients, visites, paiements, reçus WhatsApp et états des lieux.</p></div>
+        <div class="building-visual"><div></div><div></div><div></div></div>
+      </div>
+      <div class="kpi-row">
+        <article><span>Biens</span><strong id="kpiProperties">0</strong></article>
+        <article><span>À encaisser</span><strong id="kpiDue">0</strong></article>
+        <article><span>Visites</span><strong id="kpiVisits">0</strong></article>
+      </div>
+      <div class="mini-section"><h2>Échéances & alertes</h2><div id="dueList" class="compact-list"></div></div>
+    </section>
 
-  <div id="clientModal" class="modal"><div class="modal-card"><button class="close" data-close>×</button><h2>Nouveau contact</h2><form id="clientForm" class="form"><input type="hidden" id="clientId"><label>Agent responsable<select id="clientAgent" class="input"></select></label><label>Nom complet<input id="clientName" class="input" required></label><div class="two"><label>Profil<select id="clientType" class="input"><option>Prospect</option><option>Client</option><option>Propriétaire</option><option>Locataire</option><option>Acheteur</option></select></label><label>WhatsApp<input id="clientPhone" class="input" required placeholder="22177..."></label></div><label>Email<input id="clientEmail" class="input"></label><label>Note<textarea id="clientNotes" class="input" rows="3"></textarea></label><button class="btn primary" type="submit">Enregistrer</button></form></div></div>
+    <section id="properties" class="view">
+      <div class="page-head"><div><h1>Biens</h1><p>Portefeuille immobilier</p></div><button class="floating-add" data-open="propertyModal">+</button></div>
+      <input id="propertySearch" class="input search" placeholder="🔎 Rechercher un bien, quartier, statut...">
+      <div class="chip-row">
+        <button class="chip active" data-prop-filter="Tous">Tous</button>
+        <button class="chip" data-prop-filter="Location mensuelle">Location</button>
+        <button class="chip" data-prop-filter="Vente">Vente</button>
+      </div>
+      <div id="propertiesList" class="cards-list"></div>
+    </section>
 
-  <div id="visitModal" class="modal"><div class="modal-card"><button class="close" data-close>×</button><h2>Nouvelle visite</h2><form id="visitForm" class="form"><label>Nom prospect<input id="visitProspectName" class="input" required></label><label>Téléphone prospect<input id="visitProspectPhone" class="input" required placeholder="22177..."></label><label>Bien<select id="visitProperty" class="input" required></select></label><div class="two"><label>Date<input id="visitDate" type="date" class="input" required></label><label>Heure<input id="visitTime" type="time" class="input" required></label></div><label>Qualification<select id="visitQualification" class="input"><option>À qualifier</option><option>Chaud</option><option>Froid</option><option>Pas intéressé</option></select></label><label>Note<textarea id="visitNote" class="input" rows="3"></textarea></label><button class="btn primary" type="submit">Enregistrer visite</button></form></div></div>
+    <section id="tracking" class="view">
+      <div class="page-head"><div><h1>Suivi du bien</h1><p id="trackingSubtitle">Transactions, loyers, échéances</p></div><button class="floating-add" data-open="paymentModal">+</button></div>
+      <div id="trackingContent"></div>
+    </section>
 
-  <div id="paymentModal" class="modal"><div class="modal-card"><button class="close" data-close>×</button><h2>Nouveau paiement</h2><form id="paymentForm" class="form"><label>Bien<select id="paymentProperty" class="input" required></select></label><label>Locataire / payeur<select id="paymentClient" class="input"></select></label><label>Type<select id="paymentType" class="input"><option>Loyer</option><option>Entrée location 3 mois</option><option>Caution</option><option>Frais d'agence</option><option>Commission gestion</option><option>Prix de vente</option><option>Autre</option></select></label><div class="two"><label>Montant brut reçu<input id="paymentAmount" type="number" class="input" required></label><label>Statut<select id="paymentStatus" class="input"><option>Confirmé</option><option>En attente</option><option>Partiel</option></select></label></div><label>Commission gestion %<input id="paymentManagementRate" type="number" class="input" min="0" max="100" step="0.1"></label><label>Échéance prochaine<input id="paymentDueDate" type="date" class="input"></label><button class="btn primary" type="submit">Enregistrer paiement</button></form></div></div>
+    <section id="clients" class="view">
+      <div class="page-head"><div><h1>Clients</h1><p>Clients, propriétaires, prospects</p></div><button class="floating-add" data-open="clientModal">+</button></div>
+      <input id="clientSearch" class="input search" placeholder="🔎 Rechercher un contact...">
+      <div id="clientsList" class="cards-list"></div>
+    </section>
 
-  <div id="edlModal" class="modal"><div class="modal-card"><button class="close" data-close>×</button><h2>État des lieux</h2><form id="edlForm" class="form"><label>Bien<select id="edlProperty" class="input" required></select></label><label>Type<select id="edlType" class="input"><option>Entrée</option><option>Sortie</option></select></label><div class="two"><label>Compteur eau<input id="edlWater" class="input"></label><label>Compteur électricité<input id="edlPower" class="input"></label></div><label>Checklist<textarea id="edlNotes" class="input" rows="6">Salon :
+    <section id="payments" class="view">
+      <div class="page-head"><div><h1>Collecte</h1><p>Paiements, reçus, relances</p></div><button class="floating-add" data-open="paymentModal">+</button></div>
+      <div class="info-box">Entrée location : si le locataire paie 3 mois, la commission courtier/agence est calculée comme <strong>1 mois</strong>.</div>
+      <div id="paymentsList" class="cards-list"></div>
+    </section>
+
+    <section id="visits" class="view">
+      <div class="page-head"><div><h1>Visites</h1><p>Planning, relance & qualification</p></div><button class="floating-add" data-open="visitModal">+</button></div>
+      <div id="visitsList" class="cards-list"></div>
+    </section>
+
+    <section id="edl" class="view">
+      <div class="page-head"><div><h1>État des lieux</h1><p>Entrée, sortie, compteurs, clés</p></div><button class="floating-add" data-open="edlModal">+</button></div>
+      <div id="edlList" class="cards-list"></div>
+    </section>
+
+    <section id="profile" class="view">
+      <div class="page-head"><div><h1>Profils</h1><p>Agents & courtiers</p></div><button class="floating-add" data-open="agentModal">+</button></div>
+      <div id="agentsList" class="cards-list"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav active" data-view="dashboard">🏠<span>Accueil</span></button>
+    <button class="nav" data-view="properties">🏢<span>Biens</span></button>
+    <button class="nav" data-view="clients">👥<span>Clients</span></button>
+    <button class="nav" data-view="visits">📅<span>Visites</span></button>
+    <button class="nav" data-view="edl">🧾<span>EDL</span></button>
+    <button class="nav" data-view="payments">💳<span>Cash</span></button>
+  </nav>
+</div>
+
+<div id="propertyModal" class="modal"><div class="modal-card">
+  <button class="close" data-close>×</button><h2>Nouveau bien</h2>
+  <form id="propertyForm" class="form">
+    <input type="hidden" id="propertyId">
+    <label>Agent responsable<select id="propertyAgent" class="input"></select></label>
+    <label>Nom du bien<input id="propertyName" class="input" required placeholder="Appartement Ngor"></label>
+    <div class="two"><label>Mode<select id="propertyDealType" class="input"><option>Location mensuelle</option><option>Vente</option></select></label><label>Statut<select id="propertyStatus" class="input"><option>Disponible</option><option>Loué</option><option>En vente</option><option>Vendu</option><option>Réservé</option></select></label></div>
+    <div class="two"><label>Type<select id="propertyType" class="input"><option>Appartement</option><option>Villa</option><option>Studio</option><option>Terrain</option><option>Bureau</option><option>Local commercial</option></select></label><label>Quartier<input id="propertyArea" class="input" required></label></div>
+    <div class="two"><label>Loyer / prix<input id="propertyPrice" type="number" class="input" required></label><label>Charges<input id="propertyCharges" type="number" class="input"></label></div>
+    <div class="two"><label>Date entrée locataire<input id="propertyMoveInDate" type="date" class="input"></label><label>Commission gestion %<input id="propertyManagementRate" type="number" min="0" max="100" step="0.1" class="input"></label></div>
+    <label>Propriétaire<select id="propertyOwner" class="input"></select></label>
+    <label>Locataire / acheteur actuel<select id="propertyOccupant" class="input"></select></label>
+    <div class="photo-choice">
+      <button type="button" class="mini-btn blue" id="uploadPhotoBtn">📁 Uploader photo</button>
+      <button type="button" class="mini-btn green" id="cameraPhotoBtn">📸 Prendre photo</button>
+    </div>
+    <input id="propertyPhotosUpload" type="file" accept="image/*" multiple class="hidden">
+    <input id="propertyPhotosCamera" type="file" accept="image/*" capture="environment" multiple class="hidden">
+    <small class="hint">Maximum 3 photos. Les deux options sont séparées.</small>
+    <div id="photoPreview" class="photo-grid"></div>
+    <label>Description<textarea id="propertyDescription" class="input" rows="3"></textarea></label>
+    <button class="btn primary" type="submit">Enregistrer le bien</button>
+  </form>
+</div></div>
+
+<div id="clientModal" class="modal"><div class="modal-card">
+  <button class="close" data-close>×</button><h2>Nouveau contact</h2>
+  <form id="clientForm" class="form">
+    <input type="hidden" id="clientId">
+    <label>Agent responsable<select id="clientAgent" class="input"></select></label>
+    <label>Nom complet<input id="clientName" class="input" required></label>
+    <div class="two"><label>Profil<select id="clientType" class="input"><option>Prospect</option><option>Client</option><option>Propriétaire</option><option>Locataire</option><option>Acheteur</option></select></label><label>WhatsApp<input id="clientPhone" class="input" required placeholder="22177..."></label></div>
+    <label>Email<input id="clientEmail" class="input"></label>
+    <label>Note<textarea id="clientNotes" class="input" rows="3"></textarea></label>
+    <button class="btn primary" type="submit">Enregistrer</button>
+  </form>
+</div></div>
+
+<div id="visitModal" class="modal"><div class="modal-card">
+  <button class="close" data-close>×</button><h2>Nouvelle visite</h2>
+  <form id="visitForm" class="form">
+    <label>Nom prospect<input id="visitProspectName" class="input" required></label>
+    <label>Téléphone prospect<input id="visitProspectPhone" class="input" required placeholder="22177..."></label>
+    <label>Bien à visiter<select id="visitProperty" class="input" required></select></label>
+    <div class="two"><label>Date<input id="visitDate" type="date" class="input" required></label><label>Heure<input id="visitTime" type="time" class="input" required></label></div>
+    <label>Qualification<select id="visitQualification" class="input"><option>À qualifier</option><option>Chaud</option><option>Froid</option><option>Pas intéressé</option></select></label>
+    <label>Note<textarea id="visitNote" class="input" rows="3"></textarea></label>
+    <button class="btn primary" type="submit">Enregistrer visite</button>
+  </form>
+</div></div>
+
+<div id="paymentModal" class="modal"><div class="modal-card">
+  <button class="close" data-close>×</button><h2>Encaisser / programmer</h2>
+  <form id="paymentForm" class="form">
+    <label>Bien<select id="paymentProperty" class="input" required></select></label>
+    <label>Locataire / payeur<select id="paymentClient" class="input"></select></label>
+    <label>Mois concerné<input id="paymentMonth" type="month" class="input" required></label>
+    <label>Type<select id="paymentType" class="input"><option>Loyer mensuel</option><option>Entrée location 3 mois</option><option>Caution</option><option>Frais d'agence</option><option>Commission gestion</option><option>Prix de vente</option><option>Autre</option></select></label>
+    <div class="two"><label>Loyer mensuel<input id="paymentRent" type="number" class="input"></label><label>Montant à payer<input id="paymentExpected" type="number" class="input"></label></div>
+    <div class="two"><label>Montant payé maintenant<input id="paymentAmount" type="number" class="input" required></label><label>Reste à payer<input id="paymentRemaining" type="number" class="input" readonly></label></div>
+    <div class="two"><label><input id="paymentProrata" type="checkbox"> Calculer prorata</label><label>Date entrée<input id="paymentMoveInDate" type="date" class="input"></label></div>
+    <label>Commission gestion %<input id="paymentManagementRate" type="number" class="input" min="0" max="100" step="0.1"></label>
+    <label>Échéance prochaine<input id="paymentDueDate" type="date" class="input"></label>
+    <div id="paymentWarning" class="warning-box hidden"></div>
+    <button class="btn primary" type="submit">Enregistrer paiement</button>
+  </form>
+</div></div>
+
+<div id="edlModal" class="modal"><div class="modal-card">
+  <button class="close" data-close>×</button><h2>État des lieux</h2>
+  <form id="edlForm" class="form">
+    <label>Bien<select id="edlProperty" class="input" required></select></label>
+    <label>Type<select id="edlType" class="input"><option>Entrée</option><option>Sortie</option></select></label>
+    <div class="two"><label>Compteur eau<input id="edlWater" class="input"></label><label>Compteur électricité<input id="edlPower" class="input"></label></div>
+    <label>Checklist<textarea id="edlNotes" class="input" rows="6">Salon :
 Chambre :
 Cuisine :
 Salle d'eau :
 Clés :
-Observations :</textarea></label><button class="btn primary" type="submit">Enregistrer PV</button></form></div></div>
+Observations :</textarea></label>
+    <button class="btn primary" type="submit">Enregistrer PV</button>
+  </form>
+</div></div>
 
-  <div id="agentModal" class="modal"><div class="modal-card"><button class="close" data-close>×</button><h2>Créer / modifier profil</h2><form id="agentForm" class="form"><input type="hidden" id="agentId"><label>Nom / agence<input id="agentName" class="input" required></label><label>WhatsApp<input id="agentPhone" class="input" placeholder="22177..."></label><label>Email<input id="agentEmail" class="input"></label><label>Rôle<select id="agentRole" class="input"><option>Agent</option><option>Courtier</option><option>Agence</option><option>Manager</option></select></label><label>Signature WhatsApp<textarea id="agentSignature" class="input" rows="3" placeholder="Nom, agence, téléphone..."></textarea></label><button class="btn primary" type="submit">Enregistrer profil</button></form></div></div>
-  <script src="script.js"></script>
+<div id="agentModal" class="modal"><div class="modal-card">
+  <button class="close" data-close>×</button><h2>Créer / modifier profil</h2>
+  <form id="agentForm" class="form">
+    <input type="hidden" id="agentId">
+    <label>Nom / agence<input id="agentName" class="input" required></label>
+    <label>WhatsApp<input id="agentPhone" class="input" placeholder="22177..."></label>
+    <label>Email<input id="agentEmail" class="input"></label>
+    <label>Rôle<select id="agentRole" class="input"><option>Agent</option><option>Courtier</option><option>Agence</option><option>Manager</option></select></label>
+    <label>Signature WhatsApp<textarea id="agentSignature" class="input" rows="3" placeholder="Nom, agence, téléphone..."></textarea></label>
+    <button class="btn primary" type="submit">Enregistrer profil</button>
+  </form>
+</div></div>
+
+<script src="script.js"></script>
 </body>
 </html>
