@@ -152,18 +152,28 @@ function renderTracking(){
   if(!p){$("#trackingContent").innerHTML='<div class="card"><p>Sélectionne un bien depuis la page Biens.</p></div>';return}
   $("#trackingSubtitle").textContent=`${p.name} • ${p.area}`;
   const transactions=state.payments.filter(x=>x.propertyId===p.id).sort((a,b)=>(b.month||"").localeCompare(a.month||""));
-  $("#trackingContent").innerHTML=`<article class="card">
-    <div class="card-top"><div><h3>${p.name}</h3><p>${p.dealType} • loyer/prix ${money(p.price)}</p></div>${badge(p.status)}</div>
-    <p>Locataire/acheteur : ${client(p.occupantId)?.name||"Non renseigné"}</p>
-    <p>📅 Date d’entrée : <strong>${p.moveInDate||"Non renseignée"}</strong></p>
-    <div class="actions"><button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser ce bien</button></div>
+  $("#trackingContent").innerHTML=`<article class="card tracking-head">
+    <div>
+      <h3>${p.name}</h3>
+      <p>${p.dealType} • ${money(p.price)}</p>
+      <p class="small-muted">Entrée : ${p.moveInDate||"à renseigner"} • Occupant : ${client(p.occupantId)?.name||"non renseigné"}</p>
+    </div>
+    <button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser ce bien</button>
   </article>
-  <div class="timeline">
-    ${transactions.length?transactions.map(t=>`<div class="timeline-item ${t.remaining>0?'warning':''}">
-      <strong>${monthLabel(t.month)} — ${t.type}</strong>
-      <p>Attendu : ${money(t.expected)} • Payé : ${money(t.amount)} • Reste : ${money(t.remaining)}</p>
-      <p>Commission entrée : ${money(t.agencyCommission)} • Gestion : ${money(t.managementCommission)}</p>
-      <div class="actions"><a class="mini-btn red" target="_blank" href="${relanceLink(t.id)}">Relance reste</a></div>
+
+  <div class="tracking-section-title">Suivi</div>
+
+  <div class="compact-transactions">
+    ${transactions.length?transactions.map(t=>`<div class="transaction-row ${t.remaining>0?'has-rest':''}">
+      <div>
+        <strong>${monthLabel(t.month)}</strong>
+        <small>${t.type}</small>
+      </div>
+      <div class="transaction-money">
+        <span>${money(t.amount)}</span>
+        ${t.remaining>0?`<em>Reste ${money(t.remaining)}</em>`:""}
+      </div>
+      ${t.remaining>0?`<a class="mini-btn red tiny-btn" target="_blank" href="${relanceLink(t.id)}">Relance</a>`:""}
     </div>`).join(""):'<div class="card"><p>Aucune transaction pour ce bien.</p></div>'}
   </div>`;
 }
