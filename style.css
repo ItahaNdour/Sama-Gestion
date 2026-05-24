@@ -3,12 +3,21 @@ body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0;
 header { background: var(--teal); color: white; padding: 20px; display: flex; justify-content: space-between; }
 .content-box { padding: 15px; }
 
-/* Barres de recherche et Cartes de tri */
-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+/* Dashboard & Cards */
+.today-container { display: flex; gap: 10px; padding: 15px; }
+.card-small { background: white; flex: 1; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.8rem; }
+.grid-modules { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
+.module-card { height: 80px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; }
+.finance-card { background: white; margin: 20px 15px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+/* Biens */
+input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
 .stats-container { display: flex; gap: 10px; margin-bottom: 20px; }
 .stat-card { background: var(--white); flex: 1; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
 .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
-.btn { background: var(--teal); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; }
-.nav-bottom { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #ddd; }
+.btn { background: var(--teal); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; margin-bottom: 10px; }
+.photo-preview { width: 80px; height: 80px; object-fit: cover; margin-right: 5px; border-radius: 8px; }
+
+/* Navigation */
+.nav-bottom { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #ddd; z-index: 1000; }
 .nav-item { text-align: center; font-size: 0.7rem; color: #555; cursor: pointer; }
