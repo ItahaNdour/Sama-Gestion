@@ -128,7 +128,7 @@ function render(){
   $("#kpiVisits").textContent=visits.length;
   $("#kpiDue").textContent=pays.filter(p=>p.remaining>0 || p.status!=="Confirmé").length;
   const due=pays.filter(p=>p.remaining>0 || p.status!=="Confirmé").slice(0,4);
-  $("#dueList").innerHTML=due.length?due.map(p=>`<div class="card clickable-alert" onclick="showTracking('${p.propertyId}')"><p>⏰ ${monthLabel(p.month)} • ${prop(p.propertyId)?.name||"Bien"} • reste ${money(p.remaining)}</p><small>Toucher pour ouvrir le suivi</small></div>`).join(""):'<div class="card"><p>Aucune échéance en attente.</p></div>';
+  $("#dueList").innerHTML=due.length?due.map(p=>`<div class="card clickable-alert" onclick="showTracking('${p.propertyId}')"><p>⏰ ${monthLabel(p.month)} • ${prop(p.propertyId)?.name||"Bien"} • reste ${money(p.remaining)}</p><small>Toucher pour ouvrir le suivi</small></div>`).join(""):'<div class="card empty-state"><p>Aucune échéance en attente.</p><small>Les restes à payer apparaîtront ici.</small></div>';
   renderProperties(); renderClients(); renderVisits(); renderPayments(); renderEdl(); renderAgents(); renderTracking();
 }
 
@@ -144,7 +144,7 @@ function renderProperties(){
     <p>🏠 Occupant/client : ${client(p.occupantId)?.name||"Non renseigné"}</p>
     ${p.occupantId?`<p>📅 Date d’entrée : <strong>${p.moveInDate||"À renseigner"}</strong></p>`:""}
     <div class="actions"><button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button><button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button><button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button><button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button></div>
-  </article>`).join(""):'<div class="card"><p>Aucun bien trouvé.</p></div>';
+  </article>`).join(""):'<div class="card empty-state"><p>Aucun bien trouvé.</p><small>Ajoute un bien avec le bouton +.</small></div>';
 }
 
 function renderTracking(){
@@ -181,7 +181,7 @@ function renderTracking(){
 function renderClients(){
   let q=$("#clientSearch").value?.toLowerCase()||"", list=scoped(state.clients);
   if(q) list=list.filter(c=>JSON.stringify(c).toLowerCase().includes(q));
-  $("#clientsList").innerHTML=list.length?list.map(c=>`<article class="card"><div class="card-top"><div><h3>👤 ${c.name}</h3><p>${c.type} • ${agent(c.agentId)?.name}</p></div>${badge(c.type)}</div><p>📱 ${c.phone}</p><p>${c.notes||""}</p><div class="actions"><button class="mini-btn blue" onclick="editClient('${c.id}')">Modifier</button><a class="mini-btn green" target="_blank" href="${wa(c.phone,'Bonjour '+c.name+sig(c.agentId))}">WhatsApp</a><button class="mini-btn red" onclick="del('clients','${c.id}')">Supprimer</button></div></article>`).join(""):'<div class="card"><p>Aucun contact.</p></div>';
+  $("#clientsList").innerHTML=list.length?list.map(c=>`<article class="card"><div class="card-top"><div><h3>👤 ${c.name}</h3><p>${c.type} • ${agent(c.agentId)?.name}</p></div>${badge(c.type)}</div><p>📱 ${c.phone}</p><p>${c.notes||""}</p><div class="actions"><button class="mini-btn blue" onclick="editClient('${c.id}')">Modifier</button><a class="mini-btn green" target="_blank" href="${wa(c.phone,'Bonjour '+c.name+sig(c.agentId))}">WhatsApp</a><button class="mini-btn red" onclick="del('clients','${c.id}')">Supprimer</button></div></article>`).join(""):'<div class="card empty-state"><p>Aucun contact.</p><small>Ajoute un contact avec le bouton +.</small></div>';
 }
 
 function renderVisits(){
@@ -297,7 +297,10 @@ function bind(){
     closeModals();
   };
   $("#resetBtn").onclick=()=>{if(confirm("Tout effacer ?")){localStorage.removeItem(KEY);location.reload()}};
-  ["paymentProperty","paymentMonth","paymentType","paymentAmount","paymentProrata","paymentMoveInDate"].forEach(id=>$("#"+id).oninput=calculatePayment);
+  ["paymentProperty","paymentMonth","paymentType","paymentAmount","paymentProrata","paymentMoveInDate"].forEach(id=>{
+    $("#"+id).oninput=calculatePayment;
+    $("#"+id).onchange=calculatePayment;
+  });
 
   $("#agentForm").onsubmit=e=>{e.preventDefault();let id=$("#agentId").value||uid("agent"), a={id,name:$("#agentName").value,phone:$("#agentPhone").value,email:$("#agentEmail").value,role:$("#agentRole").value,wave:$("#agentWave").value,orangeMoney:$("#agentOrangeMoney").value,freeMoney:$("#agentFreeMoney").value,signature:$("#agentSignature").value}; let i=state.agents.findIndex(x=>x.id===id); i>=0?state.agents[i]=a:state.agents.push(a); save(); closeModals(); render()};
   $("#clientForm").onsubmit=e=>{e.preventDefault();let id=$("#clientId").value||uid("client"), c={id,agentId:$("#clientAgent").value||currentResponsibleAgent(),name:$("#clientName").value,type:$("#clientType").value,phone:$("#clientPhone").value,email:$("#clientEmail").value,notes:$("#clientNotes").value}; let i=state.clients.findIndex(x=>x.id===id); i>=0?state.clients[i]=c:state.clients.unshift(c); save(); closeModals(); render()};
@@ -328,7 +331,7 @@ function seed(){
   const ym=new Date().toISOString().slice(0,7);
   state.clients=[{id:"c1",agentId:"a1",name:"Mme Fall",type:"Propriétaire",phone:"221770000001",email:"",notes:"Propriétaire du bien à Ngor."},{id:"c2",agentId:"a1",name:"Awa Ba",type:"Locataire",phone:"221770000002",email:"",notes:"Paiement mensuel."},{id:"c3",agentId:"a1",name:"Moussa Kane",type:"Prospect",phone:"221770000003",email:"",notes:"Intéressé par Ngor."}];
   state.properties=[{id:"p1",agentId:"a1",name:"Appartement Ngor Vue Mer",dealType:"Location mensuelle",status:"Loué",type:"Appartement",area:"Ngor",price:450000,charges:30000,moveInDate:ym+"-12",managementRate:5,ownerId:"c1",occupantId:"c2",photos:[],description:"3 chambres, balcon, proche plage."}];
-  state.payments=[{id:"pay1",agentId:"a1",propertyId:"p1",clientId:"c2",type:"Entrée location 3 mois",month:ym,expected:1350000,amount:900000,status:"Partiel",remaining:450000,agencyCommission:450000,managementCommission:45000,dueDate:new Date().toISOString().slice(0,10),date:new Date().toISOString()}];
+  state.payments=[{id:"pay1",agentId:"a1",propertyId:"p1",clientId:"c2",type:"Entrée location 3 mois",month:ym,expected:1350000,amount:900000,paymentMethod:"Wave",status:"Partiel",remaining:450000,agencyCommission:450000,managementCommission:45000,dueDate:new Date().toISOString().slice(0,10),date:new Date().toISOString()}];
   state.visits=[{id:"v1",agentId:"a1",name:"Moussa Kane",phone:"221770000003",propertyId:"p1",date:new Date().toISOString().slice(0,10),time:"16:00",qualification:"À qualifier",note:"Veut visiter après le travail."}];
   state.edls=[];state.trackingId="p1";save();render();
 }

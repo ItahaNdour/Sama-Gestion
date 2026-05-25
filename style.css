@@ -242,3 +242,162 @@ body.courtier-mode #workspaceSelect{display:none!important}
   border-color:#cbf1de!important;
   color:var(--green)!important;
 }
+
+/* V3.9 pre-test polish */
+.empty-state{
+  text-align:center;
+  padding:20px 14px;
+}
+.empty-state p{
+  margin:0 0 5px!important;
+  font-weight:900;
+  color:var(--blue)!important;
+}
+.empty-state small{
+  color:var(--muted);
+  font-size:12px;
+}
+.clickable-alert{
+  cursor:pointer;
+  border-color:#d6e8f8!important;
+}
+.clickable-alert:active{
+  transform:scale(.985);
+}
+.highlight-rest{
+  font-weight:900!important;
+  color:var(--danger)!important;
+  background:#fff7f7!important;
+  border-color:#ffcaca!important;
+}
+.close{
+  position:sticky!important;
+  top:0!important;
+  margin-left:auto!important;
+  float:none!important;
+  display:grid!important;
+  place-items:center!important;
+  width:52px!important;
+  height:52px!important;
+  min-width:52px!important;
+  border-radius:18px!important;
+  font-size:32px!important;
+  line-height:1!important;
+  background:#eef3f8!important;
+  color:var(--blue)!important;
+  z-index:30!important;
+}
+.modal-card h2{
+  margin-top:-46px!important;
+  padding-right:60px!important;
+}
+.nav, .mini-btn, .chip, .small-action, .floating-add{
+  -webkit-tap-highlight-color:transparent;
+}
+@media(max-width:520px){
+  .app-top{
+    padding:8px 10px;
+  }
+  .brand-mark{
+    width:36px!important;
+    height:36px!important;
+    border-radius:13px!important;
+  }
+  .brand strong{
+    font-size:14px;
+  }
+  .input.tiny{
+    max-width:96px;
+    font-size:11px;
+  }
+  .main{
+    padding:12px 10px;
+  }
+  .hero-card{
+    padding:16px;
+    border-radius:22px;
+  }
+  .hero-card h1{
+    font-size:22px;
+  }
+  .hero-card p{
+    font-size:12px;
+  }
+  .kpi-row{
+    gap:8px;
+  }
+  .kpi-row article{
+    padding:12px;
+    border-radius:16px;
+  }
+  .kpi-row strong{
+    font-size:16px;
+  }
+  .page-head h1{
+    font-size:22px;
+  }
+  .modal-card{
+    max-height:95vh!important;
+    padding:14px!important;
+  }
+  .modal-card h2{
+    font-size:18px!important;
+    position:static!important;
+    background:transparent!important;
+    border:0!important;
+    padding-top:0!important;
+  }
+  .form label{
+    background:#fbfdff;
+    border:1px solid var(--border);
+    border-radius:15px;
+    padding:10px;
+  }
+  .form label:has(input[type="checkbox"]){
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .form label:has(input[type="checkbox"]) input{
+    width:auto;
+  }
+  .bottom-nav{
+    left:5px;
+    right:5px;
+    bottom:6px;
+    padding:5px;
+  }
+  .nav{
+    min-height:48px;
+  }
+}
+
+/* V3.9.1 - keep revenue/commission side by side on Android */
+.kpi-row-main{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:8px!important;
+}
+.kpi-row-main article{
+  min-width:0;
+}
+.kpi-row-main .big-kpi strong{
+  font-size:16px!important;
+  line-height:1.15!important;
+  word-break:break-word;
+}
+.kpi-row-main .big-kpi span{
+  font-size:10px!important;
+  line-height:1.2!important;
+}
+@media(max-width:390px){
+  .kpi-row-main{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .kpi-row-main .big-kpi{
+    padding:10px 8px!important;
+  }
+  .kpi-row-main .big-kpi strong{
+    font-size:14px!important;
+  }
+}
