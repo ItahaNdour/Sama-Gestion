@@ -12,6 +12,18 @@ function ensure(){if(!state.agents.length)state.agents=[{id:"main",name:"Agence 
 const agent=id=>state.agents.find(a=>a.id===id)||state.agents[0];
 const client=id=>state.clients.find(c=>c.id===id);
 const prop=id=>state.properties.find(p=>p.id===id);
+function canCollectProperty(p){
+  if(!p) return false;
+  const occupiedStatuses=["Loué","Réservé","Vendu"];
+  const hasOccupant=!!p.occupantId;
+  return occupiedStatuses.includes(p.status) && hasOccupant;
+}
+function collectBlockMessage(p){
+  if(!p) return "Bien introuvable.";
+  if(!p.occupantId) return "Impossible d’encaisser : aucun locataire/acheteur n’est rattaché à ce bien.";
+  return `Impossible d’encaisser : le bien « ${p.name} » est actuellement au statut « ${p.status} ». Il doit être occupé/loué pour encaisser.`;
+}
+
 const scoped=a=>state.workspace==="global"?a:a.filter(x=>x.agentId===state.workspace);
 function currentResponsibleAgent(){
   if(state.mode==="courtier") return state.currentAgentId || state.workspace || "main";
@@ -113,8 +125,12 @@ function opts(){
   $("#paymentClient").innerHTML='<option value="">Non renseigné</option>'+payers.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
   const allRecipients=contacts.filter(c=>c.phone);
   if($("#paymentMethodsRecipient")) $("#paymentMethodsRecipient").innerHTML='<option value="">Choisir un destinataire</option>'+allRecipients.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
-  const ps=scoped(state.properties).map(p=>`<option value="${p.id}">${p.name} — ${p.area}</option>`).join("");
-  ["#visitProperty","#paymentProperty","#edlProperty"].forEach(id=>$(id).innerHTML=ps||'<option value="">Créer un bien d’abord</option>');
+  const allProps=scoped(state.properties);
+  const ps=allProps.map(p=>`<option value="${p.id}">${p.name} — ${p.area}</option>`).join("");
+  const collectable=allProps.filter(canCollectProperty).map(p=>`<option value="${p.id}">${p.name} — ${p.area}</option>`).join("");
+  $("#visitProperty").innerHTML=ps||'<option value="">Créer un bien d’abord</option>';
+  $("#edlProperty").innerHTML=ps||'<option value="">Créer un bien d’abord</option>';
+  $("#paymentProperty").innerHTML=collectable||'<option value="">Aucun bien occupé/loué</option>';
 }
 
 function render(){
@@ -143,7 +159,7 @@ function renderProperties(){
     <p>👤 Proprio : ${client(p.ownerId)?.name||"Non renseigné"}</p>
     <p>🏠 Occupant/client : ${client(p.occupantId)?.name||"Non renseigné"}</p>
     ${p.occupantId?`<p>📅 Date d’entrée : <strong>${p.moveInDate||"À renseigner"}</strong></p>`:""}
-    <div class="actions"><button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button><button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button><button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button><button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button></div>
+    <div class="actions"><button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button>${canCollectProperty(p)?`<button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button>`:`<button class="mini-btn disabled" onclick="payForProperty('${p.id}')">Non encaissable</button>`}<button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button><button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button></div>
   </article>`).join(""):'<div class="card empty-state"><p>Aucun bien trouvé.</p><small>Ajoute un bien avec le bouton +.</small></div>';
 }
 
@@ -243,7 +259,17 @@ async function resize(file){return new Promise(res=>{let r=new FileReader();r.on
 async function photoInput(e){let files=[...e.target.files].slice(0,3); if(e.target.files.length>3) alert("Maximum 3 photos."); photos=await Promise.all(files.map(resize)); $("#photoPreview").innerHTML=photos.map(x=>`<img src="${x}">`).join("")}
 function resetForms(){["propertyForm","clientForm","visitForm","paymentForm","edlForm","agentForm"].forEach(id=>$("#"+id)?.reset());["propertyId","clientId","agentId"].forEach(id=>$("#"+id).value="");photos=[];$("#photoPreview").innerHTML="";$("#paymentWarning").classList.add("hidden");$("#paymentShareBox")?.classList.add("hidden");opts();applyAgentContext();}
 function showTracking(id){state.trackingId=id;save();nav("tracking")}
-function payForProperty(id){state.trackingId=id;openModal("paymentModal");$("#paymentProperty").value=id;prefillPayment();}
+function payForProperty(id){
+  const p=prop(id);
+  if(!canCollectProperty(p)){
+    alert(collectBlockMessage(p));
+    return;
+  }
+  state.trackingId=id;
+  openModal("paymentModal");
+  $("#paymentProperty").value=id;
+  prefillPayment();
+}
 function editProperty(id){let p=prop(id); if(!p)return; openModal("propertyModal"); $("#propertyId").value=p.id; $("#propertyAgent").value=p.agentId; $("#propertyName").value=p.name; $("#propertyDealType").value=p.dealType; $("#propertyStatus").value=p.status; $("#propertyType").value=p.type; $("#propertyArea").value=p.area; $("#propertyPrice").value=p.price; $("#propertyCharges").value=p.charges; $("#propertyMoveInDate").value=p.moveInDate||""; $("#propertyManagementRate").value=p.managementRate; $("#propertyOwner").value=p.ownerId; $("#propertyOccupant").value=p.occupantId; $("#propertyDescription").value=p.description; photos=p.photos||[]; $("#photoPreview").innerHTML=photos.map(x=>`<img src="${x}">`).join("")}
 function editClient(id){let c=client(id); openModal("clientModal"); $("#clientId").value=c.id; $("#clientAgent").value=c.agentId; $("#clientName").value=c.name; $("#clientType").value=c.type; $("#clientPhone").value=c.phone; $("#clientEmail").value=c.email; $("#clientNotes").value=c.notes}
 function editAgent(id){let a=agent(id); openModal("agentModal"); $("#agentId").value=a.id; $("#agentName").value=a.name; $("#agentPhone").value=a.phone; $("#agentEmail").value=a.email; $("#agentRole").value=a.role; $("#agentWave").value=a.wave||""; $("#agentOrangeMoney").value=a.orangeMoney||""; $("#agentFreeMoney").value=a.freeMoney||""; $("#agentSignature").value=a.signature||""}
@@ -310,6 +336,7 @@ function bind(){
     e.preventDefault();
     calculatePayment();
     let p=prop($("#paymentProperty").value), amount=+$("#paymentAmount").value, type=$("#paymentType").value, ym=$("#paymentMonth").value, expected=+$("#paymentExpected").value, remaining=+$("#paymentRemaining").value, rate=+$("#paymentManagementRate").value||p?.managementRate||0;
+    if(!canCollectProperty(p)){ alert(collectBlockMessage(p)); return; }
     let duplicate=state.payments.find(x=>x.propertyId===p.id&&x.month===ym&&x.type==="Loyer mensuel"&&x.remaining===0&&x.status==="Confirmé");
     if(duplicate&&type==="Loyer mensuel"){calculatePayment();return;}
     let agency=type==="Entrée location 3 mois"?Math.round((p.price||0)):0;

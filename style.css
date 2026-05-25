@@ -401,3 +401,9 @@ body.courtier-mode #workspaceSelect{display:none!important}
     font-size:14px!important;
   }
 }
+
+.mini-btn.disabled{
+  background:#eef1f4!important;
+  color:#8a96a3!important;
+  cursor:not-allowed!important;
+}
