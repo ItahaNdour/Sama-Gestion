@@ -7,7 +7,7 @@ const money=n=>new Intl.NumberFormat("fr-FR").format(Math.round(Number(n||0)))+"
 const norm=n=>{let x=String(n||"").replace(/\D/g,"");return x.startsWith("221")?x:(x.length===9?"221"+x:x)};
 const wa=(n,m)=>`https://wa.me/${norm(n)}?text=${encodeURIComponent(m)}`;
 const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
-function load(){try{Object.assign(state,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}}
+function load(){try{Object.assign(state,JSON.parse(localStorage.getItem(KEY)||"{}")); if(!state.mode) state.mode="admin";}catch(e){}}
 function ensure(){if(!state.agents.length)state.agents=[{id:"main",name:"Agence principale",role:"Agence",phone:"221770000000",email:"admin@immohub.sn",wave:"77 000 00 00 - Agence principale",orangeMoney:"78 000 00 00 - Agence principale",freeMoney:"",signature:"Agence principale\nWhatsApp : 221770000000"}]}
 const agent=id=>state.agents.find(a=>a.id===id)||state.agents[0];
 const client=id=>state.clients.find(c=>c.id===id);
@@ -75,8 +75,8 @@ function daysInMonth(ym){const [y,m]=ym.split("-").map(Number);return new Date(y
 function monthLabel(ym){return ym?new Date(ym+"-01").toLocaleDateString("fr-FR",{month:"long",year:"numeric"}):""}
 function login(){
   const email=($("#loginEmail").value||"").trim().toLowerCase();
+  ensure();
   if(email==="courtier@demo.sn"){
-    ensure();
     let demoAgent=state.agents.find(a=>a.email==="courtier@demo.sn") || state.agents.find(a=>a.id==="a1");
     if(!demoAgent){
       demoAgent={id:"a1",name:"Aminata Courtage",role:"Courtier",phone:"221771112233",email:"courtier@demo.sn",wave:"77 111 22 33 - Aminata Courtage",orangeMoney:"78 111 22 33 - Aminata Courtage",freeMoney:"",signature:"Aminata Courtage\nCourtier immobilier\nWhatsApp : 221771112233"};
@@ -97,6 +97,7 @@ function login(){
   save();
   render();
 }
+
 function logout(){ state.logged=false; save(); document.body.classList.remove("courtier-mode"); $("#loginScreen").classList.remove("hidden"); $("#app").classList.add("hidden"); }
 function nav(v){ $$(".view").forEach(x=>x.classList.remove("active")); $("#"+v).classList.add("active"); $$(".nav,.menu-item").forEach(b=>b.classList.toggle("active",b.dataset.view===v)); $("#moreMenu").classList.add("hidden"); render(); }
 function openModal(id){
@@ -117,7 +118,7 @@ function opts(){
   $("#workspaceSelect").value=state.workspace;
   $("#scopeLabel").textContent=state.workspace==="global"?"Vue globale":agent(state.workspace).name;
   const ag=state.agents.map(a=>`<option value="${a.id}">${a.name} — ${a.role}</option>`).join("");
-  ["#propertyAgent","#clientAgent"].forEach(id=>$(id).innerHTML=ag);
+  ["#propertyAgent","#clientAgent"].forEach(id=>$(id).innerHTML=ag); applyAgentContext();
   applyAgentContext();
   const contacts=scoped(state.clients), owners=contacts.filter(c=>c.type==="Propriétaire"), occupants=contacts.filter(c=>["Prospect","Client","Locataire","Acheteur"].includes(c.type)), payers=contacts.filter(c=>["Client","Locataire","Acheteur"].includes(c.type));
   $("#propertyOwner").innerHTML='<option value="">Non renseigné</option>'+owners.map(c=>`<option value="${c.id}">${c.name} — ${c.type}</option>`).join("");
@@ -203,7 +204,24 @@ function renderClients(){
 function renderVisits(){
   const today=new Date().toISOString().slice(0,10);
   const list=scoped(state.visits).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-  $("#visitsList").innerHTML=list.length?list.map(v=>{let past=v.date<today, p=prop(v.propertyId);let msg=`Bonjour ${v.name}, rappel de votre visite pour ${p?.name||"le bien"} prévue le ${v.date} à ${v.time}.${sig(v.agentId)}`;return `<article class="card" style="${past?'opacity:.55':''}"><div class="card-top"><div><h3>📅 ${v.name}</h3><p>${p?.name||"Bien"} • ${v.date} à ${v.time}</p></div>${badge(v.qualification)}</div><p>📱 ${v.phone}</p><p>📝 ${v.note||"Aucune note"}</p><div class="actions"><a class="mini-btn green" target="_blank" href="${wa(v.phone,msg)}">Relance</a><button class="mini-btn blue" onclick="qualifyVisit('${v.id}','Chaud')">Chaud</button><button class="mini-btn" onclick="qualifyVisit('${v.id}','Froid')">Froid</button><button class="mini-btn red" onclick="qualifyVisit('${v.id}','Pas intéressé')">Pas intéressé</button></div></article>`}).join(""):'<div class="card"><p>Aucune visite. Clique sur + pour en créer une.</p></div>';
+  $("#visitsList").innerHTML=list.length?list.map(v=>{
+    let past=v.date<today, p=prop(v.propertyId);
+    const locked=v.qualification && v.qualification!=="À qualifier";
+    let msg=`Bonjour ${v.name}, rappel de votre visite pour ${p?.name||"le bien"} prévue le ${v.date} à ${v.time}.${sig(v.agentId)}`;
+    return `<article class="card" style="${past?'opacity:.55':''}">
+      <div class="card-top">
+        <div><h3>📅 ${v.name}</h3><p>${p?.name||"Bien"} • ${v.date} à ${v.time}</p></div>
+        ${badge(v.qualification)}
+      </div>
+      <p>📱 ${v.phone}</p>
+      <p>📝 ${v.note||"Aucune note"}</p>
+      <div class="actions">
+        <a class="mini-btn green" target="_blank" href="${wa(v.phone,msg)}">Relance</a>
+        ${locked?`<span class="mini-btn disabled">Visite terminée</span>`:`<button class="mini-btn blue" onclick="qualifyVisit('${v.id}','Chaud')">Chaud</button><button class="mini-btn" onclick="qualifyVisit('${v.id}','Froid')">Froid</button><button class="mini-btn red" onclick="qualifyVisit('${v.id}','Pas intéressé')">Pas intéressé</button>`}
+        <button class="mini-btn red" onclick="del('visits','${v.id}')">Supprimer</button>
+      </div>
+    </article>`
+  }).join(""):'<div class="card"><p>Aucune visite. Clique sur + pour en créer une.</p></div>';
 }
 
 function relanceLink(id){const pmt=state.payments.find(x=>x.id===id), pr=prop(pmt.propertyId), c=client(pmt.clientId);return wa(c?.phone,`Bonjour ${c?.name||""}, sauf erreur de notre part, il reste ${money(pmt.remaining)} à régler pour ${pr?.name||"le bien"} (${monthLabel(pmt.month)}).
@@ -329,9 +347,9 @@ function bind(){
   });
 
   $("#agentForm").onsubmit=e=>{e.preventDefault();let id=$("#agentId").value||uid("agent"), a={id,name:$("#agentName").value,phone:$("#agentPhone").value,email:$("#agentEmail").value,role:$("#agentRole").value,wave:$("#agentWave").value,orangeMoney:$("#agentOrangeMoney").value,freeMoney:$("#agentFreeMoney").value,signature:$("#agentSignature").value}; let i=state.agents.findIndex(x=>x.id===id); i>=0?state.agents[i]=a:state.agents.push(a); save(); closeModals(); render()};
-  $("#clientForm").onsubmit=e=>{e.preventDefault();let id=$("#clientId").value||uid("client"), c={id,agentId:$("#clientAgent").value||currentResponsibleAgent(),name:$("#clientName").value,type:$("#clientType").value,phone:$("#clientPhone").value,email:$("#clientEmail").value,notes:$("#clientNotes").value}; let i=state.clients.findIndex(x=>x.id===id); i>=0?state.clients[i]=c:state.clients.unshift(c); save(); closeModals(); render()};
-  $("#propertyForm").onsubmit=e=>{e.preventDefault();let id=$("#propertyId").value||uid("prop"), p={id,agentId:$("#propertyAgent").value||currentResponsibleAgent(),name:$("#propertyName").value,dealType:$("#propertyDealType").value,status:$("#propertyStatus").value,type:$("#propertyType").value,area:$("#propertyArea").value,price:+$("#propertyPrice").value,charges:+$("#propertyCharges").value,moveInDate:$("#propertyMoveInDate").value,managementRate:+$("#propertyManagementRate").value,ownerId:$("#propertyOwner").value,occupantId:$("#propertyOccupant").value,photos:photos.slice(0,3),description:$("#propertyDescription").value}; let i=state.properties.findIndex(x=>x.id===id); i>=0?state.properties[i]=p:state.properties.unshift(p); save(); closeModals(); render()};
-  $("#visitForm").onsubmit=e=>{e.preventDefault();let p=prop($("#visitProperty").value); if(!p){alert("Crée d'abord un bien.");return;} state.visits.unshift({id:uid("visit"),agentId:p.agentId||"main",name:$("#visitProspectName").value,phone:$("#visitProspectPhone").value,propertyId:p.id,date:$("#visitDate").value,time:$("#visitTime").value,qualification:$("#visitQualification").value,note:$("#visitNote").value});save();closeModals();render();nav("visits")};
+  $("#clientForm").onsubmit=e=>{e.preventDefault();let id=$("#clientId").value||uid("client"), c={id,agentId:$("#clientAgent").value||currentResponsibleAgent()||currentResponsibleAgent(),name:$("#clientName").value,type:$("#clientType").value,phone:$("#clientPhone").value,email:$("#clientEmail").value,notes:$("#clientNotes").value}; let i=state.clients.findIndex(x=>x.id===id); i>=0?state.clients[i]=c:state.clients.unshift(c); save(); closeModals(); render()};
+  $("#propertyForm").onsubmit=e=>{e.preventDefault();let id=$("#propertyId").value||uid("prop"), p={id,agentId:$("#propertyAgent").value||currentResponsibleAgent()||currentResponsibleAgent(),name:$("#propertyName").value,dealType:$("#propertyDealType").value,status:$("#propertyStatus").value,type:$("#propertyType").value,area:$("#propertyArea").value,price:+$("#propertyPrice").value,charges:+$("#propertyCharges").value,moveInDate:$("#propertyMoveInDate").value,managementRate:+$("#propertyManagementRate").value,ownerId:$("#propertyOwner").value,occupantId:$("#propertyOccupant").value,photos:photos.slice(0,3),description:$("#propertyDescription").value}; let i=state.properties.findIndex(x=>x.id===id); i>=0?state.properties[i]=p:state.properties.unshift(p); save(); closeModals(); render()};
+  $("#visitForm").onsubmit=e=>{e.preventDefault();let p=prop($("#visitProperty").value); if(!p){alert("Crée d'abord un bien.");return;} state.visits.unshift({id:uid("visit"),agentId:p.agentId||"main",name:$("#visitProspectName").value,phone:$("#visitProspectPhone").value,propertyId:p.id,date:($("#visitDateTime").value||"").slice(0,10),time:($("#visitDateTime").value||"").slice(11,16),qualification:$("#visitQualification").value,note:$("#visitNote").value});save();closeModals();render();nav("visits")};
   $("#paymentForm").onsubmit=e=>{
     e.preventDefault();
     calculatePayment();

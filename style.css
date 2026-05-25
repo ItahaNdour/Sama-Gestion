@@ -407,3 +407,47 @@ body.courtier-mode #workspaceSelect{display:none!important}
   color:#8a96a3!important;
   cursor:not-allowed!important;
 }
+
+/* V3.9.3 - courtier test polish */
+body.courtier-mode .admin-only-field,
+body.courtier-mode #workspaceSelect{
+  display:none!important;
+}
+body.courtier-mode #scopeLabel::before{
+  content:"Espace ";
+}
+.form .hidden{
+  display:none!important;
+}
+.mini-btn.disabled{
+  background:#eef1f4!important;
+  color:#8a96a3!important;
+  cursor:not-allowed!important;
+}
+@media(max-width:520px){
+  .form{
+    gap:9px!important;
+  }
+  .form label{
+    padding:8px!important;
+  }
+  .input{
+    padding:10px 11px!important;
+  }
+  .two{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:8px!important;
+  }
+  .two label{
+    min-width:0;
+  }
+  .modal-card{
+    max-height:96vh!important;
+  }
+}
+@media(max-width:360px){
+  .two{
+    grid-template-columns:1fr!important;
+  }
+}

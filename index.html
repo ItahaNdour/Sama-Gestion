@@ -28,7 +28,7 @@
   <header class="app-top">
     <div class="brand"><div class="brand-mark">IH</div><div><strong>ImmoHub</strong><small id="scopeLabel">Vue globale</small></div></div>
     <div class="top-actions">
-      <select id="workspaceSelect" class="input tiny"></select>
+      <select id="workspaceSelect" class="input tiny admin-only-field"></select>
       <button id="demoBtn" class="icon-btn demo admin-only">Démo</button>
       <button id="moreBtn" class="icon-btn admin-only">☰</button>
       <button id="logoutBtn" class="icon-btn logout">⏻</button>
@@ -160,7 +160,7 @@
     <label>Nom prospect<input id="visitProspectName" class="input" required></label>
     <label>Téléphone prospect<input id="visitProspectPhone" class="input" required placeholder="22177..."></label>
     <label>Bien à visiter<select id="visitProperty" class="input" required></select></label>
-    <div class="two"><label>Date<input id="visitDate" type="date" class="input" required></label><label>Heure<input id="visitTime" type="time" class="input" required></label></div>
+    <label>Date et heure de visite<input id="visitDateTime" type="datetime-local" class="input" required></label>
     <label>Qualification<select id="visitQualification" class="input"><option>À qualifier</option><option>Chaud</option><option>Froid</option><option>Pas intéressé</option></select></label>
     <label>Note<textarea id="visitNote" class="input" rows="3"></textarea></label>
     <button class="btn primary" type="submit">Enregistrer visite</button>
