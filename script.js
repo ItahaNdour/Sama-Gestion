@@ -8,7 +8,7 @@ const norm=n=>{let x=String(n||"").replace(/\D/g,"");return x.startsWith("221")?
 const wa=(n,m)=>`https://wa.me/${norm(n)}?text=${encodeURIComponent(m)}`;
 const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 function load(){try{Object.assign(state,JSON.parse(localStorage.getItem(KEY)||"{}")); if(!state.mode) state.mode="admin";}catch(e){}}
-function ensure(){if(!state.agents.length)state.agents=[{id:"main",name:"Agence principale",role:"Agence",phone:"221770000000",email:"admin@immohub.sn",wave:"77 000 00 00 - Agence principale",orangeMoney:"78 000 00 00 - Agence principale",freeMoney:"",signature:"Agence principale\nWhatsApp : 221770000000"}]}
+function ensure(){if(!state.agents.length)state.agents=[{id:"main",name:"Khalifa Gueye Immobilier",role:"Agence",phone:"221770000000",email:"admin@immohub.sn",wave:"77 000 00 00 - Khalifa Gueye Immobilier",orangeMoney:"78 000 00 00 - Khalifa Gueye Immobilier",freeMoney:"",signature:"Khalifa Gueye Immobilier\nWhatsApp : 221770000000"}]}
 const agent=id=>state.agents.find(a=>a.id===id)||state.agents[0];
 const client=id=>state.clients.find(c=>c.id===id);
 const prop=id=>state.properties.find(p=>p.id===id);
@@ -398,3 +398,31 @@ function seed(){
 load();ensure();bind(); refreshModeUI(); if(state.logged){ $("#loginScreen").classList.add("hidden"); $("#app").classList.remove("hidden"); render(); } else render();
 
 window.addEventListener("beforeunload", save);
+
+/* FINAL TERRAIN STARTUP PATCH */
+(function forceCourtierMode(){
+  try {
+    state.mode = "courtier";
+    state.currentAgentId = "a1";
+    state.workspace = "a1";
+    const existing = state.agents.find(a => a.id === "a1");
+    if (!existing) {
+      state.agents.push({
+        id:"a1",
+        name:"Khalifa Gueye Immobilier",
+        role:"Courtier",
+        phone:"",
+        email:"khalifa@immohub.sn",
+        wave:"",
+        orangeMoney:"",
+        freeMoney:"",
+        signature:"Khalifa Gueye Immobilier"
+      });
+    } else {
+      existing.name = "Khalifa Gueye Immobilier";
+      existing.email = "khalifa@immohub.sn";
+      existing.signature = existing.signature || "Khalifa Gueye Immobilier";
+    }
+    save();
+  } catch(e) {}
+})();
