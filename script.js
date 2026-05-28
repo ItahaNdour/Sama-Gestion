@@ -75,10 +75,10 @@ function monthLabel(ym){return ym?new Date(ym+"-01").toLocaleDateString("fr-FR",
 function login(){
   const email=($("#loginEmail").value||"").trim().toLowerCase();
   ensure();
-  if(email==="courtier@demo.sn"){
-    let demoAgent=state.agents.find(a=>a.email==="courtier@demo.sn") || state.agents.find(a=>a.id==="a1");
+  if(email==="khalifa@immohub.sn"){
+    let demoAgent=state.agents.find(a=>a.email==="khalifa@immohub.sn") || state.agents.find(a=>a.id==="a1");
     if(!demoAgent){
-      demoAgent={id:"a1",name:"Aminata Courtage",role:"Courtier",phone:"221771112233",email:"courtier@demo.sn",wave:"77 111 22 33 - Aminata Courtage",orangeMoney:"78 111 22 33 - Aminata Courtage",freeMoney:"",signature:"Aminata Courtage\nCourtier immobilier\nWhatsApp : 221771112233"};
+      demoAgent={id:"a1",name:"Khalifa Gueye Immobilier",role:"Courtier",phone:"221771112233",email:"khalifa@immohub.sn",wave:"77 111 22 33 - Khalifa Gueye Immobilier",orangeMoney:"78 111 22 33 - Khalifa Gueye Immobilier",freeMoney:"",signature:"Khalifa Gueye Immobilier\nCourtier immobilier\nWhatsApp : 221771112233"};
       state.agents.push(demoAgent);
     }
     state.mode="courtier";
@@ -375,10 +375,10 @@ function seed(){
   state.agents=[
     {
       id:"a1",
-      name:"Aminata Courtage",
+      name:"Khalifa Gueye Immobilier",
       role:"Courtier",
       phone:"221771112233",
-      email:"courtier@demo.sn",
+      email:"khalifa@immohub.sn",
       wave:"",
       orangeMoney:"",
       freeMoney:"",

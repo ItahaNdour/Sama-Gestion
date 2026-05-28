@@ -577,3 +577,27 @@ body.courtier-mode .save-status{
 #demoBtn{
   display:none!important;
 }
+
+/* V4 terrain clean */
+.brand{
+  gap:10px!important;
+}
+.brand strong{
+  font-size:18px!important;
+  letter-spacing:-0.02em!important;
+}
+#scopeLabel{
+  color:#6f7d8a!important;
+  font-size:12px!important;
+  font-weight:700!important;
+}
+.save-status{
+  display:none!important;
+}
+.app-top{
+  background:#ffffff!important;
+  border-bottom:1px solid #eef2f6!important;
+}
+body.courtier-mode .app-top{
+  box-shadow:0 4px 18px rgba(11,58,103,.04)!important;
+}
