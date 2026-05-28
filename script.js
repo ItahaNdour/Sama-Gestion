@@ -36,12 +36,11 @@ function applyAgentContext(){
     const select=$("#"+prefix+"Agent");
     const wrap=$("#"+prefix+"AgentWrap");
     const note=$("#"+prefix+"AutoAgentNote");
-    if(!select || !wrap || !note) return;
+    if(!select || !wrap) return;
     select.value=id;
     if(state.workspace!=="global"){
       wrap.classList.add("hidden");
-      note.textContent=`Espace actif : ${a?.name || "Agent"} — affectation automatique.`;
-      note.classList.remove("hidden");
+      if(note) note.classList.add("hidden");
     }else{
       wrap.classList.remove("hidden");
       note.classList.add("hidden");

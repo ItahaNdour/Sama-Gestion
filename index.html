@@ -62,7 +62,7 @@
     </section>
 
     <section id="properties" class="view">
-      <div class="page-head"><div><h1>Biens</h1><p>Portefeuille immobilier</p></div><button class="floating-add" data-open="propertyModal">+</button></div>
+      <div class="page-head"><div><h1>Biens</h1><p>Portefeuille immobilier</p></div><button class="floating-add" aria-label="Ajouter" data-open="propertyModal">+</button></div>
       <input id="propertySearch" class="input search" placeholder="🔎 Rechercher un bien, quartier, statut...">
       <div class="chip-row">
         <button class="chip active" data-prop-filter="Tous">Tous</button>
@@ -73,34 +73,34 @@
     </section>
 
     <section id="tracking" class="view">
-      <div class="page-head"><div><h1>Suivi du bien</h1><p id="trackingSubtitle">Transactions, loyers, échéances</p></div><button class="floating-add" data-open="paymentModal">+</button></div>
+      <div class="page-head"><div><h1>Suivi du bien</h1><p id="trackingSubtitle">Transactions, loyers, échéances</p></div><button class="floating-add" aria-label="Ajouter" data-open="paymentModal">+</button></div>
       <div id="trackingContent"></div>
     </section>
 
     <section id="clients" class="view">
-      <div class="page-head"><div><h1>Clients</h1><p>Clients, propriétaires, prospects</p></div><button class="floating-add" data-open="clientModal">+</button></div>
+      <div class="page-head"><div><h1>Clients</h1><p>Clients, propriétaires, prospects</p></div><button class="floating-add" aria-label="Ajouter" data-open="clientModal">+</button></div>
       <input id="clientSearch" class="input search" placeholder="🔎 Rechercher un contact...">
       <div id="clientsList" class="cards-list"></div>
     </section>
 
     <section id="payments" class="view">
-      <div class="page-head"><div><h1>Collecte</h1><p>Paiements, reçus, relances</p></div><div class="head-actions"><button class="small-action" id="sharePaymentMethodsBtn">📲 Moyens</button><button class="floating-add" data-open="paymentModal">+</button></div></div>
+      <div class="page-head"><div><h1>Collecte</h1><p>Paiements, reçus, relances</p></div><div class="head-actions"><button class="small-action" id="sharePaymentMethodsBtn">📲 Moyens</button><button class="floating-add" aria-label="Ajouter" data-open="paymentModal">+</button></div></div>
       <div class="info-box">Entrée location : si le locataire paie 3 mois, la commission courtier/agence est calculée comme <strong>1 mois</strong>.</div>
       <div id="paymentsList" class="cards-list"></div>
     </section>
 
     <section id="visits" class="view">
-      <div class="page-head"><div><h1>Visites</h1><p>Planning, relance & qualification</p></div><button class="floating-add" data-open="visitModal">+</button></div>
+      <div class="page-head"><div><h1>Visites</h1><p>Planning, relance & qualification</p></div><button class="floating-add" aria-label="Ajouter" data-open="visitModal">+</button></div>
       <div id="visitsList" class="cards-list"></div>
     </section>
 
     <section id="edl" class="view">
-      <div class="page-head"><div><h1>État des lieux</h1><p>Entrée, sortie, compteurs, clés</p></div><button class="floating-add" data-open="edlModal">+</button></div>
+      <div class="page-head"><div><h1>État des lieux</h1><p>Entrée, sortie, compteurs, clés</p></div><button class="floating-add" aria-label="Ajouter" data-open="edlModal">+</button></div>
       <div id="edlList" class="cards-list"></div>
     </section>
 
     <section id="profile" class="view">
-      <div class="page-head"><div><h1>Profils</h1><p>Agents & courtiers</p></div><button class="floating-add" data-open="agentModal">+</button></div>
+      <div class="page-head"><div><h1>Profils</h1><p>Agents & courtiers</p></div><button class="floating-add" aria-label="Ajouter" data-open="agentModal">+</button></div>
       <div id="agentsList" class="cards-list"></div>
     </section>
   </main>
@@ -119,7 +119,7 @@
   <button class="close" data-close>×</button><h2>Nouveau bien</h2>
   <form id="propertyForm" class="form">
     <input type="hidden" id="propertyId">
-    <label id="propertyAgentWrap">Agent responsable<select id="propertyAgent" class="input"></select></label><div id="propertyAutoAgentNote" class="auto-agent-note hidden"></div>
+    <label id="propertyAgentWrap">Agent responsable<select id="propertyAgent" class="input"></select></label>
     <label>Nom du bien<input id="propertyName" class="input" required placeholder="Appartement Ngor"></label>
     <div class="two"><label>Mode<select id="propertyDealType" class="input"><option>Location mensuelle</option><option>Vente</option></select></label><label>Statut<select id="propertyStatus" class="input"><option>Disponible</option><option>Loué</option><option>En vente</option><option>Vendu</option><option>Réservé</option></select></label></div>
     <div class="two"><label>Type<select id="propertyType" class="input"><option>Appartement</option><option>Villa</option><option>Studio</option><option>Terrain</option><option>Bureau</option><option>Local commercial</option></select></label><label>Quartier<input id="propertyArea" class="input" required></label></div>
@@ -145,7 +145,7 @@
   <button class="close" data-close>×</button><h2>Nouveau contact</h2>
   <form id="clientForm" class="form">
     <input type="hidden" id="clientId">
-    <label id="clientAgentWrap">Agent responsable<select id="clientAgent" class="input"></select></label><div id="clientAutoAgentNote" class="auto-agent-note hidden"></div>
+    <label id="clientAgentWrap">Agent responsable<select id="clientAgent" class="input"></select></label>
     <label>Nom complet<input id="clientName" class="input" required></label>
     <div class="two"><label>Profil<select id="clientType" class="input"><option>Prospect</option><option>Client</option><option>Propriétaire</option><option>Locataire</option><option>Acheteur</option></select></label><label>WhatsApp<input id="clientPhone" class="input" required placeholder="22177..."></label></div>
     <label>Email<input id="clientEmail" class="input"></label>
