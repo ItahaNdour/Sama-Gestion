@@ -571,3 +571,9 @@ body.courtier-mode .save-status{
     align-items:center!important;
   }
 }
+
+/* Clean terrain demo */
+.demo,
+#demoBtn{
+  display:none!important;
+}

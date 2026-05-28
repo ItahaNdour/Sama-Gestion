@@ -370,15 +370,30 @@ function bind(){
   $("#edlForm").onsubmit=e=>{e.preventDefault();let p=prop($("#edlProperty").value); if(!p){alert("Crée d'abord un bien.");return;} state.edls.unshift({id:uid("edl"),agentId:p.agentId||"main",propertyId:p.id,type:$("#edlType").value,water:$("#edlWater").value,power:$("#edlPower").value,notes:$("#edlNotes").value,date:new Date().toISOString()});save();closeModals();render();nav("edl")};
 }
 
+
 function seed(){
-  state.agents=[{id:"main",name:"Agence principale",role:"Agence",phone:"221770000000",email:"admin@immohub.sn",wave:"77 000 00 00 - Agence principale",orangeMoney:"78 000 00 00 - Agence principale",freeMoney:"",signature:"Agence principale\nWhatsApp : 221770000000"},{id:"a1",name:"Aminata Courtage",role:"Courtier",phone:"221771112233",email:"courtier@demo.sn",wave:"77 111 22 33 - Aminata Courtage",orangeMoney:"78 111 22 33 - Aminata Courtage",freeMoney:"",signature:"Aminata Courtage\nCourtier immobilier\nWhatsApp : 221771112233"}];
-  const ym=new Date().toISOString().slice(0,7);
-  state.clients=[{id:"c1",agentId:"a1",name:"Mme Fall",type:"Propriétaire",phone:"221770000001",email:"",notes:"Propriétaire du bien à Ngor."},{id:"c2",agentId:"a1",name:"Awa Ba",type:"Locataire",phone:"221770000002",email:"",notes:"Paiement mensuel."},{id:"c3",agentId:"a1",name:"Moussa Kane",type:"Prospect",phone:"221770000003",email:"",notes:"Intéressé par Ngor."}];
-  state.properties=[{id:"p1",agentId:"a1",name:"Appartement Ngor Vue Mer",dealType:"Location mensuelle",status:"Loué",type:"Appartement",area:"Ngor",price:450000,charges:30000,moveInDate:ym+"-12",managementRate:5,ownerId:"c1",occupantId:"c2",photos:[],description:"3 chambres, balcon, proche plage."}];
-  state.payments=[{id:"pay1",agentId:"a1",propertyId:"p1",clientId:"c2",type:"Entrée location 3 mois",month:ym,expected:1350000,amount:900000,paymentMethod:"Wave",status:"Partiel",remaining:450000,agencyCommission:450000,managementCommission:45000,dueDate:new Date().toISOString().slice(0,10),date:new Date().toISOString()}];
-  state.visits=[{id:"v1",agentId:"a1",name:"Moussa Kane",phone:"221770000003",propertyId:"p1",date:new Date().toISOString().slice(0,10),time:"16:00",qualification:"À qualifier",note:"Veut visiter après le travail."}];
-  state.edls=[];state.trackingId="p1";save();render();
+  state.agents=[
+    {
+      id:"a1",
+      name:"Aminata Courtage",
+      role:"Courtier",
+      phone:"221771112233",
+      email:"courtier@demo.sn",
+      wave:"",
+      orangeMoney:"",
+      freeMoney:"",
+      signature:""
+    }
+  ];
+  state.clients=[];
+  state.properties=[];
+  state.payments=[];
+  state.visits=[];
+  state.edls=[];
+  save();
+  render();
 }
+
 
 load();ensure();bind(); refreshModeUI(); if(state.logged){ $("#loginScreen").classList.add("hidden"); $("#app").classList.remove("hidden"); render(); } else render();
 
