@@ -381,3 +381,5 @@ function seed(){
 }
 
 load();ensure();bind(); refreshModeUI(); if(state.logged){ $("#loginScreen").classList.add("hidden"); $("#app").classList.remove("hidden"); render(); } else render();
+
+window.addEventListener("beforeunload", save);
