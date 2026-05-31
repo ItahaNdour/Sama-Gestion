@@ -635,3 +635,13 @@ body,
 .app{
   background:#f5f8fc!important;
 }
+
+/* Two independent courtier spaces */
+#workspaceSelect,
+#demoBtn,
+#moreBtn,
+.demo,
+.admin-only,
+.admin-only-field{
+  display:none!important;
+}

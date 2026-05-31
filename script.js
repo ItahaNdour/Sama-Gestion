@@ -75,20 +75,50 @@ function monthLabel(ym){return ym?new Date(ym+"-01").toLocaleDateString("fr-FR",
 function login(){
   const email=($("#loginEmail").value||"").trim().toLowerCase();
   ensure();
-  if(email==="khalifa@immohub.sn"){
-    let demoAgent=state.agents.find(a=>a.email==="khalifa@immohub.sn") || state.agents.find(a=>a.id==="a1");
-    if(!demoAgent){
-      demoAgent={id:"a1",name:"Khalifa Gueye Immobilier",role:"Courtier",phone:"221771112233",email:"khalifa@immohub.sn",wave:"77 111 22 33 - Khalifa Gueye Immobilier",orangeMoney:"78 111 22 33 - Khalifa Gueye Immobilier",freeMoney:"",signature:"Khalifa Gueye Immobilier\nCourtier immobilier\nWhatsApp : 221771112233"};
-      state.agents.push(demoAgent);
+
+  const accounts = {
+    "khalifa@immohub.sn": {
+      id:"khalifa",
+      name:"Khalifa Gueye Immobilier",
+      role:"Courtier",
+      phone:"",
+      email:"khalifa@immohub.sn",
+      wave:"",
+      orangeMoney:"",
+      freeMoney:"",
+      signature:"Khalifa Gueye Immobilier"
+    },
+    "ndiaye@immohub.sn": {
+      id:"ndiaye",
+      name:"M. Ndiaye Immobilier",
+      role:"Courtier",
+      phone:"",
+      email:"ndiaye@immohub.sn",
+      wave:"",
+      orangeMoney:"",
+      freeMoney:"",
+      signature:"M. Ndiaye Immobilier"
     }
-    state.mode="courtier";
-    state.currentAgentId=demoAgent.id;
-    state.workspace=demoAgent.id;
+  };
+
+  const account = accounts[email] || accounts["khalifa@immohub.sn"];
+
+  let existing = state.agents.find(a => a.id === account.id);
+  if(!existing){
+    state.agents.push(account);
   }else{
-    state.mode="admin";
-    state.currentAgentId=null;
-    if(!state.workspace) state.workspace="global";
+    Object.assign(existing, {
+      name: account.name,
+      role: account.role,
+      email: account.email,
+      signature: existing.signature || account.signature
+    });
   }
+
+  state.mode="courtier";
+  state.currentAgentId=account.id;
+  state.workspace=account.id;
+
   $("#loginScreen").classList.add("hidden");
   $("#app").classList.remove("hidden");
   state.logged=true;
@@ -399,30 +429,4 @@ load();ensure();bind(); refreshModeUI(); if(state.logged){ $("#loginScreen").cla
 
 window.addEventListener("beforeunload", save);
 
-/* FINAL TERRAIN STARTUP PATCH */
-(function forceCourtierMode(){
-  try {
-    state.mode = "courtier";
-    state.currentAgentId = "a1";
-    state.workspace = "a1";
-    const existing = state.agents.find(a => a.id === "a1");
-    if (!existing) {
-      state.agents.push({
-        id:"a1",
-        name:"Khalifa Gueye Immobilier",
-        role:"Courtier",
-        phone:"",
-        email:"khalifa@immohub.sn",
-        wave:"",
-        orangeMoney:"",
-        freeMoney:"",
-        signature:"Khalifa Gueye Immobilier"
-      });
-    } else {
-      existing.name = "Khalifa Gueye Immobilier";
-      existing.email = "khalifa@immohub.sn";
-      existing.signature = existing.signature || "Khalifa Gueye Immobilier";
-    }
-    save();
-  } catch(e) {}
-})();
+
