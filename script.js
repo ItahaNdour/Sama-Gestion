@@ -36,28 +36,48 @@ const scoped=a=>isAdmin()?a:a.filter(x=>x.ownerId===state.currentUser);
 const client=id=>state.clients.find(c=>c.id===id);
 const prop=id=>state.properties.find(p=>p.id===id);
 const closeModals=()=>$$(".modal").forEach(m=>m.classList.remove("open"));
-let activeHistoryPropertyId=null;
-let activeHistoryFilter="Tous";
-let historyVisibleCount=5;
-function actorName(){return user()?.name||"Utilisateur"}
-function addHistory(propertyId,type,title,details=""){
+let activeHistoryPropertyId = null;
+let activeHistoryFilter = "Tous";
+let historyVisibleCount = 5;
+
+function addHistory(propertyId, type, title, details=""){
   if(!propertyId) return;
   if(!Array.isArray(state.histories)) state.histories=[];
-  state.histories.unshift({id:uid("hist"),propertyId,ownerId:prop(propertyId)?.ownerId||state.currentUser,type,title,details,actor:actorName(),date:new Date().toISOString()});
+  const p = prop(propertyId);
+  state.histories.unshift({
+    id: uid("hist"),
+    propertyId,
+    ownerId: p?.ownerId || state.currentUser,
+    type,
+    title,
+    details,
+    actor: user()?.name || "Utilisateur",
+    date: new Date().toISOString()
+  });
 }
-function propertyHistory(propertyId){return (state.histories||[]).filter(h=>h.propertyId===propertyId).sort((a,b)=>b.date.localeCompare(a.date))}
-function histIcon(type){return {"Création":"🟢","Modification":"✏️","Paiement":"💰","Relance":"📲","Visite":"📅","EDL":"🧾"}[type]||"•"}
+
+function propertyHistory(propertyId){
+  return (state.histories || []).filter(h=>h.propertyId===propertyId).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+}
+function histIcon(type){return {"Création":"🟢","Modification":"✏️","Paiement":"💰","Relance":"📲","Visite":"📅","EDL":"🧾"}[type] || "•";}
 function formatDateTime(iso){try{return new Date(iso).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"})}catch(e){return iso||""}}
-function openHistory(propertyId){activeHistoryPropertyId=propertyId;activeHistoryFilter="Tous";historyVisibleCount=5;$$('.hist-filter').forEach(b=>b.classList.toggle('active',b.dataset.histFilter==='Tous'));renderHistory();$('#historyModal').classList.add('open')}
-function renderHistory(){
-  const p=prop(activeHistoryPropertyId); if(!p)return;
-  const all=propertyHistory(p.id); const filtered=activeHistoryFilter==='Tous'?all:all.filter(h=>h.type===activeHistoryFilter); const visible=filtered.slice(0,historyVisibleCount);
-  const paymentCount=all.filter(h=>h.type==='Paiement').length; const relanceCount=all.filter(h=>h.type==='Relance').length;
-  $('#historyHeader').innerHTML=`<strong>${p.name}</strong><span>${all.length} événement(s) • ${paymentCount} paiement(s) • ${relanceCount} relance(s)</span>`;
-  $('#historyList').innerHTML=visible.length?visible.map(h=>`<article class="history-item"><div class="history-icon">${histIcon(h.type)}</div><div><strong>${h.title}</strong><small>${formatDateTime(h.date)} • par ${h.actor}</small>${h.details?`<p>${h.details}</p>`:""}</div></article>`).join(''):`<div class="empty-state"><p>Aucun événement.</p><small>Les actions liées à ce bien apparaîtront ici.</small></div>`;
-  $('#historyMoreBtn').classList.toggle('hidden',filtered.length<=historyVisibleCount);
+function openHistory(propertyId){
+  activeHistoryPropertyId=propertyId; activeHistoryFilter="Tous"; historyVisibleCount=5;
+  $$(".hist-filter").forEach(b=>b.classList.toggle("active",b.dataset.histFilter==="Tous"));
+  renderHistory();
+  $("#historyModal").classList.add("open");
 }
-function logRelance(paymentId){const pmt=state.payments.find(x=>x.id===paymentId); if(!pmt)return; addHistory(pmt.propertyId,'Relance','Relance envoyée',`Reste à payer : ${money(pmt.remaining)}`); save();}
+function renderHistory(){
+  const p=prop(activeHistoryPropertyId); if(!p) return;
+  const all=propertyHistory(p.id);
+  const filtered=activeHistoryFilter==="Tous"?all:all.filter(h=>h.type===activeHistoryFilter);
+  const visible=filtered.slice(0,historyVisibleCount);
+  const paymentCount=all.filter(h=>h.type==="Paiement").length;
+  const relanceCount=all.filter(h=>h.type==="Relance").length;
+  $("#historyHeader").innerHTML=`<strong>${p.name}</strong><span>${all.length} événement(s) • ${paymentCount} paiement(s) • ${relanceCount} relance(s)</span>`;
+  $("#historyList").innerHTML=visible.length?visible.map(h=>`<article class="history-item"><div class="history-icon">${histIcon(h.type)}</div><div><strong>${h.title}</strong><small>${formatDateTime(h.date)} • par ${h.actor||"Utilisateur"}</small>${h.details?`<p>${h.details}</p>`:""}</div></article>`).join(""):`<div class="empty-state"><p>Aucun événement.</p><small>Les actions liées à ce bien apparaîtront ici.</small></div>`;
+  $("#historyMoreBtn").classList.toggle("hidden",filtered.length<=historyVisibleCount);
+}
 
 function monthLabel(ym){return ym?new Date(ym+"-01").toLocaleDateString("fr-FR",{month:"long",year:"numeric"}):""}
 function daysInMonth(ym){const [y,m]=ym.split("-").map(Number);return new Date(y,m,0).getDate()}
@@ -202,8 +222,7 @@ function renderProperties(){
       <p>👤 ${client(p.ownerClientId)?.name||"Proprio non renseigné"} • 🏠 ${client(p.occupantId)?.name||"Libre / non renseigné"}</p>
       ${isAdmin()?`<p>🔐 ${brokerName(p.ownerId)}</p>`:""}
       <div class="actions">
-        <button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button>
-        <button class="mini-btn blue" onclick="openHistory('${p.id}')">Historique</button>
+        <button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button><button class="mini-btn blue" onclick="openHistory('${p.id}')">Historique</button>
         ${canCollectProperty(p)?`<button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button>`:`<button class="mini-btn disabled" onclick="payForProperty('${p.id}')">Non encaissable</button>`}
         <button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button>
         <button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button>
@@ -257,7 +276,7 @@ function renderTracking(){
   if(!p){$("#trackingContent").innerHTML='<div class="card"><p>Sélectionne un bien depuis la page Biens.</p></div>';return}
   $("#trackingSubtitle").textContent=`${p.name} • ${p.area}`;
   const transactions=state.payments.filter(x=>x.propertyId===p.id).sort((a,b)=>(b.month||"").localeCompare(a.month||""));
-  $("#trackingContent").innerHTML=`<article class="card tracking-head"><div><h3>${p.name}</h3><p>${p.dealType} • ${money(p.price)}</p><p class="small-muted">Entrée : ${p.moveInDate||"à renseigner"} • Occupant : ${client(p.occupantId)?.name||"non renseigné"}</p></div><div class="actions"><button class="mini-btn blue" onclick="openHistory('${p.id}')">Historique</button><button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button></div></article>
+  $("#trackingContent").innerHTML=`<article class="card tracking-head"><div><h3>${p.name}</h3><p>${p.dealType} • ${money(p.price)}</p><p class="small-muted">Entrée : ${p.moveInDate||"à renseigner"} • Occupant : ${client(p.occupantId)?.name||"non renseigné"}</p></div><button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button></article>
   <div class="compact-transactions">${transactions.length?transactions.map(t=>`<div class="transaction-row ${t.remaining>0?'has-rest':''}"><div><strong>${monthLabel(t.month)}</strong><small>${t.type}</small></div><div class="transaction-money"><span>${money(t.amount)}</span>${t.remaining>0?`<em>Reste ${money(t.remaining)}</em>`:""}</div>${t.remaining>0?`<a class="mini-btn red" target="_blank" href="${relanceLink(t.id)}" onclick="logRelance('${t.id}')">Relance</a>`:""}</div>`).join(""):'<div class="card"><p>Aucune transaction.</p></div>'}</div>`;
 }
 
@@ -316,6 +335,13 @@ function payForProperty(id){const p=prop(id); if(!canCollectProperty(p)){alert(c
 function ownerForNew(){return isAdmin()?($("#propertyOwnerBroker").value||state.users.find(u=>u.role==="Courtier")?.id):state.currentUser}
 
 function paymentMethodsText(ownerId){const u=state.users.find(x=>x.id===ownerId);const lines=[]; if(u?.wave)lines.push(`Wave : ${u.wave}`); if(u?.orangeMoney)lines.push(`Orange Money : ${u.orangeMoney}`); if(u?.freeMoney)lines.push(`Free Money : ${u.freeMoney}`); return lines.length?lines.join("\\n"):"Moyens de paiement non renseignés."}
+function logRelance(paymentId){
+  const pmt=state.payments.find(x=>x.id===paymentId);
+  if(!pmt) return;
+  addHistory(pmt.propertyId,"Relance","Relance envoyée",`Reste à payer : ${money(pmt.remaining)}`);
+  save();
+}
+
 function paymentShareLinks(pmt){
   const pr = prop(pmt.propertyId);
   const tenant = client(pmt.clientId);
@@ -384,7 +410,17 @@ Sauf erreur de notre part, il reste ${money(pmt.remaining)} à régler pour ${pr
 }
 
 async function resize(file){return new Promise(res=>{let r=new FileReader();r.onload=e=>{let img=new Image();img.onload=()=>{let c=document.createElement("canvas"),m=900,w=img.width,h=img.height;if(w>h&&w>m){h=h*m/w;w=m}else if(h>m){w=w*m/h;h=m}c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);res(c.toDataURL("image/jpeg",.72))};img.src=e.target.result};r.readAsDataURL(file)})}
-async function photoInput(e){let files=[...e.target.files].slice(0,3); if(e.target.files.length>3)alert("Maximum 3 photos."); photos=await Promise.all(files.map(resize)); $("#photoPreview").innerHTML=photos.map(x=>`<img src="${x}">`).join("")}
+async function photoInput(e){
+  let files=[...e.target.files];
+  if(!files.length) return;
+  const remaining=Math.max(0,3-photos.length);
+  if(remaining<=0){alert("Maximum 3 photos.");return;}
+  files=files.slice(0,remaining);
+  if(e.target.files.length>remaining) alert("Maximum 3 photos.");
+  const newPhotos=await Promise.all(files.map(resize));
+  photos=[...photos,...newPhotos].slice(0,3);
+  $("#photoPreview").innerHTML=photos.map(x=>`<img src="${x}">`).join("");
+}
 function resetForms(){["brokerForm","propertyForm","clientForm","paymentForm","visitForm","edlForm","paymentMethodsForm"].forEach(id=>$("#"+id)?.reset());["brokerId","propertyId","clientId"].forEach(id=>$("#"+id).value="");photos=[];$("#photoPreview").innerHTML="";$("#paymentWarning").classList.add("hidden");$("#paymentShareBox").classList.add("hidden");opts();}
 
 function editBroker(id){const u=state.users.find(x=>x.id===id); if(!u)return; openModal("brokerModal"); $("#brokerId").value=u.id; $("#brokerName").value=u.name; $("#brokerEmail").value=u.email; $("#brokerPassword").value=u.password; $("#brokerPhone").value=u.phone||""; $("#brokerWave").value=u.wave||""; $("#brokerOrange").value=u.orangeMoney||""; $("#brokerSignature").value=u.signature||""}
@@ -427,8 +463,6 @@ function bind(){
   $$(".nav").forEach(b=>b.onclick=()=>nav(b.dataset.view));
   $$("[data-open]").forEach(b=>b.onclick=()=>openModal(b.dataset.open));
   $$("[data-close]").forEach(b=>b.onclick=closeModals);
-  $$(".hist-filter").forEach(b=>b.onclick=()=>{activeHistoryFilter=b.dataset.histFilter;historyVisibleCount=5;$$(".hist-filter").forEach(x=>x.classList.toggle("active",x===b));renderHistory();});
-  $("#historyMoreBtn").onclick=()=>{historyVisibleCount+=5;renderHistory();};
   $$(".modal").forEach(m=>m.onclick=e=>{if(e.target===m)closeModals()});
   $("#propertySearch").oninput=renderProperties; $("#clientSearch").oninput=renderClients;
   $("#uploadPhotoBtn").onclick=()=>$("#propertyPhotosUpload").click(); $("#cameraPhotoBtn").onclick=()=>$("#propertyPhotosCamera").click(); $("#propertyPhotosUpload").onchange=photoInput; $("#propertyPhotosCamera").onchange=photoInput;
@@ -437,7 +471,7 @@ function bind(){
   $("#paymentMethodsForm").onsubmit=e=>{e.preventDefault(); const c=client($("#paymentMethodsRecipient").value); if(!c?.phone){alert("Choisis un destinataire avec un numéro WhatsApp.");return} window.open(wa(c.phone,$("#paymentMethodsMessage").value),"_blank");closeModals()};
   $("#brokerForm").onsubmit=e=>{e.preventDefault(); const id=$("#brokerId").value||uid("broker"); const data={id,role:"Courtier",name:$("#brokerName").value,email:$("#brokerEmail").value.toLowerCase(),password:$("#brokerPassword").value,phone:$("#brokerPhone").value,wave:$("#brokerWave").value,orangeMoney:$("#brokerOrange").value,freeMoney:"",signature:$("#brokerSignature").value||$("#brokerName").value}; const i=state.users.findIndex(u=>u.id===id); i>=0?state.users[i]=data:state.users.push(data); save();closeModals();render()};
   $("#clientForm").onsubmit=e=>{e.preventDefault(); const id=$("#clientId").value||uid("client"); const ownerId=isAdmin()?$("#clientOwnerBroker").value:state.currentUser; const c={id,ownerId,name:$("#clientName").value,type:$("#clientType").value,phone:$("#clientPhone").value,email:$("#clientEmail").value,notes:$("#clientNotes").value}; const i=state.clients.findIndex(x=>x.id===id); i>=0?state.clients[i]=c:state.clients.unshift(c); save();closeModals();render()};
-  $("#propertyForm").onsubmit=e=>{e.preventDefault(); const id=$("#propertyId").value||uid("prop"); const ownerId=isAdmin()?$("#propertyOwnerBroker").value:state.currentUser; const p={id,ownerId,name:$("#propertyName").value,dealType:$("#propertyDealType").value,status:$("#propertyStatus").value,type:$("#propertyType").value,area:$("#propertyArea").value,price:+$("#propertyPrice").value,charges:+$("#propertyCharges").value,moveInDate:$("#propertyMoveInDate").value,managementRate:+$("#propertyManagementRate").value,ownerClientId:$("#propertyOwner").value,occupantId:$("#propertyOccupant").value,photos:photos.slice(0,3),description:$("#propertyDescription").value}; const i=state.properties.findIndex(x=>x.id===id); if(i>=0){state.properties[i]=p; addHistory(id,"Modification","Bien modifié",`${p.name} • ${p.area}`)}else{state.properties.unshift(p); addHistory(id,"Création","Bien créé",`${p.name} • ${p.area}`)} save();closeModals();render()};
+  $("#propertyForm").onsubmit=e=>{e.preventDefault(); const id=$("#propertyId").value||uid("prop"); const ownerId=isAdmin()?$("#propertyOwnerBroker").value:state.currentUser; const p={id,ownerId,name:$("#propertyName").value,dealType:$("#propertyDealType").value,status:$("#propertyStatus").value,type:$("#propertyType").value,area:$("#propertyArea").value,price:+$("#propertyPrice").value,charges:+$("#propertyCharges").value,moveInDate:$("#propertyMoveInDate").value,managementRate:+$("#propertyManagementRate").value,ownerClientId:$("#propertyOwner").value,occupantId:$("#propertyOccupant").value,photos:photos.slice(0,3),description:$("#propertyDescription").value}; const i=state.properties.findIndex(x=>x.id===id); if(i>=0){state.properties[i]=p; addHistory(id,"Modification","Bien modifié",`${p.name} • ${p.area}`);}else{state.properties.unshift(p); addHistory(id,"Création","Bien créé",`${p.name} • ${p.area}`);} save();closeModals();render()};
   $("#paymentForm").onsubmit=e=>{e.preventDefault(); calculatePayment(); const p=prop($("#paymentProperty").value); if(!canCollectProperty(p)){alert(collectBlockMessage(p));return} const amount=+$("#paymentAmount").value, type=$("#paymentType").value, ym=$("#paymentMonth").value, expected=+$("#paymentExpected").value, remaining=+$("#paymentRemaining").value, rate=+$("#paymentManagementRate").value||p.managementRate||0; const dup=state.payments.find(x=>x.propertyId===p.id&&x.month===ym&&x.type==="Loyer mensuel"&&x.remaining===0&&x.status==="Confirmé"); if(dup&&type==="Loyer mensuel"){calculatePayment();return} const payment={id:uid("pay"),ownerId:p.ownerId,propertyId:p.id,clientId:$("#paymentClient").value,type,month:ym,expected,amount,paymentMethod:$("#paymentMethod").value,status:remaining>0?"Partiel":"Confirmé",remaining,agencyCommission:type==="Entrée location 3 mois"?Math.round(p.price||0):0,managementCommission:Math.round(amount*rate/100),date:new Date().toISOString()}; state.payments.unshift(payment); addHistory(p.id,"Paiement",payment.remaining>0?"Paiement partiel":"Paiement enregistré",`${money(payment.amount)} • ${monthLabel(payment.month)}${payment.remaining>0?" • reste "+money(payment.remaining):""}`); save(); render(); const links=paymentShareLinks(payment); $("#shareTenantBtn").href=links.tenant; $("#shareOwnerBtn").href=links.owner; $("#paymentShareBox").classList.remove("hidden")};
   $("#visitForm").onsubmit=e=>{e.preventDefault(); const p=prop($("#visitProperty").value); if(!p){alert("Crée d'abord un bien.");return} const dt=$("#visitDateTime").value; state.visits.unshift({id:uid("visit"),ownerId:p.ownerId,name:$("#visitProspectName").value,phone:$("#visitProspectPhone").value,propertyId:p.id,date:dt.slice(0,10),time:dt.slice(11,16),qualification:$("#visitQualification").value,note:$("#visitNote").value}); addHistory(p.id,"Visite","Visite ajoutée",`${$("#visitProspectName").value} • ${dt.replace("T"," ")}`); save();closeModals();render();nav("visits")};
   $("#edlForm").onsubmit=e=>{e.preventDefault(); const p=prop($("#edlProperty").value); if(!p){alert("Crée d'abord un bien.");return} state.edls.unshift({id:uid("edl"),ownerId:p.ownerId,propertyId:p.id,type:$("#edlType").value,water:$("#edlWater").value,power:$("#edlPower").value,notes:$("#edlNotes").value,date:new Date().toISOString()}); addHistory(p.id,"EDL",`État des lieux ${$("#edlType").value}`,`Eau : ${$("#edlWater").value||"-"} • Électricité : ${$("#edlPower").value||"-"}`); save();closeModals();render();nav("edl")};
