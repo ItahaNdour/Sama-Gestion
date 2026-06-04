@@ -108,8 +108,13 @@ function opts(){
 
   const allProps=scoped(state.properties);
   const collectable=allProps.filter(canCollectProperty);
+  const dueMap = new Map(getDueItems().map(d => [d.property.id, d]));
   const ps=allProps.map(p=>`<option value="${p.id}">${p.name} — ${p.area}</option>`).join("");
-  const cs=collectable.map(p=>`<option value="${p.id}">${p.name} — ${p.area}</option>`).join("");
+  const dueFirst=[...collectable].sort((a,b)=>(dueMap.has(b.id)-dueMap.has(a.id)));
+  const cs=dueFirst.map(p=>{
+    const d=dueMap.get(p.id);
+    return `<option value="${p.id}">${d ? "À encaisser • " : ""}${p.name} — ${p.area}${d ? ` — reste ${money(d.remaining)}` : ""}</option>`;
+  }).join("");
   $("#visitProperty").innerHTML=ps||'<option value="">Créer un bien d’abord</option>';
   $("#edlProperty").innerHTML=ps||'<option value="">Créer un bien d’abord</option>';
   $("#paymentProperty").innerHTML=cs||'<option value="">Aucun bien loué/occupé</option>';
@@ -131,10 +136,20 @@ function render(){
   $("#kpiCommissions").textContent=money(pays.reduce((s,p)=>s+Number(p.agencyCommission||0)+Number(p.managementCommission||0),0));
   $("#kpiProperties").textContent=props.length;
   $("#kpiVisits").textContent=visits.length;
-  $("#kpiDue").textContent=pays.filter(p=>p.remaining>0 || p.status!=="Confirmé").length;
+  $("#kpiDue").textContent=0;
 
-  const due=pays.filter(p=>p.remaining>0 || p.status!=="Confirmé").slice(0,5);
-  $("#dueList").innerHTML=due.length?due.map(p=>`<div class="card clickable-alert" onclick="showTracking('${p.propertyId}')"><p>⏰ ${prop(p.propertyId)?.name||"Bien"}</p><small>${monthLabel(p.month)} • reste ${money(p.remaining)}</small></div>`).join(""):'<div class="card empty-state"><p>Aucune échéance en attente.</p><small>Les restes à payer apparaîtront ici.</small></div>';
+  const duePayments = pays
+    .filter(p => p.remaining > 0 || p.status !== "Confirmé")
+    .map(p => ({property:prop(p.propertyId), month:p.month, remaining:p.remaining, dueDate:(p.month || "")+"-01"}));
+
+  const due = [...getDueItems(), ...duePayments]
+    .filter(item => item.property)
+    .slice(0,6);
+
+  $("#kpiDue").textContent = due.length;
+  $("#dueList").innerHTML = due.length
+    ? due.map(d => `<div class="card clickable-alert" onclick="showTracking('${d.property.id}')"><p>⏰ ${d.property.name}</p><small>${monthLabel(d.month)} • reste ${money(d.remaining)} • échéance ${d.dueDate}</small></div>`).join("")
+    : '<div class="card empty-state"><p>Aucune échéance en attente.</p><small>Les restes à payer apparaîtront ici.</small></div>';
 
   renderBrokers();renderProperties();renderClients();renderPayments();renderVisits();renderEdl();renderTracking();
 }
@@ -157,7 +172,7 @@ function renderProperties(){
   $("#propertiesList").innerHTML=list.length?list.map(p=>`
     <article class="card">
       <div class="card-top"><div><h3>${p.name}</h3><p>📍 ${p.area} • ${p.type}</p></div></div>
-      ${(p.photos||[]).length?`<div class="photo-strip">${p.photos.map(x=>`<img src="${x}">`).join("")}</div>`:""}
+      ${(p.photos||[]).length?`<div class="photo-strip">${p.photos.map(x=>`<img src="${x}" onclick="openImageViewer('${x}')">`).join("")}</div>`:""}
       <p>💼 ${p.dealType} • <strong>${money(p.price)}</strong></p>
       <p>👤 ${client(p.ownerClientId)?.name||"Proprio non renseigné"} • 🏠 ${client(p.occupantId)?.name||"Libre / non renseigné"}</p>
       ${isAdmin()?`<p>🔐 ${brokerName(p.ownerId)}</p>`:""}
@@ -221,6 +236,54 @@ function renderTracking(){
 }
 
 function canCollectProperty(p){return !!p && ["Loué","Réservé","Vendu"].includes(p.status) && !!p.occupantId}
+function dueDayForProperty(p){
+  if(!p?.moveInDate) return 1;
+  return Number(p.moveInDate.slice(8,10)) || 1;
+}
+
+function currentDueMonthForProperty(p){
+  const today = new Date();
+  const dueDay = dueDayForProperty(p);
+  let y = today.getFullYear();
+  let m = today.getMonth();
+  if(today.getDate() < dueDay) m -= 1;
+  return new Date(y,m,1).toISOString().slice(0,7);
+}
+
+function expectedForPropertyMonth(p, ym, type="Loyer mensuel"){
+  if(!p) return 0;
+  if(type === "Entrée location 3 mois") return Number(p.price || 0) * 3;
+  let expected = Number(p.price || 0);
+
+  if(p.moveInDate && p.moveInDate.slice(0,7) === ym){
+    const day = Number(p.moveInDate.slice(8,10));
+    expected = Math.round(Number(p.price || 0) * (daysInMonth(ym) - day + 1) / daysInMonth(ym));
+  }
+
+  return expected;
+}
+
+function paidForPropertyMonth(propertyId, ym){
+  return state.payments
+    .filter(p => p.propertyId === propertyId && p.month === ym && ["Loyer mensuel","Entrée location 3 mois"].includes(p.type))
+    .reduce((sum,p) => sum + Number(p.amount || 0), 0);
+}
+
+function getDueItems(){
+  return scoped(state.properties)
+    .filter(canCollectProperty)
+    .map(p => {
+      const month = currentDueMonthForProperty(p);
+      const expected = expectedForPropertyMonth(p, month, "Loyer mensuel");
+      const paid = paidForPropertyMonth(p.id, month);
+      const remaining = Math.max(0, expected - paid);
+      const dueDate = `${month}-${String(dueDayForProperty(p)).padStart(2,"0")}`;
+      return {property:p, month, expected, paid, remaining, dueDate};
+    })
+    .filter(item => item.remaining > 0)
+    .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+}
+
 function collectBlockMessage(p){if(!p)return"Bien introuvable."; if(!p.occupantId)return"Impossible d’encaisser : aucun locataire/acheteur n’est rattaché à ce bien."; return`Impossible d’encaisser : le bien « ${p.name} » est au statut « ${p.status} ». Il doit être occupé/loué pour encaisser.`}
 function showTracking(id){state.trackingId=id;save();nav("tracking")}
 function payForProperty(id){const p=prop(id); if(!canCollectProperty(p)){alert(collectBlockMessage(p));return} state.trackingId=id;openModal("paymentModal");$("#paymentProperty").value=id;prefillPayment();}
@@ -228,13 +291,71 @@ function ownerForNew(){return isAdmin()?($("#propertyOwnerBroker").value||state.
 
 function paymentMethodsText(ownerId){const u=state.users.find(x=>x.id===ownerId);const lines=[]; if(u?.wave)lines.push(`Wave : ${u.wave}`); if(u?.orangeMoney)lines.push(`Orange Money : ${u.orangeMoney}`); if(u?.freeMoney)lines.push(`Free Money : ${u.freeMoney}`); return lines.length?lines.join("\\n"):"Moyens de paiement non renseignés."}
 function paymentShareLinks(pmt){
-  const pr=prop(pmt.propertyId), tenant=client(pmt.clientId), owner=client(pr?.ownerClientId);
-  const net=Number(pmt.amount||0)-Number(pmt.agencyCommission||0)-Number(pmt.managementCommission||0);
-  const tenantMsg=`Bonjour ${tenant?.name||""},\\n\\nNous confirmons la bonne réception de votre paiement pour ${pr?.name||"le bien"}.\\nMois : ${monthLabel(pmt.month)}\\nMontant payé : ${money(pmt.amount)}\\nMoyen de paiement : ${pmt.paymentMethod||"Non renseigné"}\\nMontant attendu : ${money(pmt.expected)}\\nReste à payer : ${money(pmt.remaining)}\\n\\nMoyens de paiement :\\n${paymentMethodsText(pmt.ownerId)}\\n\\n— ${signature(pmt.ownerId)}`;
-  const ownerMsg=`Bonjour ${owner?.name||""},\\n\\nPaiement reçu pour ${pr?.name||"votre bien"}.\\nMois : ${monthLabel(pmt.month)}\\nMontant brut : ${money(pmt.amount)}\\nCommission courtier/agence : ${money(pmt.agencyCommission||0)}\\nCommission gestion : ${money(pmt.managementCommission||0)}\\nNet propriétaire : ${money(net)}\\nReste locataire : ${money(pmt.remaining)}\\n\\n— ${signature(pmt.ownerId)}`;
-  return {tenant:wa(tenant?.phone,tenantMsg),owner:wa(owner?.phone,ownerMsg)};
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId);
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+
+  const methods = paymentMethodsText(pmt.ownerId);
+  const methodsBlock = methods && methods !== "Moyens de paiement non renseignés."
+    ? `
+
+Moyens de paiement :
+${methods}`
+    : "";
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement pour ${pr?.name || "le bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant payé : ${money(pmt.amount)}
+Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+Montant attendu : ${money(pmt.expected)}
+Reste à payer : ${money(pmt.remaining)}${methodsBlock}
+
+— ${signature(pmt.ownerId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Paiement reçu pour ${pr?.name || "votre bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant brut : ${money(pmt.amount)}
+Commission courtier/agence : ${money(pmt.agencyCommission || 0)}
+Commission gestion : ${money(pmt.managementCommission || 0)}
+Net propriétaire : ${money(net)}
+Reste locataire : ${money(pmt.remaining)}
+
+— ${signature(pmt.ownerId)}`;
+
+  return {
+    tenant: wa(tenant?.phone, tenantMsg),
+    owner: wa(owner?.phone, ownerMsg)
+  };
 }
-function relanceLink(id){const pmt=state.payments.find(x=>x.id===id), pr=prop(pmt.propertyId), c=client(pmt.clientId);return wa(c?.phone,`Bonjour ${c?.name||""}, sauf erreur de notre part, il reste ${money(pmt.remaining)} à régler pour ${pr?.name||"le bien"} (${monthLabel(pmt.month)}).\\n\\nMoyens de paiement :\\n${paymentMethodsText(pmt.ownerId)}\\n\\n— ${signature(pmt.ownerId)}`)}
+
+function relanceLink(id){
+  const pmt = state.payments.find(x => x.id === id);
+  const pr = prop(pmt.propertyId);
+  const c = client(pmt.clientId);
+
+  const methods = paymentMethodsText(pmt.ownerId);
+  const methodsBlock = methods && methods !== "Moyens de paiement non renseignés."
+    ? `
+
+Moyens de paiement :
+${methods}`
+    : "";
+
+  const msg = `Bonjour ${c?.name || ""},
+
+Sauf erreur de notre part, il reste ${money(pmt.remaining)} à régler pour ${pr?.name || "le bien"} (${monthLabel(pmt.month)}).${methodsBlock}
+
+— ${signature(pmt.ownerId)}`;
+
+  return wa(c?.phone, msg);
+}
 
 async function resize(file){return new Promise(res=>{let r=new FileReader();r.onload=e=>{let img=new Image();img.onload=()=>{let c=document.createElement("canvas"),m=900,w=img.width,h=img.height;if(w>h&&w>m){h=h*m/w;w=m}else if(h>m){w=w*m/h;h=m}c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);res(c.toDataURL("image/jpeg",.72))};img.src=e.target.result};r.readAsDataURL(file)})}
 async function photoInput(e){let files=[...e.target.files].slice(0,3); if(e.target.files.length>3)alert("Maximum 3 photos."); photos=await Promise.all(files.map(resize)); $("#photoPreview").innerHTML=photos.map(x=>`<img src="${x}">`).join("")}
@@ -250,10 +371,11 @@ function qualifyVisit(id,q){const v=state.visits.find(x=>x.id===id); if(v){v.qua
 function prefillPayment(){
   if(!$("#paymentProperty").value && scoped(state.properties).filter(canCollectProperty)[0]) $("#paymentProperty").value=scoped(state.properties).filter(canCollectProperty)[0].id;
   const p=prop($("#paymentProperty").value); if(!p)return;
-  const ym=new Date().toISOString().slice(0,7);
+  const due=getDueItems().find(d=>d.property.id===p.id);
+  const ym=due?.month || new Date().toISOString().slice(0,7);
   $("#paymentMonth").value=$("#paymentMonth").value||ym;
   $("#paymentClient").value=p.occupantId||"";
-  $("#paymentExpected").value=p.price||0;
+  $("#paymentExpected").value=due?.remaining || p.price || 0;
   $("#paymentManagementRate").value=p.managementRate||0;
   $("#paymentMoveInDate").value=p.moveInDate||"";
   calculatePayment();
