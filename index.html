@@ -312,6 +312,24 @@ Observations :</textarea></label>
     </div>
   </div>
 
+
+  <div id="historyModal" class="modal">
+    <div class="modal-card history-card">
+      <button class="close" data-close>×</button>
+      <h2>Historique du bien</h2>
+      <div id="historyHeader" class="history-header"></div>
+      <div class="history-filters">
+        <button class="hist-filter active" data-hist-filter="Tous">Tous</button>
+        <button class="hist-filter" data-hist-filter="Paiement">Paiements</button>
+        <button class="hist-filter" data-hist-filter="Relance">Relances</button>
+        <button class="hist-filter" data-hist-filter="Visite">Visites</button>
+        <button class="hist-filter" data-hist-filter="EDL">EDL</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+      <button id="historyMoreBtn" class="btn ghost full hidden" type="button">Voir plus</button>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
