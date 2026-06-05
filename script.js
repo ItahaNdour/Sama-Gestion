@@ -2140,3 +2140,262 @@ if(oldRenderV55 && !window.__v55DashboardPatched){
 }
 
 setTimeout(updatePaymentDashboardV55,150);
+
+
+/* ===== V5.5.1 + SPRINT 3 — Corrections + quittance imprimable ===== */
+
+function dueAlertItemsV551(){
+  const items = [];
+  const props = scoped(state.properties || []).filter(p => typeof canCollectProperty === "function" ? canCollectProperty(p) : !!p.occupantId);
+  const ym = new Date().toISOString().slice(0,7);
+
+  props.forEach(p=>{
+    const expected = typeof expectedRentV55 === "function" ? expectedRentV55(p, ym) : Number(p.price || 0);
+    const paid = (state.payments || [])
+      .filter(pay=>pay.propertyId===p.id && pay.month===ym && pay.type==="Loyer mensuel")
+      .reduce((s,pay)=>s+Number(pay.amount||0),0);
+    const remaining = Math.max(0, expected - paid);
+    if(remaining > 0){
+      items.push({property:p, month:ym, remaining, kind:"À encaisser"});
+    }
+  });
+
+  (scoped(state.payments || [])).forEach(pmt=>{
+    const pr = prop(pmt.propertyId);
+    if(pr && Number(pmt.remaining||0) > 0){
+      const duplicate = items.some(x=>x.property.id===pr.id && x.month===pmt.month);
+      if(!duplicate){
+        items.push({property:pr, month:pmt.month, remaining:Number(pmt.remaining||0), kind:"Reliquat"});
+      }
+    }
+  });
+
+  return items.slice(0,6);
+}
+
+function renderDueAlertsV551(){
+  const list = dueAlertItemsV551();
+  if($("#dueList")){
+    $("#dueList").innerHTML = list.length ? list.map(d=>`
+      <div class="card clickable-alert" onclick="showTracking('${d.property.id}')">
+        <p>⏰ ${d.property.name}</p>
+        <small>${d.kind} • ${monthLabel(d.month)} • reste ${money(d.remaining)}</small>
+      </div>
+    `).join("") : '<div class="card empty-state"><p>Aucune échéance en attente.</p><small>Les biens soldés disparaissent automatiquement.</small></div>';
+  }
+}
+
+function ownerUserV551(ownerId){
+  const id = ownerId || state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+function ownerIdFromPropertyV551(p){
+  return p?.ownerId || p?.agentId || state.currentUser || state.workspace || "main";
+}
+function signatureV551(ownerId){
+  const u = ownerUserV551(ownerId);
+  return u.signature || u.name || "ImmoHub Sénégal";
+}
+
+function paymentShareLinks(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId || pr?.ownerId);
+  const ownerId = pmt.ownerId || ownerIdFromPropertyV551(pr) || pmt.agentId;
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement.
+
+🏠 Bien : ${pr?.name || "le bien"}
+📍 Adresse : ${pr?.area || "Non renseignée"}
+📅 Période : ${monthLabel(pmt.month)}
+📄 Type : ${pmt.type || "Paiement"}
+💰 Montant payé : ${money(pmt.amount)}
+📱 Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+💰 Reste à payer : ${money(pmt.remaining)}
+
+Merci pour votre règlement.
+
+${signatureV551(ownerId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Nous vous informons que le paiement suivant a été encaissé et reversé :
+
+🏠 Bien : ${pr?.name || "votre bien"}
+📍 Adresse : ${pr?.area || "Non renseignée"}
+📅 Période : ${monthLabel(pmt.month)}
+📄 Type : ${pmt.type || "Paiement"}
+
+💰 Montant encaissé : ${money(pmt.amount)}
+💼 Commission de gestion : ${money(pmt.managementCommission || 0)}
+💵 Montant reversé : ${money(net)}
+
+📱 Moyen de versement : ${pmt.paymentMethod || "Non renseigné"}
+
+Merci pour votre confiance.
+
+${signatureV551(ownerId)}`;
+
+  return {tenant:wa(tenant?.phone, tenantMsg), owner:wa(owner?.phone, ownerMsg)};
+}
+
+function relanceLink(id){
+  const pmt = state.payments.find(x=>x.id===id);
+  const pr = prop(pmt.propertyId);
+  const c = client(pmt.clientId);
+  const ownerId = pmt.ownerId || ownerIdFromPropertyV551(pr) || pmt.agentId;
+  const methods = typeof paymentMethodsText === "function" ? paymentMethodsText(ownerId) : "";
+
+  const msg = `Bonjour ${c?.name || ""},
+
+Sauf erreur de notre part, le règlement suivant n'a pas encore été reçu :
+
+🏠 Bien : ${pr?.name || "le bien"}
+📍 Adresse : ${pr?.area || "Non renseignée"}
+📅 Période : ${monthLabel(pmt.month)}
+📄 Type : ${pmt.type || "Paiement"}
+💰 Montant restant : ${money(pmt.remaining)}
+
+Vous pouvez effectuer le paiement via :
+
+${methods || "Moyens de paiement non renseignés."}
+
+Merci de nous transmettre la preuve de paiement après règlement.
+
+${signatureV551(ownerId)}`;
+
+  return wa(c?.phone, msg);
+}
+
+function renderVisits(){
+  const today = new Date().toISOString().slice(0,10);
+  const list = scoped(state.visits || []).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const box = $("#visitsList");
+  if(!box) return;
+
+  box.innerHTML = list.length ? list.map(v=>{
+    const p = prop(v.propertyId);
+    const locked = v.qualification && v.qualification !== "À qualifier";
+    const msg = `Bonjour ${v.name},
+
+Petit rappel concernant votre visite.
+
+🏠 Bien : ${p?.name || "le bien"}
+📍 Adresse : ${p?.area || "Non renseignée"}
+📅 Date : ${v.date}
+🕒 Heure : ${v.time}
+
+Merci de confirmer votre présence.
+
+${signatureV551(v.ownerId || p?.ownerId || p?.agentId)}`;
+
+    return `<article class="card" style="${v.date<today?'opacity:.55':''}">
+      <div class="card-top">
+        <div><h3>📅 ${v.name}</h3><p>${p?.name||"Bien"} • ${v.date} à ${v.time}</p></div>
+        ${badge(v.qualification)}
+      </div>
+      <p>📱 ${v.phone}</p>
+      <p>📝 ${v.note||"Aucune note"}</p>
+      <div class="actions">
+        <a class="mini-btn green" target="_blank" href="${wa(v.phone,msg)}">Relance</a>
+        ${locked?`<span class="mini-btn disabled">Terminée</span>`:`<button class="mini-btn blue" onclick="qualifyVisit('${v.id}','Chaud')">Chaud</button><button class="mini-btn" onclick="qualifyVisit('${v.id}','Froid')">Froid</button><button class="mini-btn red" onclick="qualifyVisit('${v.id}','Pas intéressé')">Pas intéressé</button>`}
+        <button class="mini-btn red" onclick="del('visits','${v.id}')">Supprimer</button>
+      </div>
+    </article>`;
+  }).join("") : '<div class="card empty-state"><p>Aucune visite.</p><small>Ajoute une visite avec le bouton +.</small></div>';
+}
+
+function receiptHtmlV551(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const ownerId = pmt.ownerId || ownerIdFromPropertyV551(pr) || pmt.agentId;
+  const agency = signatureV551(ownerId);
+  const receiptNo = (pmt.id || "").slice(-8).toUpperCase() || Date.now();
+
+  return `
+    <div class="receipt-head">
+      <div>
+        <h1>QUITTANCE DE PAIEMENT</h1>
+        <p>${agency}</p>
+      </div>
+      <strong>N° ${receiptNo}</strong>
+    </div>
+    <div class="receipt-section">
+      <p><span>Locataire / client</span><strong>${tenant?.name || "Non renseigné"}</strong></p>
+      <p><span>Bien</span><strong>${pr?.name || "Non renseigné"}</strong></p>
+      <p><span>Adresse</span><strong>${pr?.area || "Non renseignée"}</strong></p>
+      <p><span>Période</span><strong>${monthLabel(pmt.month)}</strong></p>
+      <p><span>Type</span><strong>${pmt.type || "Paiement"}</strong></p>
+    </div>
+    <div class="receipt-section receipt-money">
+      <p><span>Montant payé</span><strong>${money(pmt.amount)}</strong></p>
+      <p><span>Moyen de paiement</span><strong>${pmt.paymentMethod || "Non renseigné"}</strong></p>
+      <p><span>Montant attendu</span><strong>${money(pmt.expected)}</strong></p>
+      <p><span>Reste à payer</span><strong>${money(pmt.remaining)}</strong></p>
+    </div>
+    <div class="receipt-footer">
+      <p>Date : ${new Date().toLocaleDateString("fr-FR")}</p>
+      <p>Signature / cachet</p>
+      <div class="stamp">${agency}</div>
+    </div>`;
+}
+
+function openReceiptV551(paymentId){
+  const pmt = (state.payments || []).find(p=>p.id===paymentId) || (state.payments || [])[0];
+  if(!pmt){ alert("Aucun paiement trouvé."); return; }
+  $("#receiptContent").innerHTML = receiptHtmlV551(pmt);
+  $("#receiptModal").classList.add("open");
+}
+
+function renderPayments(){
+  const list=scoped(state.payments || []);
+  const box=$("#paymentsList");
+  if(!box) return;
+  box.innerHTML=list.length?list.map(p=>{
+    const pr=prop(p.propertyId);
+    const links=paymentShareLinks(p);
+    return `<article class="card compact-payment-card">
+      <div class="compact-payment-top">
+        <div><h3>${pr?.name||"Bien"}</h3><small>${monthLabel(p.month)} • ${p.type || "Paiement"}</small></div>
+        <strong>${money(p.amount)}</strong>
+      </div>
+      <div class="compact-payment-meta">
+        <span>💳 ${p.paymentMethod||"Non renseigné"}</span>
+        ${Number(p.remaining)>0?`<span class="reste-inline">Reste : ${money(p.remaining)}</span>`:`<span class="paid-inline">Payé</span>`}
+      </div>
+      <div class="actions">
+        <a class="mini-btn green" target="_blank" href="${links.tenant}">Locataire</a>
+        <a class="mini-btn blue" target="_blank" href="${links.owner}">Proprio</a>
+        <button class="mini-btn blue" onclick="openReceiptV551('${p.id}')">Quittance</button>
+        ${Number(p.remaining)>0?`<a class="mini-btn red" target="_blank" href="${relanceLink(p.id)}">Relance</a>`:""}
+      </div>
+    </article>`;
+  }).join(""):'<div class="card empty-state"><p>Aucun paiement.</p><small>Les encaissements apparaîtront ici.</small></div>';
+}
+
+setTimeout(()=>{
+  const printBtn = $("#printReceiptBtn");
+  if(printBtn && !printBtn.dataset.v551){
+    printBtn.dataset.v551="1";
+    printBtn.onclick = ()=>window.print();
+  }
+  const closeBtn = $("#closeReceiptBtn");
+  if(closeBtn && !closeBtn.dataset.v551){
+    closeBtn.dataset.v551="1";
+    closeBtn.onclick = ()=>$("#receiptModal").classList.remove("open");
+  }
+},120);
+
+const oldRenderV551 = typeof render === "function" ? render : null;
+if(oldRenderV551 && !window.__v551Patch){
+  window.__v551Patch = true;
+  render = function(){
+    oldRenderV551();
+    renderDueAlertsV551();
+    if(typeof updatePaymentDashboardV55 === "function") updatePaymentDashboardV55();
+  };
+}
+setTimeout(()=>{renderDueAlertsV551();},150);

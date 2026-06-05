@@ -273,3 +273,23 @@ body.courtier-mode #clientOwnerBrokerWrap{
 .priority-item strong{display:block;font-size:13px;color:var(--text)}
 .priority-item small{display:block;margin-top:2px;color:var(--muted);font-size:11px}
 @media(max-width:380px){.payment-dashboard-grid{grid-template-columns:1fr}}
+
+/* V5.5.1 + Sprint 3 */
+.receipt-modal-card{background:#f5f8fc!important}
+.receipt-document{background:#fff;color:#111;border-radius:18px;padding:18px;border:1px solid #dfe7ef}
+.receipt-head{display:flex;justify-content:space-between;gap:12px;border-bottom:2px solid #0b3a67;padding-bottom:12px;margin-bottom:14px}
+.receipt-head h1{margin:0;color:#0b3a67;font-size:20px}
+.receipt-head p{margin:4px 0 0;color:#555}
+.receipt-section{display:grid;gap:8px;margin:14px 0}
+.receipt-section p{display:flex;justify-content:space-between;gap:10px;margin:0;border-bottom:1px dashed #ddd;padding-bottom:7px}
+.receipt-section span{color:#666}
+.receipt-section strong{text-align:right}
+.receipt-money{background:#f7fbff;border:1px solid #dbeaf8;border-radius:14px;padding:12px}
+.receipt-footer{margin-top:18px;display:grid;gap:10px}
+.stamp{border:2px dashed #0b3a67;color:#0b3a67;border-radius:14px;padding:14px;text-align:center;font-weight:900}
+.receipt-actions-print{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+@media print{
+  body *{visibility:hidden!important}
+  #receiptContent,#receiptContent *{visibility:visible!important}
+  #receiptContent{position:absolute;left:0;top:0;width:100%}
+}
