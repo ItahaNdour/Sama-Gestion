@@ -244,3 +244,32 @@ body.courtier-mode #clientOwnerBrokerWrap{
   border-radius:14px;
   display:block;
 }
+
+/* V5.5 — Sprint dashboard paiements */
+.payment-dashboard-panel{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:14px;
+  margin-top:12px;
+  box-shadow:var(--shadow);
+}
+.payment-dashboard-head h2{margin:0;font-size:17px}
+.payment-dashboard-head p{margin:3px 0 12px;color:var(--muted);font-size:12px}
+.payment-dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pay-tile{border:1px solid var(--border);border-radius:17px;padding:12px;background:#f8fbff}
+.pay-tile span{display:block;font-size:11px;color:var(--muted);font-weight:900}
+.pay-tile strong{display:block;margin-top:5px;color:var(--blue);font-size:15px}
+.pay-tile small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+.pay-tile.due{background:#fff7ed;border-color:#ffd9ae}
+.pay-tile.late{background:#fff1f1;border-color:#ffcaca}
+.pay-tile.commission{background:#ecfff9;border-color:#c7f1e6}
+.pay-tile.reverse{background:#eef7ff;border-color:#d7e8f8}
+.priority-list{margin-top:12px}
+.priority-title{font-size:12px;font-weight:900;color:var(--blue);margin-bottom:7px}
+#paymentPriorityList{display:grid;gap:7px}
+.priority-item{width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:15px;padding:10px}
+.priority-item span{display:inline-block;font-size:10px;font-weight:900;color:var(--orange);margin-bottom:3px}
+.priority-item strong{display:block;font-size:13px;color:var(--text)}
+.priority-item small{display:block;margin-top:2px;color:var(--muted);font-size:11px}
+@media(max-width:380px){.payment-dashboard-grid{grid-template-columns:1fr}}

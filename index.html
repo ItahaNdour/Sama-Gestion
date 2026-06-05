@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=1780657803" />
+  <link rel="stylesheet" href="style.css?v=1780663711" />
 </head>
 <body>
   <section id="loginScreen" class="login-screen">
@@ -61,6 +61,25 @@
           <article><span>À encaisser</span><strong id="kpiDue">0</strong></article>
           <article><span>Visites</span><strong id="kpiVisits">0</strong></article>
         </div>
+
+        <section id="paymentDashboardPanel" class="payment-dashboard-panel">
+          <div class="payment-dashboard-head">
+            <div>
+              <h2>Vue paiements</h2>
+              <p>Encaissements, reliquats et commissions du mois</p>
+            </div>
+          </div>
+          <div class="payment-dashboard-grid">
+            <article class="pay-tile due"><span>À encaisser</span><strong id="dashToCollect">0 FCFA</strong><small id="dashToCollectCount">0 bien</small></article>
+            <article class="pay-tile late"><span>Reliquats</span><strong id="dashReliquats">0 FCFA</strong><small id="dashReliquatsCount">0 paiement</small></article>
+            <article class="pay-tile commission"><span>Commission du mois</span><strong id="dashMonthCommission">0 FCFA</strong><small>Gestion + agence</small></article>
+            <article class="pay-tile reverse"><span>À reverser</span><strong id="dashToReverse">0 FCFA</strong><small>Net propriétaire</small></article>
+          </div>
+          <div class="priority-list">
+            <div class="priority-title">Priorités paiement</div>
+            <div id="paymentPriorityList"></div>
+          </div>
+        </section>
 
         <section id="adminPanel" class="admin-panel hidden">
           <div class="page-head compact">
@@ -373,6 +392,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=1780657803"></script>
+  <script src="script.js?v=1780663711"></script>
 </body>
 </html>

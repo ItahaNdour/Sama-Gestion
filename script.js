@@ -2041,3 +2041,102 @@ if(oldRenderPropertiesV546){
     });
   };
 }
+
+
+/* ===== V5.5 — SPRINT 2 DASHBOARD PAIEMENTS UNIQUEMENT ===== */
+
+function currentMonthV55(){
+  return new Date().toISOString().slice(0,7);
+}
+
+function scopedPaymentsV55(){
+  return scoped(state.payments || []);
+}
+
+function scopedPropertiesV55(){
+  return scoped(state.properties || []);
+}
+
+function expectedRentV55(p, ym){
+  if(!p) return 0;
+  if(typeof expectedForPropertyMonth === "function"){
+    return Number(expectedForPropertyMonth(p, ym, "Loyer mensuel") || p.price || 0);
+  }
+  return Number(p.price || 0);
+}
+
+function paidForMonthV55(propertyId, ym){
+  return (state.payments || [])
+    .filter(p => p.propertyId === propertyId && p.month === ym && p.type === "Loyer mensuel")
+    .reduce((s,p)=>s + Number(p.amount || 0),0);
+}
+
+function dashboardDueItemsV55(){
+  const ym = currentMonthV55();
+  return scopedPropertiesV55()
+    .filter(p => typeof canCollectProperty === "function" ? canCollectProperty(p) : !!p.occupantId)
+    .map(p=>{
+      const expected = expectedRentV55(p, ym);
+      const paid = paidForMonthV55(p.id, ym);
+      const remaining = Math.max(0, expected - paid);
+      return {property:p, month:ym, expected, paid, remaining};
+    })
+    .filter(x=>x.remaining>0);
+}
+
+function updatePaymentDashboardV55(){
+  const ym = currentMonthV55();
+  const payments = scopedPaymentsV55();
+  const dueItems = dashboardDueItemsV55();
+
+  const toCollect = dueItems.reduce((s,x)=>s+x.remaining,0);
+  const reliquats = payments.filter(p=>Number(p.remaining||0)>0);
+  const reliquatAmount = reliquats.reduce((s,p)=>s+Number(p.remaining||0),0);
+
+  const monthPayments = payments.filter(p=>p.month===ym);
+  const monthCommission = monthPayments.reduce((s,p)=>s+Number(p.agencyCommission||0)+Number(p.managementCommission||0),0);
+  const toReverse = monthPayments.reduce((s,p)=>s + Math.max(0, Number(p.amount||0)-Number(p.agencyCommission||0)-Number(p.managementCommission||0)),0);
+
+  if($("#dashToCollect")) $("#dashToCollect").textContent = money(toCollect);
+  if($("#dashToCollectCount")) $("#dashToCollectCount").textContent = `${dueItems.length} bien(s)`;
+  if($("#dashReliquats")) $("#dashReliquats").textContent = money(reliquatAmount);
+  if($("#dashReliquatsCount")) $("#dashReliquatsCount").textContent = `${reliquats.length} paiement(s)`;
+  if($("#dashMonthCommission")) $("#dashMonthCommission").textContent = money(monthCommission);
+  if($("#dashToReverse")) $("#dashToReverse").textContent = money(toReverse);
+
+  const priorities = [
+    ...dueItems.map(x=>({
+      label:x.property.name,
+      sub:`${monthLabel(x.month)} • reste ${money(x.remaining)}`,
+      propertyId:x.property.id,
+      kind:"À encaisser"
+    })),
+    ...reliquats.slice(0,5).map(p=>({
+      label:prop(p.propertyId)?.name || "Bien",
+      sub:`Reliquat ${monthLabel(p.month)} • ${money(p.remaining)}`,
+      propertyId:p.propertyId,
+      kind:"Reliquat"
+    }))
+  ].slice(0,6);
+
+  if($("#paymentPriorityList")){
+    $("#paymentPriorityList").innerHTML = priorities.length ? priorities.map(item=>`
+      <button class="priority-item" onclick="showTracking('${item.propertyId}')">
+        <span>${item.kind}</span>
+        <strong>${item.label}</strong>
+        <small>${item.sub}</small>
+      </button>
+    `).join("") : '<div class="empty-state"><p>Aucune priorité paiement.</p><small>Les échéances et reliquats apparaîtront ici.</small></div>';
+  }
+}
+
+const oldRenderV55 = typeof render === "function" ? render : null;
+if(oldRenderV55 && !window.__v55DashboardPatched){
+  window.__v55DashboardPatched = true;
+  render = function(){
+    oldRenderV55();
+    updatePaymentDashboardV55();
+  };
+}
+
+setTimeout(updatePaymentDashboardV55,150);
