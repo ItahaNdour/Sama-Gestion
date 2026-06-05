@@ -1787,3 +1787,209 @@ setTimeout(()=>{
     };
   }
 },120);
+
+
+/* ===== V5.4.5 — FIX STRICT ENCAISSEMENT UNIQUEMENT ===== */
+
+function monthlyRentPaymentsV545(propertyId, ym){
+  return (state.payments || []).filter(p =>
+    p.propertyId === propertyId &&
+    p.month === ym &&
+    p.type === "Loyer mensuel"
+  );
+}
+
+function expectedRentV545(propertyId, ym){
+  const p = prop(propertyId);
+  if(!p) return 0;
+
+  if(typeof expectedForPropertyMonth === "function"){
+    return Number(expectedForPropertyMonth(p, ym, "Loyer mensuel") || p.price || 0);
+  }
+
+  return Number(p.price || 0);
+}
+
+function paidRentTotalV545(propertyId, ym){
+  return monthlyRentPaymentsV545(propertyId, ym)
+    .reduce((sum,p)=>sum + Number(p.amount || 0), 0);
+}
+
+function remainingRentV545(propertyId, ym){
+  return Math.max(0, expectedRentV545(propertyId, ym) - paidRentTotalV545(propertyId, ym));
+}
+
+function nextMonthV545(ym){
+  const d = new Date(ym + "-01");
+  d.setMonth(d.getMonth()+1);
+  return d.toISOString().slice(0,7);
+}
+
+/* Préremplir le bon montant : reste réel à payer */
+function prefillPayment(){
+  if(!$("#paymentProperty")?.value){
+    const first = scoped(state.properties || []).filter(canCollectProperty)[0];
+    if(first) $("#paymentProperty").value = first.id;
+  }
+
+  const p = prop($("#paymentProperty")?.value);
+  if(!p) return;
+
+  const ym = $("#paymentMonth")?.value || new Date().toISOString().slice(0,7);
+  $("#paymentMonth").value = ym;
+
+  if($("#paymentClient")) $("#paymentClient").value = p.occupantId || "";
+
+  const type = $("#paymentType")?.value || "Loyer mensuel";
+  let expected = type === "Loyer mensuel" ? expectedRentV545(p.id, ym) : Number(p.price || 0);
+  let remaining = type === "Loyer mensuel" ? remainingRentV545(p.id, ym) : expected;
+
+  if($("#paymentExpected")) $("#paymentExpected").value = expected;
+  if($("#paymentAmount")) $("#paymentAmount").value = remaining > 0 ? remaining : expected;
+  if($("#paymentRemaining")) $("#paymentRemaining").value = Math.max(0, expected - Number($("#paymentAmount")?.value || 0));
+  if($("#paymentManagementRate")) $("#paymentManagementRate").value = p.managementRate || 0;
+  if($("#paymentMoveInDate")) $("#paymentMoveInDate").value = p.moveInDate || "";
+}
+
+/* Recalculer correctement à chaque changement */
+function calculatePayment(){
+  const propertyId = $("#paymentProperty")?.value;
+  const p = prop(propertyId);
+  const ym = $("#paymentMonth")?.value;
+  const type = $("#paymentType")?.value || "Loyer mensuel";
+  if(!p || !ym) return;
+
+  let expected = Number(p.price || 0);
+
+  if(type === "Entrée location 3 mois"){
+    expected = Number(p.price || 0) * 3;
+  }else if(type === "Loyer mensuel"){
+    expected = expectedRentV545(p.id, ym);
+  }
+
+  if($("#paymentExpected")) $("#paymentExpected").value = expected;
+
+  const alreadyPaid = type === "Loyer mensuel" ? paidRentTotalV545(p.id, ym) : 0;
+  const amount = Number($("#paymentAmount")?.value || 0);
+  const remaining = Math.max(0, expected - alreadyPaid - amount);
+
+  if($("#paymentRemaining")) $("#paymentRemaining").value = remaining;
+
+  const warning = $("#paymentWarning");
+  if(warning){
+    if(type === "Loyer mensuel" && alreadyPaid >= expected){
+      warning.textContent = `Le loyer de ${monthLabel(ym)} est déjà soldé. Prochaine période : ${monthLabel(nextMonthV545(ym))}.`;
+      warning.classList.remove("hidden");
+    }else{
+      warning.classList.add("hidden");
+    }
+  }
+}
+
+/* Bloquer strictement : un mois soldé ne peut plus être encaissé */
+function blockSoldedRentBeforeSubmitV545(e){
+  const propertyId = $("#paymentProperty")?.value;
+  const ym = $("#paymentMonth")?.value;
+  const type = $("#paymentType")?.value || "Loyer mensuel";
+  if(type !== "Loyer mensuel" || !propertyId || !ym) return false;
+
+  const expected = expectedRentV545(propertyId, ym);
+  const alreadyPaid = paidRentTotalV545(propertyId, ym);
+
+  if(alreadyPaid >= expected){
+    e.preventDefault();
+    alert(`Le loyer de ${monthLabel(ym)} est déjà soldé pour ce bien.
+
+Prochaine période à encaisser : ${monthLabel(nextMonthV545(ym))}.`);
+    return true;
+  }
+
+  return false;
+}
+
+/* Si paiement partiel déjà existant : on complète la même échéance */
+function mergePartialRentBeforeSubmitV545(e){
+  const propertyId = $("#paymentProperty")?.value;
+  const ym = $("#paymentMonth")?.value;
+  const type = $("#paymentType")?.value || "Loyer mensuel";
+  if(type !== "Loyer mensuel" || !propertyId || !ym) return false;
+
+  const expected = expectedRentV545(propertyId, ym);
+  const existing = monthlyRentPaymentsV545(propertyId, ym)[0];
+  const alreadyPaid = paidRentTotalV545(propertyId, ym);
+  const amount = Number($("#paymentAmount")?.value || 0);
+
+  if(!existing || alreadyPaid === 0) return false;
+
+  e.preventDefault();
+
+  const newTotal = Math.min(expected, alreadyPaid + amount);
+  const remaining = Math.max(0, expected - newTotal);
+
+  existing.amount = newTotal;
+  existing.expected = expected;
+  existing.remaining = remaining;
+  existing.status = remaining > 0 ? "Partiel" : "Confirmé";
+  existing.paymentMethod = $("#paymentMethod")?.value || existing.paymentMethod || "Non renseigné";
+  existing.managementCommission = Math.round(newTotal * (Number($("#paymentManagementRate")?.value || prop(propertyId)?.managementRate || 0) / 100));
+
+  if(typeof addHistory === "function"){
+    addHistory(
+      propertyId,
+      "Paiement",
+      remaining > 0 ? "Paiement partiel complété" : "Loyer soldé",
+      `${money(amount)} ajouté • Total reçu : ${money(newTotal)}${remaining>0 ? " • reste "+money(remaining) : ""}`
+    );
+  }
+
+  save();
+  render();
+
+  if(typeof showReceiptPopup === "function") showReceiptPopup(existing);
+  else{
+    const links = paymentShareLinks(existing);
+    if($("#shareTenantBtn")) $("#shareTenantBtn").href = links.tenant;
+    if($("#shareOwnerBtn")) $("#shareOwnerBtn").href = links.owner;
+    if($("#paymentShareBox")) $("#paymentShareBox").classList.remove("hidden");
+  }
+
+  alert(remaining > 0
+    ? `Paiement ajouté sur l’échéance de ${monthLabel(ym)}.
+
+Reste à payer : ${money(remaining)}.`
+    : `Le loyer de ${monthLabel(ym)} est maintenant soldé.
+
+Prochaine période : ${monthLabel(nextMonthV545(ym))}.`
+  );
+
+  return true;
+}
+
+setTimeout(()=>{
+  ["paymentProperty","paymentMonth","paymentType"].forEach(id=>{
+    const el = $("#"+id);
+    if(!el || el.dataset.v545) return;
+    el.dataset.v545 = "1";
+    el.addEventListener("change", ()=>{
+      prefillPayment();
+      calculatePayment();
+    });
+  });
+
+  const amount = $("#paymentAmount");
+  if(amount && !amount.dataset.v545){
+    amount.dataset.v545 = "1";
+    amount.addEventListener("input", calculatePayment);
+  }
+
+  const form = $("#paymentForm");
+  if(form && !form.dataset.v545strict){
+    const oldSubmit = form.onsubmit;
+    form.dataset.v545strict = "1";
+    form.onsubmit = (e)=>{
+      if(blockSoldedRentBeforeSubmitV545(e)) return;
+      if(mergePartialRentBeforeSubmitV545(e)) return;
+      if(oldSubmit) oldSubmit(e);
+    };
+  }
+},150);
