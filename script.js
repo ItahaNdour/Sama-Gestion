@@ -1502,3 +1502,288 @@ setTimeout(()=>{
 
   renderProperties();
 },120);
+
+
+/* ===== V5.4.4 — FIX BUGS PAIEMENTS UNIQUEMENT ===== */
+
+function ownerUserV544(ownerId){
+  const id = ownerId || state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+
+function ownerIdFromPropertyV544(p){
+  return p?.ownerId || p?.agentId || state.currentUser || state.workspace || "main";
+}
+
+function signatureV544(ownerId){
+  const u = ownerUserV544(ownerId);
+  return u.signature || u.name || "ImmoHub Sénégal";
+}
+
+function paymentMethodsText(ownerId){
+  const u = ownerUserV544(ownerId);
+  const lines = [];
+  if(u.wave) lines.push(`📱 Wave : ${u.wave}`);
+  if(u.orangeMoney) lines.push(`📱 Orange Money : ${u.orangeMoney}`);
+  if(u.freeMoney) lines.push(`📱 Free Money : ${u.freeMoney}`);
+  return lines.join("\n");
+}
+
+function ensurePaymentMethodsV544(ownerId){
+  const u = ownerUserV544(ownerId);
+  if(u.wave || u.orangeMoney || u.freeMoney) return true;
+
+  const wave = prompt("Numéro Wave à afficher dans les messages :", u.wave || "");
+  if(wave === null) return false;
+
+  const orange = prompt("Numéro Orange Money à afficher dans les messages :", u.orangeMoney || "");
+  if(orange === null) return false;
+
+  u.wave = wave.trim();
+  u.orangeMoney = orange.trim();
+  u.freeMoney = u.freeMoney || "";
+  if(!u.signature) u.signature = u.name || "ImmoHub Sénégal";
+  save();
+  return true;
+}
+
+/* 1) Message moyens de paiement — locataire */
+function buildTenantPaymentMethodsMessageV544(name, ownerId){
+  const methods = paymentMethodsText(ownerId);
+  return `Bonjour ${name || ""},
+
+Pour rappel, vous pouvez régler vos échéances avec nos moyens de paiement :
+
+${methods || "Moyens de paiement non renseignés."}
+
+Merci de nous envoyer la preuve de paiement après règlement.
+
+Cordialement,
+
+${signatureV544(ownerId)}`;
+}
+
+/* 2) Message moyens de paiement — propriétaire */
+function buildOwnerPaymentMethodsMessageV544(name, ownerId){
+  const methods = paymentMethodsText(ownerId);
+  return `Bonjour ${name || ""},
+
+Pour tout versement ou remboursement éventuel, vous pouvez utiliser les moyens de paiement suivants :
+
+${methods || "Moyens de paiement non renseignés."}
+
+Merci.
+
+${signatureV544(ownerId)}`;
+}
+
+/* 3) Message paiement reçu locataire + versement propriétaire */
+function paymentShareLinks(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId || pr?.ownerId);
+  const ownerId = pmt.ownerId || ownerIdFromPropertyV544(pr) || pmt.agentId;
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement.
+
+🏠 Bien : ${pr?.name || "le bien"}
+📅 Période : ${monthLabel(pmt.month)}
+💰 Montant payé : ${money(pmt.amount)}
+📱 Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+💰 Reste à payer : ${money(pmt.remaining)}
+
+Merci pour votre règlement.
+
+${signatureV544(ownerId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Nous vous informons que le loyer du bien suivant a été encaissé et reversé :
+
+🏠 Bien : ${pr?.name || "votre bien"}
+📅 Période : ${monthLabel(pmt.month)}
+
+💰 Montant encaissé : ${money(pmt.amount)}
+💼 Commission de gestion : ${money(pmt.managementCommission || 0)}
+💵 Montant reversé : ${money(net)}
+
+📱 Moyen de versement : ${pmt.paymentMethod || "Non renseigné"}
+
+Merci pour votre confiance.
+
+${signatureV544(ownerId)}`;
+
+  return {
+    tenant: wa(tenant?.phone, tenantMsg),
+    owner: wa(owner?.phone, ownerMsg)
+  };
+}
+
+/* 4) Relance locataire */
+function relanceLink(id){
+  const pmt = state.payments.find(x=>x.id===id);
+  const pr = prop(pmt.propertyId);
+  const c = client(pmt.clientId);
+  const ownerId = pmt.ownerId || ownerIdFromPropertyV544(pr) || pmt.agentId;
+  const methods = paymentMethodsText(ownerId);
+
+  const msg = `Bonjour ${c?.name || ""},
+
+Sauf erreur de notre part, le règlement du mois de ${monthLabel(pmt.month)} n'a pas encore été reçu.
+
+🏠 Bien : ${pr?.name || "le bien"}
+💰 Montant restant : ${money(pmt.remaining)}
+
+Vous pouvez effectuer le paiement via :
+
+${methods || "Moyens de paiement non renseignés."}
+
+Merci de nous transmettre la preuve de paiement après règlement.
+
+${signatureV544(ownerId)}`;
+
+  return wa(c?.phone, msg);
+}
+
+/* 5) Paiement partiel : fusionner sur la même échéance au lieu de créer une nouvelle ligne */
+function findMonthlyRentPaymentV544(propertyId, ym){
+  return (state.payments || []).find(p =>
+    p.propertyId === propertyId &&
+    p.month === ym &&
+    p.type === "Loyer mensuel"
+  );
+}
+
+function nextMonthV544(ym){
+  const d = new Date(ym + "-01");
+  d.setMonth(d.getMonth()+1);
+  return d.toISOString().slice(0,7);
+}
+
+function isMonthlyRentSoldedV544(propertyId, ym){
+  const p = findMonthlyRentPaymentV544(propertyId, ym);
+  return !!p && Number(p.remaining || 0) === 0 && p.status === "Confirmé";
+}
+
+function mergeOrBlockRentPaymentV544(e){
+  const propertyId = $("#paymentProperty")?.value;
+  const ym = $("#paymentMonth")?.value;
+  const type = $("#paymentType")?.value;
+  const amount = Number($("#paymentAmount")?.value || 0);
+  const method = $("#paymentMethod")?.value || "Non renseigné";
+  const pr = prop(propertyId);
+
+  if(type !== "Loyer mensuel") return false;
+  if(!propertyId || !ym || !pr) return false;
+
+  const existing = findMonthlyRentPaymentV544(propertyId, ym);
+
+  if(existing && Number(existing.remaining || 0) === 0 && existing.status === "Confirmé"){
+    alert(`Le loyer de ${monthLabel(ym)} est déjà soldé pour ce bien.
+
+Prochaine période à encaisser : ${monthLabel(nextMonthV544(ym))}.`);
+    e.preventDefault();
+    return true;
+  }
+
+  if(existing && Number(existing.remaining || 0) > 0){
+    e.preventDefault();
+
+    const newAmount = Number(existing.amount || 0) + amount;
+    const expected = Number(existing.expected || $("#paymentExpected")?.value || pr.price || 0);
+    const remaining = Math.max(0, expected - newAmount);
+
+    existing.amount = newAmount;
+    existing.remaining = remaining;
+    existing.paymentMethod = method;
+    existing.status = remaining > 0 ? "Partiel" : "Confirmé";
+    existing.managementCommission = Math.round(newAmount * (Number($("#paymentManagementRate")?.value || pr.managementRate || 0) / 100));
+
+    if(typeof addHistory === "function"){
+      addHistory(
+        propertyId,
+        "Paiement",
+        remaining > 0 ? "Paiement partiel complété" : "Loyer soldé",
+        `${money(amount)} ajouté • Total reçu : ${money(newAmount)}${remaining>0 ? " • reste "+money(remaining) : ""}`
+      );
+    }
+
+    save();
+    render();
+
+    if(typeof showReceiptPopup === "function") showReceiptPopup(existing);
+    else {
+      const links = paymentShareLinks(existing);
+      if($("#shareTenantBtn")) $("#shareTenantBtn").href = links.tenant;
+      if($("#shareOwnerBtn")) $("#shareOwnerBtn").href = links.owner;
+      if($("#paymentShareBox")) $("#paymentShareBox").classList.remove("hidden");
+    }
+
+    alert(remaining > 0
+      ? `Paiement ajouté sur l’échéance de ${monthLabel(ym)}.\n\nReste à payer : ${money(remaining)}.`
+      : `Le loyer de ${monthLabel(ym)} est maintenant soldé.\n\nProchaine période : ${monthLabel(nextMonthV544(ym))}.`
+    );
+
+    return true;
+  }
+
+  return false;
+}
+
+/* 6) Bind strict : paiement + moyens de paiement */
+setTimeout(()=>{
+  const paymentForm = $("#paymentForm");
+  if(paymentForm && !paymentForm.dataset.v544){
+    const oldSubmit = paymentForm.onsubmit;
+    paymentForm.dataset.v544 = "1";
+    paymentForm.onsubmit = (e)=>{
+      if(mergeOrBlockRentPaymentV544(e)) return;
+      if(oldSubmit) oldSubmit(e);
+    };
+  }
+
+  const btn = $("#sharePaymentMethodsBtn");
+  if(btn && !btn.dataset.v544){
+    const oldClick = btn.onclick;
+    btn.dataset.v544 = "1";
+    btn.onclick = ()=>{
+      const ownerId = state.currentUser || state.workspace || "main";
+      if(!ensurePaymentMethodsV544(ownerId)) return;
+
+      if(oldClick) oldClick();
+
+      setTimeout(()=>{
+        const recipient = client($("#paymentMethodsRecipient")?.value);
+        const type = recipient?.type || "";
+        const msg = $("#paymentMethodsMessage");
+        if(!msg) return;
+
+        if(type === "Propriétaire"){
+          msg.value = buildOwnerPaymentMethodsMessageV544(recipient?.name || "", ownerId);
+        }else{
+          msg.value = buildTenantPaymentMethodsMessageV544(recipient?.name || "", ownerId);
+        }
+      },80);
+    };
+  }
+
+  const recipientSelect = $("#paymentMethodsRecipient");
+  if(recipientSelect && !recipientSelect.dataset.v544){
+    recipientSelect.dataset.v544 = "1";
+    recipientSelect.onchange = ()=>{
+      const ownerId = state.currentUser || state.workspace || "main";
+      const recipient = client(recipientSelect.value);
+      const msg = $("#paymentMethodsMessage");
+      if(!msg) return;
+
+      if(recipient?.type === "Propriétaire"){
+        msg.value = buildOwnerPaymentMethodsMessageV544(recipient?.name || "", ownerId);
+      }else{
+        msg.value = buildTenantPaymentMethodsMessageV544(recipient?.name || "", ownerId);
+      }
+    };
+  }
+},120);
