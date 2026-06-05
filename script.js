@@ -925,3 +925,580 @@ setTimeout(()=>{
     };
   }
 },150);
+
+
+/* ===== V5.4.2 FIXES DEMANDÉS UNIQUEMENT ===== */
+let activePropertyViewV542 = localStorage.getItem("immohub_property_tab_v542") || "disponibles";
+
+function ownerIdFromContextV542(){
+  return state.currentUser || state.workspace || "main";
+}
+
+function getOwnerUserV542(ownerId){
+  const id = ownerId || ownerIdFromContextV542();
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+
+/* Fix moyens de paiement : si vide, ouvrir un prompt simple pour renseigner une fois */
+function ensurePaymentMethodsV542(ownerId){
+  const u = getOwnerUserV542(ownerId);
+  if(u.wave || u.orangeMoney || u.freeMoney) return true;
+
+  const wave = prompt("Renseigne le numéro Wave à afficher dans les messages de paiement :", u.wave || "");
+  if(wave === null) return false;
+  const orange = prompt("Renseigne le numéro Orange Money :", u.orangeMoney || "");
+  if(orange === null) return false;
+
+  u.wave = wave.trim();
+  u.orangeMoney = orange.trim();
+  u.freeMoney = u.freeMoney || "";
+  if(!u.signature) u.signature = u.name || "ImmoHub Sénégal";
+  save();
+  return true;
+}
+
+function paymentMethodsText(ownerId){
+  const u = getOwnerUserV542(ownerId);
+  const lines = [];
+  if(u.wave) lines.push(`Wave : ${u.wave}`);
+  if(u.orangeMoney) lines.push(`Orange Money : ${u.orangeMoney}`);
+  if(u.freeMoney) lines.push(`Free Money : ${u.freeMoney}`);
+  return lines.join("\n");
+}
+
+function signatureSafeV542(ownerId){
+  const u = getOwnerUserV542(ownerId);
+  return u.signature || u.name || "ImmoHub Sénégal";
+}
+
+/* Fix aperçu photo */
+function openImageViewer(src){
+  const modal = $("#imageViewerModal");
+  const img = $("#imageViewerImg");
+  if(!modal || !img){ alert("Aperçu photo indisponible."); return; }
+  img.src = src;
+  modal.classList.add("open");
+}
+
+function photoStripV542(p){
+  const photos = p.photos || [];
+  if(!photos.length) return "";
+  return `<div class="photo-strip">${photos.map((x,i)=>`<img src="${x}" onclick="openImageViewer(${JSON.stringify(x)})" alt="Photo ${i+1}">`).join("")}</div>`;
+}
+
+/* Dispo / Loué : onglets, pas deux colonnes affichées en même temps */
+function propertyGroupV542(p){
+  return (["Loué","Réservé","Vendu"].includes(p.status) || p.occupantId) ? "loues" : "disponibles";
+}
+
+function renderPropertyCardV542(p){
+  const isLoued = propertyGroupV542(p)==="loues";
+  return `
+    <article class="card">
+      <div class="card-top">
+        <div>
+          <h3>${p.name}</h3>
+          <p>📍 ${p.area || "-"} • ${p.type || "-"}</p>
+        </div>
+        <span class="badge ${isLoued ? "green" : "orange"}">${isLoued ? "Loué" : "Disponible"}</span>
+      </div>
+      ${photoStripV542(p)}
+      <p>💼 ${p.dealType || "Location mensuelle"} • <strong>${money(p.price)}</strong></p>
+      <p>👤 ${client(p.ownerClientId || p.ownerId)?.name || "Proprio non renseigné"} • 🏠 ${client(p.occupantId)?.name || "Libre"}</p>
+      <div class="actions">
+        <button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button>
+        <button class="mini-btn blue" onclick="openHistory?.('${p.id}')">Historique</button>
+        ${!isLoued ? `<button class="mini-btn green" onclick="openRentModal?.('${p.id}')">Louer</button>` : ""}
+        ${canCollectProperty(p)?`<button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button>`:`<button class="mini-btn disabled" onclick="payForProperty('${p.id}')">Non encaissable</button>`}
+        <button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button>
+        <button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button>
+      </div>
+    </article>`;
+}
+
+function renderProperties(){
+  const q = ($("#propertySearch")?.value || "").toLowerCase();
+  let list = scoped(state.properties || []);
+  if(q) list = list.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
+
+  const disponibles = list.filter(p=>propertyGroupV542(p)==="disponibles");
+  const loues = list.filter(p=>propertyGroupV542(p)==="loues");
+  const shown = activePropertyViewV542 === "loues" ? loues : disponibles;
+
+  $$(".property-tab").forEach(b=>{
+    b.classList.toggle("active", b.dataset.propertyView === activePropertyViewV542);
+    b.textContent = b.dataset.propertyView === "loues" ? `Loués (${loues.length})` : `Disponibles (${disponibles.length})`;
+  });
+
+  const box = $("#propertiesList");
+  if(!box) return;
+  box.innerHTML = shown.length
+    ? shown.map(renderPropertyCardV542).join("")
+    : `<div class="card empty-state"><p>Aucun bien ${activePropertyViewV542 === "loues" ? "loué" : "disponible"}.</p></div>`;
+}
+
+/* Blocage double encaissement d'un même mois */
+function nextMonthV542(ym){
+  const d = new Date(ym + "-01");
+  d.setMonth(d.getMonth()+1);
+  return d.toISOString().slice(0,7);
+}
+
+function isMonthlyRentAlreadyPaidV542(propertyId, ym){
+  return (state.payments || []).some(p =>
+    p.propertyId === propertyId &&
+    p.month === ym &&
+    p.type === "Loyer mensuel" &&
+    Number(p.remaining || 0) === 0 &&
+    p.status === "Confirmé"
+  );
+}
+
+function blockIfAlreadyPaidV542(propertyId, ym, type){
+  if(type !== "Loyer mensuel") return false;
+  if(!isMonthlyRentAlreadyPaidV542(propertyId, ym)) return false;
+  alert(`Le loyer de ${monthLabel(ym)} est déjà réglé pour ce bien.\n\nProchaine période à encaisser : ${monthLabel(nextMonthV542(ym))}.`);
+  return true;
+}
+
+/* Messages propres + moyens de paiement obligatoires si bouton Moyens */
+function paymentShareLinks(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId || pr?.ownerId);
+  const ownerId = pmt.ownerId || pr?.ownerId || pmt.agentId || ownerIdFromContextV542();
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+  const methods = paymentMethodsText(ownerId);
+  const methodsBlock = methods ? `
+
+Moyens de paiement :
+${methods}` : "";
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement pour ${pr?.name || "le bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant payé : ${money(pmt.amount)}
+Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+Montant attendu : ${money(pmt.expected)}
+Reste à payer : ${money(pmt.remaining)}${methodsBlock}
+
+— ${signatureSafeV542(ownerId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Paiement reçu pour ${pr?.name || "votre bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant brut : ${money(pmt.amount)}
+Commission courtier/agence : ${money(pmt.agencyCommission || 0)}
+Commission gestion : ${money(pmt.managementCommission || 0)}
+Net propriétaire : ${money(net)}
+Reste locataire : ${money(pmt.remaining)}
+
+— ${signatureSafeV542(ownerId)}`;
+
+  return {tenant:wa(tenant?.phone,tenantMsg), owner:wa(owner?.phone,ownerMsg)};
+}
+
+/* Validation EDL : au moins une case OU une observation */
+function validateEdlV542(){
+  const checked = $$(".edl-check:checked").length;
+  const note = ($("#edlNotes")?.value || "").trim();
+  const msg = $("#edlValidationMessage");
+  if(checked === 0 && !note){
+    if(msg){
+      msg.textContent = "Coche au moins un élément ou renseigne une observation avant d’enregistrer.";
+      msg.classList.remove("hidden");
+    } else {
+      alert("Coche au moins un élément ou renseigne une observation avant d’enregistrer.");
+    }
+    return false;
+  }
+  if(msg) msg.classList.add("hidden");
+  return true;
+}
+
+/* Bind uniquement les corrections demandées */
+setTimeout(()=>{
+  $$(".property-tab").forEach(b=>{
+    b.onclick=()=>{
+      activePropertyViewV542 = b.dataset.propertyView;
+      localStorage.setItem("immohub_property_tab_v542", activePropertyViewV542);
+      renderProperties();
+    };
+  });
+
+  const moyenBtn = $("#sharePaymentMethodsBtn");
+  if(moyenBtn && !moyenBtn.dataset.v542){
+    const old = moyenBtn.onclick;
+    moyenBtn.dataset.v542 = "1";
+    moyenBtn.onclick = () => {
+      const ownerId = ownerIdFromContextV542();
+      if(!ensurePaymentMethodsV542(ownerId)) return;
+      if(old) old();
+      setTimeout(()=>{
+        const msg = $("#paymentMethodsMessage");
+        if(msg) msg.value = `Bonjour,
+
+Voici les moyens de paiement disponibles :
+${paymentMethodsText(ownerId)}
+
+— ${signatureSafeV542(ownerId)}`;
+      },30);
+    };
+  }
+
+  const payForm = $("#paymentForm");
+  if(payForm && !payForm.dataset.v542){
+    const old = payForm.onsubmit;
+    payForm.dataset.v542 = "1";
+    payForm.onsubmit = (e) => {
+      const propertyId = $("#paymentProperty")?.value;
+      const ym = $("#paymentMonth")?.value;
+      const type = $("#paymentType")?.value;
+      if(blockIfAlreadyPaidV542(propertyId, ym, type)){
+        e.preventDefault();
+        return;
+      }
+      if(old) old(e);
+    };
+  }
+
+  const edlForm = $("#edlForm");
+  if(edlForm && !edlForm.dataset.v542){
+    const old = edlForm.onsubmit;
+    edlForm.dataset.v542 = "1";
+    edlForm.onsubmit = (e) => {
+      if(!validateEdlV542()){
+        e.preventDefault();
+        return;
+      }
+      const checks = $$(".edl-check:checked").map(x=>x.value);
+      if(checks.length && $("#edlNotes")){
+        $("#edlNotes").value = `${checks.join("\n")}${$("#edlNotes").value.trim() ? "\n\n" + $("#edlNotes").value.trim() : ""}`;
+      }
+      if(old) old(e);
+    };
+  }
+
+  renderProperties();
+},120);
+
+
+/* ===== V5.4.3 — CORRECTIONS VALIDÉES UNIQUEMENT ===== */
+
+let activePropertyViewV543 = localStorage.getItem("immohub_property_tab_v543") || "disponibles";
+
+function ownerIdV543(){
+  return state.currentUser || state.workspace || "main";
+}
+
+function ownerUserV543(ownerId){
+  const id = ownerId || ownerIdV543();
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+
+function ownerFromPropertyV543(p){
+  return p?.ownerId || p?.agentId || ownerIdV543();
+}
+
+function signatureV543(ownerId){
+  const u = ownerUserV543(ownerId);
+  return u.signature || u.name || "ImmoHub Sénégal";
+}
+
+function paymentMethodsText(ownerId){
+  const u = ownerUserV543(ownerId);
+  const lines = [];
+  if(u.wave) lines.push(`📱 Wave : ${u.wave}`);
+  if(u.orangeMoney) lines.push(`📱 Orange Money : ${u.orangeMoney}`);
+  if(u.freeMoney) lines.push(`📱 Free Money : ${u.freeMoney}`);
+  return lines.join("\n");
+}
+
+function ensurePaymentMethodsV543(ownerId){
+  const u = ownerUserV543(ownerId);
+  if(u.wave || u.orangeMoney || u.freeMoney) return true;
+
+  const wave = prompt("Numéro Wave à afficher dans les messages :", u.wave || "");
+  if(wave === null) return false;
+
+  const orange = prompt("Numéro Orange Money à afficher dans les messages :", u.orangeMoney || "");
+  if(orange === null) return false;
+
+  u.wave = wave.trim();
+  u.orangeMoney = orange.trim();
+  u.freeMoney = u.freeMoney || "";
+  if(!u.signature) u.signature = u.name || "ImmoHub Sénégal";
+  save();
+  return true;
+}
+
+/* Message automatique : moyens de paiement locataire */
+function buildPaymentMethodsMessageV543(recipientName, ownerId){
+  const methods = paymentMethodsText(ownerId);
+  return `Bonjour ${recipientName || ""},
+
+Pour rappel, vous pouvez régler vos échéances avec nos moyens de paiement :
+
+${methods || "Aucun moyen de paiement renseigné."}
+
+Merci de nous envoyer la preuve de paiement après règlement.
+
+Cordialement,
+
+${signatureV543(ownerId)}`;
+}
+
+/* Messages paiement */
+function paymentShareLinks(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId || pr?.ownerId);
+  const ownerId = pmt.ownerId || ownerFromPropertyV543(pr) || pmt.agentId;
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement.
+
+🏠 Bien : ${pr?.name || "le bien"}
+📅 Période : ${monthLabel(pmt.month)}
+💰 Montant payé : ${money(pmt.amount)}
+📱 Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+💰 Reste à payer : ${money(pmt.remaining)}
+
+Merci pour votre règlement.
+
+${signatureV543(ownerId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Nous vous informons que le loyer du bien suivant a été encaissé et reversé :
+
+🏠 Bien : ${pr?.name || "votre bien"}
+📅 Période : ${monthLabel(pmt.month)}
+
+💰 Montant encaissé : ${money(pmt.amount)}
+💼 Commission de gestion : ${money(pmt.managementCommission || 0)}
+💵 Montant reversé : ${money(net)}
+
+📱 Moyen de versement : ${pmt.paymentMethod || "Non renseigné"}
+${tenant?.phone ? `📞 Numéro locataire : ${tenant.phone}` : ""}
+
+Merci pour votre confiance.
+
+${signatureV543(ownerId)}`;
+
+  return {
+    tenant: wa(tenant?.phone, tenantMsg),
+    owner: wa(owner?.phone, ownerMsg)
+  };
+}
+
+/* Message relance locataire */
+function relanceLink(id){
+  const pmt = state.payments.find(x=>x.id===id);
+  const pr = prop(pmt.propertyId);
+  const c = client(pmt.clientId);
+  const ownerId = pmt.ownerId || ownerFromPropertyV543(pr) || pmt.agentId;
+  const methods = paymentMethodsText(ownerId);
+
+  const msg = `Bonjour ${c?.name || ""},
+
+Sauf erreur de notre part, le règlement du mois de ${monthLabel(pmt.month)} n'a pas encore été reçu.
+
+🏠 Bien : ${pr?.name || "le bien"}
+💰 Montant restant : ${money(pmt.remaining)}
+
+Vous pouvez effectuer le paiement via :
+
+${methods || "Moyens de paiement non renseignés."}
+
+Merci de nous transmettre la preuve de paiement après règlement.
+
+${signatureV543(ownerId)}`;
+
+  return wa(c?.phone, msg);
+}
+
+/* Onglets Disponibles / Loués */
+function groupPropertyV543(p){
+  return (["Loué","Réservé","Vendu"].includes(p.status) || p.occupantId) ? "loues" : "disponibles";
+}
+
+function openImageViewer(src){
+  const modal = $("#imageViewerModal");
+  const img = $("#imageViewerImg");
+  if(!modal || !img){ alert("Aperçu photo indisponible."); return; }
+  img.src = src;
+  modal.classList.add("open");
+}
+
+function photoStripV543(p){
+  const arr = p.photos || [];
+  if(!arr.length) return "";
+  return `<div class="photo-strip">${arr.map((x,i)=>`<img src="${x}" onclick="openImageViewer(${JSON.stringify(x)})" alt="Photo ${i+1}">`).join("")}</div>`;
+}
+
+function propertyCardV543(p){
+  const isLoued = groupPropertyV543(p)==="loues";
+  return `
+    <article class="card">
+      <div class="card-top">
+        <div>
+          <h3>${p.name}</h3>
+          <p>📍 ${p.area || "-"} • ${p.type || "-"}</p>
+        </div>
+        <span class="badge ${isLoued ? "green" : "orange"}">${isLoued ? "Loué" : "Disponible"}</span>
+      </div>
+      ${photoStripV543(p)}
+      <p>💼 ${p.dealType || "Location mensuelle"} • <strong>${money(p.price)}</strong></p>
+      <p>👤 ${client(p.ownerClientId || p.ownerId)?.name || "Proprio non renseigné"} • 🏠 ${client(p.occupantId)?.name || "Libre"}</p>
+      <div class="actions">
+        <button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button>
+        <button class="mini-btn blue" onclick="openHistory?.('${p.id}')">Historique</button>
+        ${!isLoued ? `<button class="mini-btn green" onclick="openRentModal?.('${p.id}')">Louer</button>` : ""}
+        ${canCollectProperty(p)?`<button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button>`:`<button class="mini-btn disabled" onclick="payForProperty('${p.id}')">Non encaissable</button>`}
+        <button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button>
+        <button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button>
+      </div>
+    </article>`;
+}
+
+function renderProperties(){
+  const q = ($("#propertySearch")?.value || "").toLowerCase();
+  let list = scoped(state.properties || []);
+  if(q) list = list.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
+
+  const disponibles = list.filter(p=>groupPropertyV543(p)==="disponibles");
+  const loues = list.filter(p=>groupPropertyV543(p)==="loues");
+  const shown = activePropertyViewV543 === "loues" ? loues : disponibles;
+
+  $$(".property-tab").forEach(b=>{
+    b.classList.toggle("active", b.dataset.propertyView === activePropertyViewV543);
+    b.textContent = b.dataset.propertyView === "loues" ? `Loués (${loues.length})` : `Disponibles (${disponibles.length})`;
+  });
+
+  const box = $("#propertiesList");
+  if(!box) return;
+  box.innerHTML = shown.length
+    ? shown.map(propertyCardV543).join("")
+    : `<div class="card empty-state"><p>Aucun bien ${activePropertyViewV543 === "loues" ? "loué" : "disponible"}.</p></div>`;
+}
+
+/* EDL : impossible d'enregistrer vide */
+function validateEdlV543(){
+  const checked = $$(".edl-check:checked").length;
+  const note = ($("#edlNotes")?.value || "").trim();
+  const msg = $("#edlValidationMessage");
+  if(checked === 0 && !note){
+    if(msg){
+      msg.textContent = "Coche au moins un élément ou renseigne une observation avant d’enregistrer.";
+      msg.classList.remove("hidden");
+    } else {
+      alert("Coche au moins un élément ou renseigne une observation avant d’enregistrer.");
+    }
+    return false;
+  }
+  if(msg) msg.classList.add("hidden");
+  return true;
+}
+
+/* Blocage double encaissement */
+function nextMonthV543(ym){
+  const d = new Date(ym + "-01");
+  d.setMonth(d.getMonth()+1);
+  return d.toISOString().slice(0,7);
+}
+
+function rentAlreadyPaidV543(propertyId, ym){
+  return (state.payments || []).some(p =>
+    p.propertyId === propertyId &&
+    p.month === ym &&
+    p.type === "Loyer mensuel" &&
+    Number(p.remaining || 0) === 0 &&
+    p.status === "Confirmé"
+  );
+}
+
+function blockDuplicateRentV543(propertyId, ym, type){
+  if(type !== "Loyer mensuel") return false;
+  if(!rentAlreadyPaidV543(propertyId, ym)) return false;
+  alert(`Le loyer de ${monthLabel(ym)} est déjà réglé pour ce bien.
+
+Prochaine période à encaisser : ${monthLabel(nextMonthV543(ym))}.`);
+  return true;
+}
+
+/* Bind strict des corrections */
+setTimeout(()=>{
+  $$(".property-tab").forEach(b=>{
+    b.onclick=()=>{
+      activePropertyViewV543 = b.dataset.propertyView;
+      localStorage.setItem("immohub_property_tab_v543", activePropertyViewV543);
+      renderProperties();
+    };
+  });
+
+  const moyensBtn = $("#sharePaymentMethodsBtn");
+  if(moyensBtn && !moyensBtn.dataset.v543){
+    const old = moyensBtn.onclick;
+    moyensBtn.dataset.v543="1";
+    moyensBtn.onclick=()=>{
+      const ownerId = ownerIdV543();
+      if(!ensurePaymentMethodsV543(ownerId)) return;
+      if(old) old();
+      setTimeout(()=>{
+        const recipientId = $("#paymentMethodsRecipient")?.value;
+        const recipient = client(recipientId);
+        const msg = $("#paymentMethodsMessage");
+        if(msg) msg.value = buildPaymentMethodsMessageV543(recipient?.name || "", ownerId);
+      },80);
+    };
+  }
+
+  const methodsRecipient = $("#paymentMethodsRecipient");
+  if(methodsRecipient && !methodsRecipient.dataset.v543){
+    methodsRecipient.dataset.v543="1";
+    methodsRecipient.onchange=()=>{
+      const ownerId = ownerIdV543();
+      const recipient = client(methodsRecipient.value);
+      const msg = $("#paymentMethodsMessage");
+      if(msg) msg.value = buildPaymentMethodsMessageV543(recipient?.name || "", ownerId);
+    };
+  }
+
+  const payForm = $("#paymentForm");
+  if(payForm && !payForm.dataset.v543){
+    const old = payForm.onsubmit;
+    payForm.dataset.v543="1";
+    payForm.onsubmit=(e)=>{
+      const propertyId = $("#paymentProperty")?.value;
+      const ym = $("#paymentMonth")?.value;
+      const type = $("#paymentType")?.value;
+      if(blockDuplicateRentV543(propertyId, ym, type)){
+        e.preventDefault();
+        return;
+      }
+      if(old) old(e);
+    };
+  }
+
+  const edlForm = $("#edlForm");
+  if(edlForm && !edlForm.dataset.v543){
+    const old = edlForm.onsubmit;
+    edlForm.dataset.v543="1";
+    edlForm.onsubmit=(e)=>{
+      if(!validateEdlV543()){
+        e.preventDefault();
+        return;
+      }
+      if(old) old(e);
+    };
+  }
+
+  renderProperties();
+},120);

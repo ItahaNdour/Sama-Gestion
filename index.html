@@ -85,6 +85,10 @@
           <button class="floating-add" data-open="propertyModal">+</button>
         </div>
         <input id="propertySearch" class="input search" placeholder="🔎 Rechercher un bien...">
+        <div id="propertyStatusTabs" class="property-tabs">
+          <button class="property-tab active" data-property-view="disponibles">Disponibles</button>
+          <button class="property-tab" data-property-view="loues">Loués</button>
+        </div>
         <div id="propertiesList" class="cards-list"></div>
       </section>
 
@@ -290,7 +294,7 @@
           <label><input type="checkbox" class="edl-check" value="Clés remises"> Clés remises</label>
         </div>
         <label>Observations libres<textarea id="edlNotes" class="input" rows="4" placeholder="Ex : peinture à reprendre, robinet à vérifier..."></textarea></label>
-        <button class="btn primary" type="submit">Enregistrer PV</button>
+        <div id="edlValidationMessage" class="warning-box hidden"></div><button class="btn primary" type="submit">Enregistrer PV</button>
       </form>
     </div>
   </div>
