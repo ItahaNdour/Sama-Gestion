@@ -1993,3 +1993,51 @@ setTimeout(()=>{
     };
   }
 },150);
+
+
+/* ===== V5.4.6 — MINI FIX UNIQUEMENT ===== */
+
+/* X / retour dans Suivi du bien */
+function closeTrackingViewV546(){
+  if(typeof nav === "function") nav("properties");
+}
+
+setTimeout(()=>{
+  const btn = $("#trackingBackBtn");
+  if(btn && !btn.dataset.v546){
+    btn.dataset.v546 = "1";
+    btn.onclick = closeTrackingViewV546;
+  }
+},100);
+
+/* Aperçu photo robuste */
+function openImageViewer(src){
+  const modal = $("#imageViewerModal");
+  const img = $("#imageViewerImg");
+  if(!modal || !img){
+    alert("Aperçu photo indisponible.");
+    return;
+  }
+  img.src = src;
+  modal.classList.add("open");
+}
+
+function photoStripV546(p){
+  const photos = p.photos || [];
+  if(!photos.length) return "";
+  return `<div class="photo-strip">${photos.map((x,i)=>`<img src="${x}" onclick="openImageViewer(${JSON.stringify(x)})" alt="Photo ${i+1}">`).join("")}</div>`;
+}
+
+/* Si l'ancien rendu n'a pas branché les photos, on le rebranche sans changer le reste */
+const oldRenderPropertiesV546 = typeof renderProperties === "function" ? renderProperties : null;
+if(oldRenderPropertiesV546){
+  renderProperties = function(){
+    oldRenderPropertiesV546();
+    document.querySelectorAll(".photo-strip img").forEach(img=>{
+      if(!img.dataset.v546){
+        img.dataset.v546 = "1";
+        img.onclick = () => openImageViewer(img.getAttribute("src"));
+      }
+    });
+  };
+}

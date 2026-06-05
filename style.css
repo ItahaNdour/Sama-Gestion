@@ -210,3 +210,37 @@ body.courtier-mode #clientOwnerBrokerWrap{
   border-radius:14px;
   display:block;
 }
+
+/* V5.4.6 mini fix */
+.tracking-close-btn{
+  width:42px;
+  height:42px;
+  min-width:42px;
+  border:0;
+  border-radius:15px;
+  background:#eef3f8;
+  color:var(--blue);
+  font-size:28px;
+  font-weight:900;
+  display:grid;
+  place-items:center;
+}
+.photo-strip img{
+  cursor:pointer;
+}
+.image-viewer-card{
+  background:#000!important;
+  padding:54px 10px 10px!important;
+  max-width:min(96vw,760px)!important;
+}
+.image-viewer-card .close{
+  background:#fff!important;
+  color:#0b3a67!important;
+}
+.image-viewer-img{
+  width:100%;
+  max-height:82vh;
+  object-fit:contain;
+  border-radius:14px;
+  display:block;
+}
