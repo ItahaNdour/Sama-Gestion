@@ -281,12 +281,15 @@
           <label>Compteur eau<input id="edlWater" class="input"></label>
           <label>Compteur électricité<input id="edlPower" class="input"></label>
         </div>
-        <label>Checklist<textarea id="edlNotes" class="input" rows="6">Salon :
-Chambre :
-Cuisine :
-Salle d'eau :
-Clés :
-Observations :</textarea></label>
+        <div class="edl-checklist">
+          <label><input type="checkbox" class="edl-check" value="Salon OK"> Salon OK</label>
+          <label><input type="checkbox" class="edl-check" value="Chambre OK"> Chambre OK</label>
+          <label><input type="checkbox" class="edl-check" value="Cuisine OK"> Cuisine OK</label>
+          <label><input type="checkbox" class="edl-check" value="Salle d'eau OK"> Salle d'eau OK</label>
+          <label><input type="checkbox" class="edl-check" value="Compteurs relevés"> Compteurs relevés</label>
+          <label><input type="checkbox" class="edl-check" value="Clés remises"> Clés remises</label>
+        </div>
+        <label>Observations libres<textarea id="edlNotes" class="input" rows="4" placeholder="Ex : peinture à reprendre, robinet à vérifier..."></textarea></label>
         <button class="btn primary" type="submit">Enregistrer PV</button>
       </form>
     </div>

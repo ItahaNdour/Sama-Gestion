@@ -111,3 +111,21 @@ body.courtier-mode #clientOwnerBrokerWrap{
 .compact-history.open p{
   display:block;
 }
+
+/* V5.4.1 paiement-first UX */
+.property-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.property-column{min-width:0}
+.inner-list{display:grid;gap:10px}
+.section-title-pill{position:sticky;top:58px;z-index:5;background:#fff7ed;color:#a95000;border:1px solid #ffd9ae;border-radius:16px;padding:10px 12px;margin-bottom:10px;font-weight:900;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.section-title-pill.green{background:#ecfff9;color:#128c7e;border-color:#c7f1e6}
+.section-title-pill span{background:#fff;border-radius:999px;padding:3px 8px;font-size:11px}
+.property-mini-card{padding:11px}
+.property-mini-card h3{font-size:14px}
+.property-mini-card p{font-size:11px}
+.edl-checklist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.edl-checklist label{display:flex!important;align-items:center!important;gap:8px!important;background:#fbfdff;border:1px solid var(--border);border-radius:14px;padding:10px;font-size:12px;font-weight:850}
+.edl-checklist input{width:auto!important}
+.compact-history p{display:none}
+.compact-history.open p{display:block}
+@media(max-width:640px){.property-columns{grid-template-columns:1fr 1fr;gap:8px}.property-mini-card .actions{gap:5px}.property-mini-card .mini-btn{font-size:10px;padding:7px}.section-title-pill{top:54px;font-size:12px;padding:9px 10px}}
+@media(max-width:390px){.property-columns{grid-template-columns:1fr}.edl-checklist{grid-template-columns:1fr}}

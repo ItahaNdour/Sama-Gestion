@@ -732,3 +732,196 @@ setTimeout(()=>{
     };
   }
 },100);
+
+
+/* ===== V5.4.1 STABILISATION PAIEMENTS ===== */
+
+function getOwnerUserV541(ownerId){
+  const id = ownerId || state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+
+function normalizeOwnerIdFromPropertyV541(p){
+  return p?.ownerId || p?.agentId || state.currentUser || state.workspace || "main";
+}
+
+function paymentMethodsText(ownerId){
+  const u = getOwnerUserV541(ownerId);
+  const lines = [];
+  if(u.wave) lines.push(`Wave : ${u.wave}`);
+  if(u.orangeMoney) lines.push(`Orange Money : ${u.orangeMoney}`);
+  if(u.freeMoney) lines.push(`Free Money : ${u.freeMoney}`);
+  if(!lines.length && u.phone) lines.push(`Contact paiement : ${u.phone}`);
+  return lines.join("\n");
+}
+
+function signatureSafe(ownerId){
+  const u = getOwnerUserV541(ownerId);
+  return u.signature || u.name || "ImmoHub Sénégal";
+}
+
+function propertyStatusGroup(p){
+  if(["Loué","Réservé","Vendu"].includes(p.status) || p.occupantId) return "loues";
+  return "disponibles";
+}
+
+function renderPropertyMiniCardV541(p){
+  return `
+    <article class="card property-mini-card">
+      <div class="card-top">
+        <div>
+          <h3>${p.name}</h3>
+          <p>📍 ${p.area || "-"} • ${money(p.price)}</p>
+        </div>
+        <span class="badge ${propertyStatusGroup(p)==="loues"?"green":"orange"}">${propertyStatusGroup(p)==="loues"?"Loué":"Disponible"}</span>
+      </div>
+      ${typeof makePhotoStrip==="function" ? makePhotoStrip(p) : ((p.photos||[]).length?`<div class="photo-strip">${p.photos.map(x=>`<img src="${x}" onclick="openImageViewer(${JSON.stringify(x)})">`).join("")}</div>`:"")}
+      <p>👤 ${client(p.ownerClientId || p.ownerId)?.name || "Proprio non renseigné"} • 🏠 ${client(p.occupantId)?.name || "Libre"}</p>
+      <div class="actions">
+        <button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button>
+        <button class="mini-btn blue" onclick="openHistory?.('${p.id}')">Historique</button>
+        <button class="mini-btn green" onclick="openRentModal?.('${p.id}')">Mettre en location</button>
+        ${canCollectProperty(p)?`<button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button>`:`<button class="mini-btn disabled" onclick="payForProperty('${p.id}')">Non encaissable</button>`}
+        <button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button>
+        <button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button>
+      </div>
+    </article>`;
+}
+
+function renderProperties(){
+  const q = ($("#propertySearch")?.value || "").toLowerCase();
+  let list = scoped(state.properties || []);
+  if(q) list = list.filter(p=>JSON.stringify(p).toLowerCase().includes(q));
+  const disponibles = list.filter(p=>propertyStatusGroup(p)==="disponibles");
+  const loues = list.filter(p=>propertyStatusGroup(p)==="loues");
+  const box = $("#propertiesList");
+  if(!box) return;
+  if(!list.length){
+    box.innerHTML = '<div class="card empty-state"><p>Aucun bien trouvé.</p><small>Ajoute un bien avec le bouton +.</small></div>';
+    return;
+  }
+  box.innerHTML = `
+    <div class="property-columns">
+      <section class="property-column">
+        <div class="section-title-pill">Disponibles <span>${disponibles.length}</span></div>
+        <div class="cards-list inner-list">${disponibles.length ? disponibles.map(renderPropertyMiniCardV541).join("") : '<div class="card empty-state"><p>Aucun bien disponible.</p></div>'}</div>
+      </section>
+      <section class="property-column">
+        <div class="section-title-pill green">Loués <span>${loues.length}</span></div>
+        <div class="cards-list inner-list">${loues.length ? loues.map(renderPropertyMiniCardV541).join("") : '<div class="card empty-state"><p>Aucun bien loué.</p></div>'}</div>
+      </section>
+    </div>`;
+}
+
+function paymentShareLinks(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId || pr?.ownerId);
+  const ownerId = pmt.ownerId || normalizeOwnerIdFromPropertyV541(pr) || pmt.agentId;
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+  const methods = paymentMethodsText(ownerId);
+  const methodsBlock = methods ? `
+
+Moyens de paiement :
+${methods}` : "";
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement pour ${pr?.name || "le bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant payé : ${money(pmt.amount)}
+Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+Montant attendu : ${money(pmt.expected)}
+Reste à payer : ${money(pmt.remaining)}${methodsBlock}
+
+— ${signatureSafe(ownerId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Paiement reçu pour ${pr?.name || "votre bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant brut : ${money(pmt.amount)}
+Commission courtier/agence : ${money(pmt.agencyCommission || 0)}
+Commission gestion : ${money(pmt.managementCommission || 0)}
+Net propriétaire : ${money(net)}
+Reste locataire : ${money(pmt.remaining)}
+
+— ${signatureSafe(ownerId)}`;
+
+  return {tenant:wa(tenant?.phone,tenantMsg), owner:wa(owner?.phone,ownerMsg)};
+}
+
+function relanceLink(id){
+  const pmt = state.payments.find(x=>x.id===id);
+  const pr = prop(pmt.propertyId);
+  const c = client(pmt.clientId);
+  const ownerId = pmt.ownerId || normalizeOwnerIdFromPropertyV541(pr) || pmt.agentId;
+  const methods = paymentMethodsText(ownerId);
+  const methodsBlock = methods ? `
+
+Moyens de paiement :
+${methods}` : "";
+
+  const msg = `Bonjour ${c?.name || ""},
+
+Sauf erreur de notre part, il reste ${money(pmt.remaining)} à régler pour ${pr?.name || "le bien"} (${monthLabel(pmt.month)}).${methodsBlock}
+
+— ${signatureSafe(ownerId)}`;
+
+  return wa(c?.phone,msg);
+}
+
+function bindHistoryFiltersV541(){
+  $$(".hist-filter").forEach(b=>{
+    b.onclick=()=>{
+      activeHistoryFilter = b.dataset.histFilter;
+      historyVisibleCount = 5;
+      $$(".hist-filter").forEach(x=>x.classList.toggle("active",x===b));
+      renderHistory?.();
+    };
+  });
+  const more=$("#historyMoreBtn");
+  if(more) more.onclick=()=>{historyVisibleCount=(historyVisibleCount||5)+5;renderHistory?.();};
+}
+
+function renderHistory(){
+  const p = prop(activeHistoryPropertyId);
+  if(!p) return;
+  const all = propertyHistory(p.id);
+  const filtered = activeHistoryFilter === "Tous" ? all : all.filter(h=>h.type===activeHistoryFilter);
+  const visible = filtered.slice(0, historyVisibleCount || 5);
+  const paymentCount = all.filter(h=>h.type==="Paiement").length;
+  const relanceCount = all.filter(h=>h.type==="Relance").length;
+  $("#historyHeader").innerHTML = `<strong>${p.name}</strong><span>${all.length} événement(s) • ${paymentCount} paiement(s) • ${relanceCount} relance(s)</span>`;
+  $("#historyList").innerHTML = visible.length ? visible.map(h=>`
+    <article class="history-item compact-history" onclick="this.classList.toggle('open')">
+      <div class="history-icon">${histIcon?.(h.type)||"•"}</div>
+      <div>
+        <strong>${h.title}</strong>
+        <small>${formatDateTime?.(h.date)||h.date||""} • ${h.actor||"Utilisateur"}</small>
+        ${h.details?`<p>${h.details}</p>`:""}
+      </div>
+    </article>`).join("") : '<div class="empty-state"><p>Aucun événement.</p></div>';
+  $("#historyMoreBtn").classList.toggle("hidden", filtered.length <= (historyVisibleCount || 5));
+}
+
+function selectedEdlChecks(){
+  return $$(".edl-check:checked").map(x=>x.value);
+}
+
+setTimeout(()=>{
+  bindHistoryFiltersV541();
+
+  const edlForm=$("#edlForm");
+  if(edlForm && !edlForm.dataset.v541){
+    const old=edlForm.onsubmit;
+    edlForm.dataset.v541="1";
+    edlForm.onsubmit=e=>{
+      const checks=selectedEdlChecks();
+      if($("#edlNotes")) $("#edlNotes").value = `${checks.length ? checks.join("\n") + "\n\n" : ""}${$("#edlNotes").value || ""}`;
+      if(old) old(e);
+    };
+  }
+},150);
