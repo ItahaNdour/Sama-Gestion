@@ -71,3 +71,43 @@ body.courtier-mode #clientOwnerBrokerWrap{
 .history-icon{width:34px;height:34px;border-radius:13px;background:#f3f8fd;display:grid;place-items:center}
 .history-item strong{display:block;font-size:13px}.history-item small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.history-item p{margin:5px 0 0;color:var(--muted);font-size:11px}
 .btn.ghost{background:#fff;border:1px solid var(--border);color:var(--blue)}.btn.full{width:100%;margin-top:10px}
+
+/* V5.4 corrective terrain */
+.photo-strip img{
+  cursor:pointer;
+}
+.image-viewer-card{
+  background:#000!important;
+  padding:54px 10px 10px!important;
+  max-width:min(96vw,760px)!important;
+}
+.image-viewer-card .close{
+  background:#fff!important;
+  color:#0b3a67!important;
+}
+.image-viewer-img{
+  width:100%;
+  max-height:82vh;
+  object-fit:contain;
+  border-radius:14px;
+  display:block;
+}
+.receipt-actions{
+  display:grid;
+  gap:10px;
+  margin-top:12px;
+}
+.btn.ghost{
+  background:#fff;
+  border:1px solid var(--border);
+  color:var(--blue);
+}
+.compact-history{
+  cursor:pointer;
+}
+.compact-history p{
+  display:none;
+}
+.compact-history.open p{
+  display:block;
+}

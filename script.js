@@ -503,3 +503,232 @@ load();ensureBase();bind();if(state.logged&&state.currentUser){$("#loginScreen")
     }
   }catch(e){}
 })();
+
+
+/* =========================
+   V5.4 TERRAIN FIX PATCH
+   ========================= */
+
+function getCurrentOwnerIdSafe(){
+  if(typeof isAdmin === "function" && isAdmin()){
+    return state.users?.find?.(u=>u.role==="Courtier")?.id || state.currentUser || "main";
+  }
+  return state.currentUser || state.workspace || "main";
+}
+
+function getOwnerUserSafe(ownerId){
+  return (state.users||[]).find(u=>u.id===ownerId) || (state.agents||[]).find(a=>a.id===ownerId) || user?.() || {};
+}
+
+function paymentMethodsText(ownerId){
+  const u = getOwnerUserSafe(ownerId);
+  const lines = [];
+  if(u.wave) lines.push(`Wave : ${u.wave}`);
+  if(u.orangeMoney) lines.push(`Orange Money : ${u.orangeMoney}`);
+  if(u.freeMoney) lines.push(`Free Money : ${u.freeMoney}`);
+  return lines.join("\n");
+}
+
+function signatureSafe(ownerId){
+  const u = getOwnerUserSafe(ownerId);
+  return u.signature || u.name || "ImmoHub Sénégal";
+}
+
+function openImageViewer(src){
+  const img = $("#imageViewerImg");
+  if(!img){ alert("Aperçu photo indisponible."); return; }
+  img.src = src;
+  $("#imageViewerModal").classList.add("open");
+}
+
+function makePhotoStrip(p){
+  const arr = p.photos || [];
+  if(!arr.length) return "";
+  return `<div class="photo-strip">${arr.map((x,i)=>`<img src="${x}" onclick="openImageViewer(${JSON.stringify(x)})" alt="Photo ${i+1}">`).join("")}</div>`;
+}
+
+function renderProperties(){
+  const search = $("#propertySearch");
+  const q = (search?.value || "").toLowerCase();
+  let list = scoped(state.properties || []);
+  if(q) list = list.filter(p => JSON.stringify(p).toLowerCase().includes(q));
+  const box = $("#propertiesList");
+  if(!box) return;
+
+  box.innerHTML = list.length ? list.map(p => `
+    <article class="card">
+      <div class="card-top">
+        <div>
+          <h3>${p.name}</h3>
+          <p>📍 ${p.area || "-"} • ${p.type || "-"}</p>
+        </div>
+      </div>
+      ${makePhotoStrip(p)}
+      <p>💼 ${p.dealType || "Location mensuelle"} • <strong>${money(p.price)}</strong></p>
+      <p>👤 ${client(p.ownerClientId || p.ownerId)?.name || "Proprio non renseigné"} • 🏠 ${client(p.occupantId)?.name || "Libre / non renseigné"}</p>
+      ${typeof isAdmin==="function" && isAdmin()?`<p>🔐 ${brokerName?.(p.ownerId) || p.ownerId || ""}</p>`:""}
+      <div class="actions">
+        <button class="mini-btn blue" onclick="showTracking('${p.id}')">Suivi</button>
+        <button class="mini-btn blue" onclick="openHistory?.('${p.id}')">Historique</button>
+        <button class="mini-btn green" onclick="openRentModal('${p.id}')">Mettre en location</button>
+        ${canCollectProperty(p)?`<button class="mini-btn green" onclick="payForProperty('${p.id}')">Encaisser</button>`:`<button class="mini-btn disabled" onclick="payForProperty('${p.id}')">Non encaissable</button>`}
+        <button class="mini-btn blue" onclick="editProperty('${p.id}')">Modifier</button>
+        <button class="mini-btn red" onclick="del('properties','${p.id}')">Supprimer</button>
+      </div>
+    </article>`).join("") : '<div class="card empty-state"><p>Aucun bien trouvé.</p><small>Ajoute un bien avec le bouton +.</small></div>';
+}
+
+function currentContactsForProperty(p){
+  const contacts = scoped(state.clients || []);
+  return {
+    owners: contacts.filter(c=>c.type==="Propriétaire"),
+    tenants: contacts.filter(c=>["Client","Locataire","Acheteur"].includes(c.type))
+  };
+}
+
+function openRentModal(propertyId){
+  const p = prop(propertyId);
+  if(!p) return;
+  const {owners, tenants} = currentContactsForProperty(p);
+  if(!owners.length || !tenants.length){
+    alert("Avant de mettre ce bien en location, ajoute au moins un propriétaire et un locataire/client dans Contacts.");
+    return;
+  }
+  $("#rentPropertyId").value = p.id;
+  $("#rentOwner").innerHTML = owners.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  $("#rentTenant").innerHTML = tenants.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+  $("#rentOwner").value = p.ownerClientId || p.ownerId || owners[0].id;
+  $("#rentTenant").value = p.occupantId || tenants[0].id;
+  $("#rentMoveInDate").value = p.moveInDate || new Date().toISOString().slice(0,10);
+  $("#rentPrice").value = p.price || "";
+  $("#rentModal").classList.add("open");
+}
+
+function canSavePropertyWithRentalRules(p){
+  if(["Loué","Réservé"].includes(p.status)){
+    if(!p.ownerClientId && !p.ownerId) return "Pour mettre un bien en location, le propriétaire est obligatoire.";
+    if(!p.occupantId) return "Pour mettre un bien en location, le locataire est obligatoire.";
+    if(!p.moveInDate) return "Pour mettre un bien en location, la date d’entrée est obligatoire.";
+  }
+  return "";
+}
+
+const originalPaymentShareLinksV54 = typeof paymentShareLinks === "function" ? paymentShareLinks : null;
+function paymentShareLinks(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const owner = client(pr?.ownerClientId || pr?.ownerId);
+  const net = Number(pmt.amount || 0) - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+  const methods = paymentMethodsText(pmt.ownerId || pr?.ownerId || pmt.agentId);
+  const methodsBlock = methods ? `
+
+Moyens de paiement :
+${methods}` : "";
+
+  const tenantMsg = `Bonjour ${tenant?.name || ""},
+
+Nous confirmons la bonne réception de votre paiement pour ${pr?.name || "le bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant payé : ${money(pmt.amount)}
+Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
+Montant attendu : ${money(pmt.expected)}
+Reste à payer : ${money(pmt.remaining)}${methodsBlock}
+
+— ${signatureSafe(pmt.ownerId || pr?.ownerId || pmt.agentId)}`;
+
+  const ownerMsg = `Bonjour ${owner?.name || ""},
+
+Paiement reçu pour ${pr?.name || "votre bien"}.
+
+Mois : ${monthLabel(pmt.month)}
+Montant brut : ${money(pmt.amount)}
+Commission courtier/agence : ${money(pmt.agencyCommission || 0)}
+Commission gestion : ${money(pmt.managementCommission || 0)}
+Net propriétaire : ${money(net)}
+Reste locataire : ${money(pmt.remaining)}
+
+— ${signatureSafe(pmt.ownerId || pr?.ownerId || pmt.agentId)}`;
+
+  return {
+    tenant: wa(tenant?.phone, tenantMsg),
+    owner: wa(owner?.phone, ownerMsg)
+  };
+}
+
+function showReceiptPopup(payment){
+  const links = paymentShareLinks(payment);
+  const t = $("#receiptTenantLink") || $("#shareTenantBtn");
+  const o = $("#receiptOwnerLink") || $("#shareOwnerBtn");
+  if(t) t.href = links.tenant;
+  if(o) o.href = links.owner;
+  const share = $("#paymentShareBox");
+  if(share) share.classList.remove("hidden");
+  const modal = $("#paymentReceiptModal");
+  if(modal) modal.classList.add("open");
+}
+
+function compactHistoryItem(h){
+  return `
+    <article class="history-item compact-history" onclick="this.classList.toggle('open')">
+      <div class="history-icon">${histIcon?.(h.type) || "•"}</div>
+      <div>
+        <strong>${h.title}</strong>
+        <small>${formatDateTime?.(h.date) || h.date || ""} • ${h.actor || "Utilisateur"}</small>
+        ${h.details ? `<p>${h.details}</p>` : ""}
+      </div>
+    </article>`;
+}
+
+if(typeof renderHistory === "function"){
+  const oldRenderHistory = renderHistory;
+  renderHistory = function(){
+    const p = prop(activeHistoryPropertyId);
+    if(!p) return;
+    const all = propertyHistory(p.id);
+    const filtered = activeHistoryFilter === "Tous" ? all : all.filter(h => h.type === activeHistoryFilter);
+    const visible = filtered.slice(0, historyVisibleCount || 5);
+    const paymentCount = all.filter(h=>h.type==="Paiement").length;
+    const relanceCount = all.filter(h=>h.type==="Relance").length;
+    $("#historyHeader").innerHTML = `<strong>${p.name}</strong><span>${all.length} événement(s) • ${paymentCount} paiement(s) • ${relanceCount} relance(s)</span>`;
+    $("#historyList").innerHTML = visible.length ? visible.map(compactHistoryItem).join("") : `<div class="empty-state"><p>Aucun événement.</p><small>Les actions liées à ce bien apparaîtront ici.</small></div>`;
+    $("#historyMoreBtn").classList.toggle("hidden", filtered.length <= (historyVisibleCount || 5));
+  };
+}
+
+/* Rebind after load */
+setTimeout(()=>{
+  const rentForm = $("#rentForm");
+  if(rentForm && !rentForm.dataset.bound){
+    rentForm.dataset.bound = "1";
+    rentForm.onsubmit = e => {
+      e.preventDefault();
+      const p = prop($("#rentPropertyId").value);
+      if(!p) return;
+      p.status = "Loué";
+      p.dealType = "Location mensuelle";
+      p.ownerClientId = $("#rentOwner").value;
+      p.ownerId = p.ownerId || p.ownerClientId;
+      p.occupantId = $("#rentTenant").value;
+      p.moveInDate = $("#rentMoveInDate").value;
+      p.price = Number($("#rentPrice").value || p.price || 0);
+      addHistory?.(p.id,"Modification","Bien mis en location",`${client(p.occupantId)?.name || "Locataire"} • ${money(p.price)}`);
+      save();
+      closeModals();
+      render();
+    };
+  }
+
+  const paymentForm = $("#paymentForm");
+  if(paymentForm && !paymentForm.dataset.v54){
+    const oldSubmit = paymentForm.onsubmit;
+    paymentForm.dataset.v54 = "1";
+    paymentForm.onsubmit = e => {
+      if(oldSubmit) oldSubmit(e);
+      setTimeout(()=>{
+        const last = (state.payments || [])[0];
+        if(last) showReceiptPopup(last);
+      }, 80);
+    };
+  }
+},100);

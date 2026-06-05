@@ -330,6 +330,42 @@ Observations :</textarea></label>
     </div>
   </div>
 
+
+  <div id="rentModal" class="modal">
+    <div class="modal-card">
+      <button class="close" data-close>×</button>
+      <h2>Mettre en location</h2>
+      <form id="rentForm" class="form">
+        <input type="hidden" id="rentPropertyId">
+        <label>Propriétaire
+          <select id="rentOwner" class="input" required></select>
+        </label>
+        <label>Locataire
+          <select id="rentTenant" class="input" required></select>
+        </label>
+        <label>Date d’entrée
+          <input id="rentMoveInDate" type="date" class="input" required>
+        </label>
+        <label>Loyer mensuel
+          <input id="rentPrice" type="number" class="input" required>
+        </label>
+        <button class="btn primary" type="submit">Valider la mise en location</button>
+      </form>
+    </div>
+  </div>
+
+
+  <div id="paymentReceiptModal" class="modal">
+    <div class="modal-card">
+      <button class="close" data-close>×</button>
+      <h2>Paiement enregistré</h2>
+      <div class="receipt-actions">
+        <a id="receiptTenantLink" class="btn primary" target="_blank">Envoyer reçu locataire</a>
+        <a id="receiptOwnerLink" class="btn ghost" target="_blank">Informer propriétaire</a>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
