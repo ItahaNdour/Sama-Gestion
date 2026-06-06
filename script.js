@@ -2399,3 +2399,203 @@ if(oldRenderV551 && !window.__v551Patch){
   };
 }
 setTimeout(()=>{renderDueAlertsV551();},150);
+
+
+/* ===== V5.5.2 — QUITTANCES PROFESSIONNELLES COMPLET ===== */
+
+function receiptOwnerUserV552(ownerId){
+  const id = ownerId || state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+
+function receiptOwnerIdFromPaymentV552(pmt){
+  const pr = prop(pmt.propertyId);
+  return pmt.ownerId || pr?.ownerId || pr?.agentId || state.currentUser || state.workspace || "main";
+}
+
+function receiptAgencyNameV552(ownerId){
+  const u = receiptOwnerUserV552(ownerId);
+  return u.name || u.signature || "ImmoHub Sénégal";
+}
+
+function receiptPrefixV552(method){
+  const m = String(method || "").toLowerCase();
+  return m.includes("esp") ? "ESP" : "MOB";
+}
+
+function receiptSequenceKeyV552(ownerId, prefix){
+  return `immohub_receipt_seq_v552_${ownerId}_${prefix}`;
+}
+
+function receiptExistingNoV552(pmt){
+  return pmt.receiptNo || pmt.quittanceNo || pmt.receiptNumber || "";
+}
+
+function generateReceiptNoV552(pmt){
+  if(receiptExistingNoV552(pmt)) return receiptExistingNoV552(pmt);
+
+  const ownerId = receiptOwnerIdFromPaymentV552(pmt);
+  const prefix = receiptPrefixV552(pmt.paymentMethod);
+  const ym = String(pmt.month || new Date().toISOString().slice(0,7)).replace("-", "");
+
+  const key = receiptSequenceKeyV552(ownerId, prefix);
+  const next = Number(localStorage.getItem(key) || "0") + 1;
+  localStorage.setItem(key, String(next));
+
+  const no = `${prefix}-${ym}-${String(next).padStart(4,"0")}`;
+  pmt.receiptNo = no;
+  pmt.quittanceNo = no;
+  save();
+  return no;
+}
+
+function receiptPaymentRowsV552(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const ownerId = receiptOwnerIdFromPaymentV552(pmt);
+  const receiptNo = generateReceiptNoV552(pmt);
+
+  return {
+    receiptNo,
+    agency: receiptAgencyNameV552(ownerId),
+    tenantName: tenant?.name || "Non renseigné",
+    propertyName: pr?.name || "Non renseigné",
+    address: pr?.area || "Non renseignée",
+    period: monthLabel(pmt.month),
+    type: pmt.type || "Paiement",
+    amount: money(pmt.amount),
+    expected: money(pmt.expected),
+    remaining: money(pmt.remaining),
+    method: pmt.paymentMethod || "Non renseigné",
+    date: new Date().toLocaleDateString("fr-FR")
+  };
+}
+
+/* Remplace la quittance précédente par une quittance A4 propre */
+function receiptHtmlV551(pmt){
+  const r = receiptPaymentRowsV552(pmt);
+
+  return `
+    <section class="receipt-a4">
+      <header class="receipt-pro-header">
+        <div>
+          <div class="receipt-logo">IH</div>
+          <h1>IMMOHUB SÉNÉGAL</h1>
+          <p>${r.agency}</p>
+        </div>
+        <div class="receipt-number-box">
+          <span>QUITTANCE</span>
+          <strong>${r.receiptNo}</strong>
+        </div>
+      </header>
+
+      <div class="receipt-title-block">
+        <h2>QUITTANCE DE PAIEMENT</h2>
+        <p>Document justificatif de règlement</p>
+      </div>
+
+      <div class="receipt-grid-pro">
+        <div>
+          <span>Locataire / client</span>
+          <strong>${r.tenantName}</strong>
+        </div>
+        <div>
+          <span>Bien</span>
+          <strong>${r.propertyName}</strong>
+        </div>
+        <div>
+          <span>Adresse</span>
+          <strong>${r.address}</strong>
+        </div>
+        <div>
+          <span>Période</span>
+          <strong>${r.period}</strong>
+        </div>
+        <div>
+          <span>Type de paiement</span>
+          <strong>${r.type}</strong>
+        </div>
+        <div>
+          <span>Moyen de paiement</span>
+          <strong>${r.method}</strong>
+        </div>
+      </div>
+
+      <div class="receipt-money-pro">
+        <div>
+          <span>Montant reçu</span>
+          <strong>${r.amount}</strong>
+        </div>
+        <div>
+          <span>Montant attendu</span>
+          <strong>${r.expected}</strong>
+        </div>
+        <div>
+          <span>Reste à payer</span>
+          <strong>${r.remaining}</strong>
+        </div>
+      </div>
+
+      <footer class="receipt-pro-footer">
+        <div>
+          <span>Date d’émission</span>
+          <strong>${r.date}</strong>
+        </div>
+        <div class="receipt-signature">
+          <span>Signature</span>
+          <strong>Pour ${r.agency}</strong>
+        </div>
+      </footer>
+    </section>
+  `;
+}
+
+function openReceiptV551(paymentId){
+  const pmt = (state.payments || []).find(p=>p.id===paymentId) || (state.payments || [])[0];
+  if(!pmt){ alert("Aucun paiement trouvé."); return; }
+  generateReceiptNoV552(pmt);
+  $("#receiptContent").innerHTML = receiptHtmlV551(pmt);
+  $("#receiptModal").classList.add("open");
+}
+
+function downloadReceiptPdfV552(){
+  const content = $("#receiptContent");
+  if(!content || !content.innerHTML.trim()){
+    alert("Aucune quittance à télécharger.");
+    return;
+  }
+
+  const w = window.open("", "_blank");
+  w.document.write(`
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <title>Quittance ImmoHub</title>
+      <style>
+        ${document.querySelector("style")?.innerHTML || ""}
+        body{background:#fff;margin:0;padding:20px;font-family:Inter,Arial,sans-serif;color:#111}
+        .receipt-a4{box-shadow:none!important;border:1px solid #dfe7ef!important;max-width:794px;margin:0 auto}
+        @media print{body{padding:0}.receipt-a4{border:0!important}}
+      </style>
+    </head>
+    <body>${content.innerHTML}</body>
+    </html>
+  `);
+  w.document.close();
+  setTimeout(()=>w.print(),300);
+}
+
+setTimeout(()=>{
+  const printBtn = $("#printReceiptBtn");
+  if(printBtn && !printBtn.dataset.v552){
+    printBtn.dataset.v552 = "1";
+    printBtn.onclick = ()=>window.print();
+  }
+
+  const dlBtn = $("#downloadReceiptBtn");
+  if(dlBtn && !dlBtn.dataset.v552){
+    dlBtn.dataset.v552 = "1";
+    dlBtn.onclick = downloadReceiptPdfV552;
+  }
+},150);
