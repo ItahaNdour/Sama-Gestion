@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=1780713514" />
+  <link rel="stylesheet" href="style.css?v=1780716927" />
 </head>
 <body>
   <section id="loginScreen" class="login-screen">
@@ -397,12 +397,20 @@
       <button class="close" data-close>×</button>
       <div id="receiptContent" class="receipt-document"></div>
       <div class="receipt-actions-print">
-        <button id="printReceiptBtn" class="btn primary" type="button">Imprimer</button>
-        <button id="downloadReceiptBtn" class="btn primary" type="button">Télécharger PDF</button>
+        <button id="printReceiptBtn" class="btn primary" type="button">Imprimer / PDF</button>
         <button id="closeReceiptBtn" class="btn ghost" type="button">Fermer</button>
       </div>
     </div>
   </div>
-  <script src="script.js?v=1780713514"></script>
+  <div id="soldedPaymentModal" class="modal">
+    <div class="modal-card solded-modal-card">
+      <button class="close" data-close>×</button>
+      <div class="solded-icon">!</div>
+      <h2>Paiement déjà réglé</h2>
+      <p id="soldedPaymentText"></p>
+      <button id="soldedPaymentCloseBtn" class="btn primary" type="button">Compris</button>
+    </div>
+  </div>
+  <script src="script.js?v=1780716927"></script>
 </body>
 </html>
