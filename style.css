@@ -294,32 +294,162 @@ body.courtier-mode #clientOwnerBrokerWrap{
   #receiptContent{position:absolute;left:0;top:0;width:100%}
 }
 
-/* ===== V5.5.3 — Quittance pro + popup soldé ===== */
-.receipt-a4-pro{background:#fff;max-width:794px;min-height:1020px;margin:0 auto;padding:42px;border:1px solid #dfe7ef;color:#111;font-family:Inter,Arial,sans-serif}
-.receipt-clean-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:3px solid #0b3a67;padding-bottom:18px;margin-bottom:28px}
-.receipt-brand-line{color:#0b3a67;font-weight:900;letter-spacing:.06em;font-size:14px;margin-bottom:8px}
-.receipt-clean-header h1{margin:0;color:#17212b;font-size:28px;text-transform:uppercase}
-.receipt-clean-header p{margin:8px 0 0;color:#596775;font-weight:700}
-.receipt-clean-number{border:1px solid #dbeaf8;border-radius:14px;padding:12px 14px;background:#f7fbff;text-align:right;min-width:190px}
-.receipt-clean-number span{display:block;color:#6b7785;font-size:11px;font-weight:900}
-.receipt-clean-number strong{display:block;margin-top:5px;color:#0b3a67;font-size:16px}
-.receipt-clean-block{margin-top:18px}
-.receipt-clean-block h2{margin:0 0 12px;color:#0b3a67;font-size:18px}
-.receipt-clean-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.receipt-clean-grid p{margin:0;border:1px solid #e4ebf3;border-radius:12px;padding:11px;background:#fbfdff}
-.receipt-clean-grid span,.receipt-clean-money span,.receipt-clean-footer span{display:block;color:#6b7785;font-size:11px;font-weight:900;margin-bottom:4px}
-.receipt-clean-grid strong,.receipt-clean-money strong,.receipt-clean-footer strong{color:#17212b;font-size:14px}
-.receipt-clean-money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:22px 0}
-.receipt-clean-money div{border:1px solid #e4ebf3;border-radius:12px;padding:13px;background:#fbfdff}
-.receipt-clean-money div:first-child{background:#eef7ff;border-color:#cfe4f8}
-.receipt-clean-money div:first-child strong{color:#0b3a67;font-size:18px}
-.receipt-clean-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:70px}
-.receipt-clean-footer>div{border:1px solid #e4ebf3;border-radius:12px;padding:13px;background:#fbfdff}
-.signature-clean strong{display:block;margin-top:16px;border-top:2px solid #0b3a67;padding-top:10px;color:#0b3a67;text-align:center}
-.solded-modal-card{background:#fff!important;color:#17212b;text-align:center;border-radius:24px!important;padding:26px!important;max-width:420px!important}
-.solded-icon{width:54px;height:54px;border-radius:50%;background:#fff1f1;color:#d94d4d;display:grid;place-items:center;font-size:30px;font-weight:900;margin:4px auto 10px}
-.solded-modal-card h2{margin:0 0 8px!important;color:#d94d4d!important;font-size:22px!important}
-.solded-modal-card p{color:#44515f;line-height:1.45;font-size:14px}
-.solded-modal-card .btn.primary{background:#d94d4d!important;width:100%;margin-top:10px}
-@media print{@page{size:A4;margin:12mm}body{background:#fff!important}body *{visibility:hidden!important}#receiptContent,#receiptContent *{visibility:visible!important}#receiptContent{position:absolute!important;left:0!important;top:0!important;width:100%!important}.receipt-a4-pro{border:0!important;min-height:auto!important;padding:0!important;max-width:100%!important}}
-@media(max-width:520px){.receipt-a4-pro{padding:22px;min-height:auto}.receipt-clean-header,.receipt-clean-grid,.receipt-clean-money,.receipt-clean-footer{grid-template-columns:1fr;display:grid}.receipt-clean-number{text-align:left;min-width:0}}
+/* ===== V5.5.5 — Quittance pro en deux colonnes ===== */
+.receipt-v555{background:#fff;max-width:794px;min-height:980px;margin:0 auto;padding:36px;border:1px solid #dfe7ef;color:#111}
+.receipt-v555-header{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #0b3a67;padding-bottom:18px;margin-bottom:24px}
+.receipt-v555-brand{color:#0b3a67;font-size:14px;letter-spacing:.05em}
+.receipt-v555-header h1{margin:8px 0 4px;text-transform:uppercase;font-size:26px;color:#17212b}
+.receipt-v555-header p{margin:0;color:#596775;font-weight:700}
+.receipt-v555-number{border:1px solid #dbeaf8;border-radius:12px;padding:12px;background:#f7fbff;text-align:right;min-width:190px;height:max-content}
+.receipt-v555-number span,.receipt-v555-card span,.receipt-v555-money span,.receipt-v555-footer span{display:block;color:#6b7785;font-size:11px;font-weight:900;margin-bottom:5px}
+.receipt-v555-number strong{color:#0b3a67}
+.receipt-v555-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0}
+.receipt-v555-card,.receipt-v555-money div,.receipt-v555-footer>div{border:1px solid #e4ebf3;border-radius:12px;padding:12px;background:#fbfdff}
+.receipt-v555-card.wide{grid-column:1/-1}
+.receipt-v555-money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:22px 0}
+.receipt-v555-money div:first-child{background:#eef7ff;border-color:#cfe4f8}
+.receipt-v555-money div:first-child strong{color:#0b3a67;font-size:18px}
+.receipt-v555-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:60px}
+.receipt-v555-signature strong{display:block;margin-top:18px;border-top:2px solid #0b3a67;padding-top:10px;text-align:center;color:#0b3a67}
+@media print{@page{size:A4;margin:12mm}body{background:#fff!important}body *{visibility:hidden!important}#receiptContent,#receiptContent *{visibility:visible!important}#receiptContent{position:absolute!important;left:0!important;top:0!important;width:100%!important}.receipt-v555{border:0!important;padding:0!important;min-height:auto!important;max-width:100%!important}}
+@media(max-width:520px){.receipt-v555{padding:22px;min-height:auto}.receipt-v555-header,.receipt-v555-grid,.receipt-v555-money,.receipt-v555-footer{display:grid;grid-template-columns:1fr}.receipt-v555-number{text-align:left;min-width:0}}
+
+
+/* ===== V5.5.6 — Profil courtier ===== */
+.bottom-nav{
+  grid-template-columns:repeat(7,1fr);
+}
+.profile-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:14px;
+  box-shadow:var(--shadow);
+}
+@media(max-width:390px){
+  .nav span{font-size:7px}
+  .nav{font-size:15px}
+}
+
+
+/* ===== V5.6 — Quittance pro consolidée ===== */
+.receipt-v56{
+  background:#fff;
+  max-width:794px;
+  min-height:980px;
+  margin:0 auto;
+  padding:34px;
+  border:1px solid #dfe7ef;
+  color:#111;
+}
+.receipt-v56-header{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  border-bottom:3px solid #0b3a67;
+  padding-bottom:16px;
+  margin-bottom:22px;
+}
+.receipt-v56-brand{
+  color:#0b3a67;
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.05em;
+}
+.receipt-v56-header h1{
+  margin:8px 0 4px;
+  text-transform:uppercase;
+  font-size:26px;
+  color:#17212b;
+}
+.receipt-v56-header p{
+  margin:0;
+  color:#596775;
+  font-weight:700;
+}
+.receipt-v56-number{
+  border:1px solid #dbeaf8;
+  border-radius:12px;
+  padding:12px;
+  background:#f7fbff;
+  text-align:right;
+  min-width:190px;
+  height:max-content;
+}
+.receipt-v56-number span,
+.receipt-v56-grid span,
+.receipt-v56-money span,
+.receipt-v56-footer span{
+  display:block;
+  color:#6b7785;
+  font-size:11px;
+  font-weight:900;
+  margin-bottom:5px;
+}
+.receipt-v56-number strong{
+  color:#0b3a67;
+}
+.receipt-v56-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:22px 0;
+}
+.receipt-v56-grid>div,
+.receipt-v56-money>div,
+.receipt-v56-footer>div{
+  border:1px solid #e4ebf3;
+  border-radius:12px;
+  padding:12px;
+  background:#fbfdff;
+}
+.receipt-v56-grid .wide{
+  grid-column:1/-1;
+}
+.receipt-v56-money{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  margin:22px 0;
+}
+.receipt-v56-money>div:first-child{
+  background:#eef7ff;
+  border-color:#cfe4f8;
+}
+.receipt-v56-money>div:first-child strong{
+  font-size:18px;
+  color:#0b3a67;
+}
+.receipt-v56-footer{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:54px;
+}
+.receipt-v56-signature strong{
+  display:block;
+  margin-top:18px;
+  border-top:2px solid #0b3a67;
+  padding-top:10px;
+  text-align:center;
+  color:#0b3a67;
+}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff!important}
+  body *{visibility:hidden!important}
+  #receiptContent,#receiptContent *{visibility:visible!important}
+  #receiptContent{position:absolute!important;left:0!important;top:0!important;width:100%!important}
+  .receipt-v56{border:0!important;padding:0!important;min-height:auto!important;max-width:100%!important}
+}
+@media(max-width:520px){
+  .receipt-v56{padding:22px;min-height:auto}
+  .receipt-v56-header,
+  .receipt-v56-grid,
+  .receipt-v56-money,
+  .receipt-v56-footer{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .receipt-v56-number{text-align:left;min-width:0}
+}

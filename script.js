@@ -2400,214 +2400,143 @@ if(oldRenderV551 && !window.__v551Patch){
 }
 setTimeout(()=>{renderDueAlertsV551();},150);
 
+/* ===== V5.5.5 — Correctifs paiement/quittance/visites ===== */
+function v555_isAdmin(){try{return typeof isAdmin==="function"&&isAdmin()}catch(e){return false}}
+function v555_ownerUser(ownerId){const id=ownerId||state.currentUser||state.workspace||"main";return (state.users||[]).find(u=>u.id===id)||(state.agents||[]).find(a=>a.id===id)||{}}
+function v555_ownerIdFromPayment(pmt){const pr=prop(pmt.propertyId);return pmt.ownerId||pr?.ownerId||pr?.agentId||state.currentUser||state.workspace||"main"}
+function v555_agencyName(ownerId){const u=v555_ownerUser(ownerId);return u.name||u.signature||"ImmoHub Sénégal"}
+function v555_isRelicatPayment(pmt){return Number(pmt.lastPaymentAmount||0)>0||Number(pmt.deltaAmount||0)>0}
+function v555_paidNow(pmt){if(Number(pmt.lastPaymentAmount||0)>0)return Number(pmt.lastPaymentAmount);if(Number(pmt.deltaAmount||0)>0)return Number(pmt.deltaAmount);return Number(pmt.amount||0)}
+function v555_transactionTypeLabel(pmt){const t=pmt.type||"Paiement";if(v555_isRelicatPayment(pmt)&&t==="Loyer mensuel")return `Paiement du reliquat du loyer de ${monthLabel(pmt.month)}`;if(t==="Loyer mensuel")return `Paiement du loyer de ${monthLabel(pmt.month)}`;return t}
+function v555_receiptPrefix(method){return String(method||"").toLowerCase().includes("esp")?"ESP":"MOB"}
+function v555_receiptNo(pmt){if(pmt.receiptNo||pmt.quittanceNo||pmt.receiptNumber)return pmt.receiptNo||pmt.quittanceNo||pmt.receiptNumber;const ownerId=v555_ownerIdFromPayment(pmt);const prefix=v555_receiptPrefix(pmt.paymentMethod);const ym=String(pmt.month||new Date().toISOString().slice(0,7)).replace("-","");const key=`immohub_receipt_seq_v555_${ownerId}_${prefix}`;const next=Number(localStorage.getItem(key)||"0")+1;localStorage.setItem(key,String(next));const no=`${prefix}-${ym}-${String(next).padStart(4,"0")}`;pmt.receiptNo=no;pmt.quittanceNo=no;save();return no}
 
-/* ===== V5.5.3 — CORRECTIONS PAIEMENT / QUITTANCE / RELANCE ===== */
+if(typeof payForProperty==="function"&&!window.__v555AdminPayPatch){window.__v555AdminPayPatch=true;const oldPayForProperty=payForProperty;payForProperty=function(id){if(v555_isAdmin()){alert("L’admin a une vue globale mais ne peut pas encaisser les biens des agences. L’encaissement doit être fait depuis l’espace du courtier concerné.");return}return oldPayForProperty(id)}}
+setTimeout(()=>{const form=$("#paymentForm");if(form&&!form.dataset.v555admin){const old=form.onsubmit;form.dataset.v555admin="1";form.onsubmit=e=>{if(v555_isAdmin()){e.preventDefault();alert("L’admin ne peut pas enregistrer d’encaissement. Connecte-toi avec le compte du courtier concerné.");return}if(old)old(e)}}},120);
 
-function ownerUserV553(ownerId){
-  const id = ownerId || state.currentUser || state.workspace || "main";
-  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
-}
-function ownerIdFromPaymentV553(pmt){
-  const pr = prop(pmt.propertyId);
-  return pmt.ownerId || pr?.ownerId || pr?.agentId || state.currentUser || state.workspace || "main";
-}
-function agencyNameV553(ownerId){
-  const u = ownerUserV553(ownerId);
-  return u.name || u.signature || "ImmoHub Sénégal";
-}
-function forcePaymentMethodsV553(ownerId){
-  const u = ownerUserV553(ownerId);
-  if(u.wave && u.orangeMoney) return true;
-  const wave = prompt("Numéro Wave obligatoire pour les relances :", u.wave || "");
-  if(wave === null || !wave.trim()){ alert("Le numéro Wave est obligatoire pour envoyer une relance."); return false; }
-  const orange = prompt("Numéro Orange Money obligatoire pour les relances :", u.orangeMoney || "");
-  if(orange === null || !orange.trim()){ alert("Le numéro Orange Money est obligatoire pour envoyer une relance."); return false; }
-  u.wave = wave.trim();
-  u.orangeMoney = orange.trim();
-  if(!u.signature) u.signature = u.name || "ImmoHub Sénégal";
-  save();
-  return true;
-}
-function paymentMethodsText(ownerId){
-  const u = ownerUserV553(ownerId);
-  const lines = [];
-  if(u.wave) lines.push(`📱 Wave : ${u.wave}`);
-  if(u.orangeMoney) lines.push(`📱 Orange Money : ${u.orangeMoney}`);
-  if(u.freeMoney) lines.push(`📱 Free Money : ${u.freeMoney}`);
-  return lines.join("\n");
-}
-function currentPaymentDeltaV553(pmt){
-  if(Number(pmt.lastPaymentAmount || 0) > 0) return Number(pmt.lastPaymentAmount);
-  if(Number(pmt.deltaAmount || 0) > 0) return Number(pmt.deltaAmount);
-  return Number(pmt.amount || 0);
-}
-function paymentShareLinks(pmt){
-  const pr = prop(pmt.propertyId);
-  const tenant = client(pmt.clientId);
-  const owner = client(pr?.ownerClientId || pr?.ownerId);
-  const ownerId = ownerIdFromPaymentV553(pmt);
-  const paidNow = currentPaymentDeltaV553(pmt);
-  const net = paidNow - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
+function paymentMethodsText(ownerId){const u=v555_ownerUser(ownerId);const lines=[];if(u.wave)lines.push(`- Wave : ${u.wave}`);if(u.orangeMoney)lines.push(`- Orange Money : ${u.orangeMoney}`);if(u.freeMoney)lines.push(`- Free Money : ${u.freeMoney}`);return lines.join("\n")}
+function v555_forcePaymentMethods(ownerId){const u=v555_ownerUser(ownerId);if(u.wave&&u.orangeMoney)return true;const wave=prompt("Numéro Wave obligatoire pour les relances :",u.wave||"");if(wave===null||!wave.trim()){alert("Le numéro Wave est obligatoire pour envoyer une relance.");return false}const orange=prompt("Numéro Orange Money obligatoire pour les relances :",u.orangeMoney||"");if(orange===null||!orange.trim()){alert("Le numéro Orange Money est obligatoire pour envoyer une relance.");return false}u.wave=wave.trim();u.orangeMoney=orange.trim();if(!u.signature)u.signature=u.name||"ImmoHub Sénégal";save();return true}
 
-  const tenantMsg = `Bonjour ${tenant?.name || ""},
+function paymentShareLinks(pmt){const pr=prop(pmt.propertyId);const tenant=client(pmt.clientId);const owner=client(pr?.ownerClientId||pr?.ownerId);const ownerId=v555_ownerIdFromPayment(pmt);const paidNow=v555_paidNow(pmt);const typeLabel=v555_transactionTypeLabel(pmt);const net=paidNow-Number(pmt.agencyCommission||0)-Number(pmt.managementCommission||0);const agency=v555_agencyName(ownerId);const tenantMsg=`Bonjour ${tenant?.name||""},
 
-✅ Nous confirmons la bonne réception de votre paiement.
+Nous confirmons la bonne réception de votre paiement.
 
-🏠 Bien : ${pr?.name || "le bien"}
-📍 Adresse : ${pr?.area || "Non renseignée"}
-📅 Période : ${monthLabel(pmt.month)}
-📄 Type : ${pmt.type || "Paiement"}
-💰 Montant payé : ${money(paidNow)}
-📱 Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
-🔴 Reste à payer : ${money(pmt.remaining)}
+- Bien : ${pr?.name||"le bien"}
+- Adresse : ${pr?.area||"Non renseignée"}
+- Période : ${monthLabel(pmt.month)}
+- Type : ${typeLabel}
+- Montant payé : ${money(paidNow)}
+- Moyen de paiement : ${pmt.paymentMethod||"Non renseigné"}
+- Reste à payer : ${money(pmt.remaining)}
 
 Merci pour votre règlement.
 
-${agencyNameV553(ownerId)}`;
+${agency}`;const ownerMsg=`Bonjour ${owner?.name||""},
 
-  const ownerMsg = `Bonjour ${owner?.name || ""},
+Nous vous informons que le paiement suivant a été encaissé et reversé :
 
-✅ Nous vous informons que le paiement suivant a été encaissé et reversé :
+- Bien : ${pr?.name||"votre bien"}
+- Adresse : ${pr?.area||"Non renseignée"}
+- Période : ${monthLabel(pmt.month)}
+- Type : ${typeLabel}
 
-🏠 Bien : ${pr?.name || "votre bien"}
-📍 Adresse : ${pr?.area || "Non renseignée"}
-📅 Période : ${monthLabel(pmt.month)}
-📄 Type : ${pmt.type || "Paiement"}
-
-💰 Montant encaissé : ${money(paidNow)}
-💼 Commission de gestion : ${money(pmt.managementCommission || 0)}
-💵 Montant reversé : ${money(Math.max(0, net))}
-
-📱 Moyen de versement : ${pmt.paymentMethod || "Non renseigné"}
+- Montant encaissé : ${money(paidNow)}
+- Commission de gestion : ${money(pmt.managementCommission||0)}
+- Montant reversé : ${money(Math.max(0,net))}
+- Moyen de versement : ${pmt.paymentMethod||"Non renseigné"}
 
 Merci pour votre confiance.
 
-${agencyNameV553(ownerId)}`;
+${agency}`;return{tenant:wa(tenant?.phone,tenantMsg),owner:wa(owner?.phone,ownerMsg)}}
 
-  return {tenant:wa(tenant?.phone, tenantMsg), owner:wa(owner?.phone, ownerMsg)};
-}
-function relanceLink(id){
-  const pmt = state.payments.find(x=>x.id===id);
-  const pr = prop(pmt.propertyId);
-  const c = client(pmt.clientId);
-  const ownerId = ownerIdFromPaymentV553(pmt);
-  if(!forcePaymentMethodsV553(ownerId)) return "#";
-  const methods = paymentMethodsText(ownerId);
-  const msg = `Bonjour ${c?.name || ""},
+function relanceLink(id){const pmt=state.payments.find(x=>x.id===id);const pr=prop(pmt.propertyId);const c=client(pmt.clientId);const ownerId=v555_ownerIdFromPayment(pmt);if(!v555_forcePaymentMethods(ownerId))return"#";const msg=`Bonjour ${c?.name||""},
 
-⚠️ Sauf erreur de notre part, le règlement suivant n'a pas encore été reçu :
+Sauf erreur de notre part, le règlement suivant n'a pas encore été reçu :
 
-🏠 Bien : ${pr?.name || "le bien"}
-📍 Adresse : ${pr?.area || "Non renseignée"}
-📅 Période : ${monthLabel(pmt.month)}
-📄 Type : ${pmt.type || "Paiement"}
-💰 Montant restant : ${money(pmt.remaining)}
+- Bien : ${pr?.name||"le bien"}
+- Adresse : ${pr?.area||"Non renseignée"}
+- Période : ${monthLabel(pmt.month)}
+- Type : ${v555_transactionTypeLabel(pmt)}
+- Montant restant : ${money(pmt.remaining)}
 
 Vous pouvez effectuer le paiement via :
 
-${methods}
+${paymentMethodsText(ownerId)}
 
 Merci de nous transmettre la preuve de paiement après règlement.
 
-${agencyNameV553(ownerId)}`;
-  return wa(c?.phone, msg);
+${v555_agencyName(ownerId)}`;return wa(c?.phone,msg)}
+
+if(typeof mergePartialRentBeforeSubmitV545==="function"&&!window.__v555MergePatch){window.__v555MergePatch=true;const oldMerge=mergePartialRentBeforeSubmitV545;mergePartialRentBeforeSubmitV545=function(e){const amount=Number($("#paymentAmount")?.value||0);const propertyId=$("#paymentProperty")?.value;const ym=$("#paymentMonth")?.value;const existing=(state.payments||[]).find(p=>p.propertyId===propertyId&&p.month===ym&&p.type==="Loyer mensuel");if(existing&&Number(existing.remaining||0)>0){existing.lastPaymentAmount=amount;existing.deltaAmount=amount}return oldMerge(e)}}
+
+function renderVisits(){const today=new Date().toISOString().slice(0,10);const list=scoped(state.visits||[]).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));const box=$("#visitsList");if(!box)return;box.innerHTML=list.length?list.map(v=>{const p=prop(v.propertyId);const locked=v.qualification&&v.qualification!=="À qualifier";const msg=`Bonjour ${v.name},
+
+Petit rappel concernant votre visite.
+
+- Bien : ${p?.name||"le bien"}
+- Adresse : ${p?.area||"Non renseignée"}
+- Date : ${v.date}
+- Heure : ${v.time}
+
+Merci de confirmer votre présence.
+
+${v555_agencyName(v.ownerId||p?.ownerId||p?.agentId)}`;return `<article class="card" style="${v.date<today?'opacity:.55':''}">
+      <div class="card-top"><div><h3>Visite - ${v.name}</h3><p>${p?.name||"Bien"} • ${v.date} à ${v.time}</p></div>${badge(v.qualification)}</div>
+      <p>Téléphone : ${v.phone}</p><p>Note : ${v.note||"Aucune note"}</p>
+      <div class="actions"><a class="mini-btn green" target="_blank" href="${wa(v.phone,msg)}">Relance</a>
+        ${locked?`<span class="mini-btn disabled">Terminée</span>`:`<button class="mini-btn blue" onclick="qualifyVisit('${v.id}','Chaud')">Chaud</button><button class="mini-btn" onclick="qualifyVisit('${v.id}','Froid')">Froid</button><button class="mini-btn red" onclick="qualifyVisit('${v.id}','Pas intéressé')">Pas intéressé</button>`}
+        <button class="mini-btn red" onclick="del('visits','${v.id}')">Supprimer</button></div></article>`}).join(""):'<div class="card empty-state"><p>Aucune visite.</p><small>Ajoute une visite avec le bouton +.</small></div>'}
+
+function receiptHtmlV551(pmt){const pr=prop(pmt.propertyId);const tenant=client(pmt.clientId);const ownerId=v555_ownerIdFromPayment(pmt);const agency=v555_agencyName(ownerId);const receiptNo=v555_receiptNo(pmt);const paidNow=v555_paidNow(pmt);const typeLabel=v555_transactionTypeLabel(pmt);return `
+    <section class="receipt-v555">
+      <header class="receipt-v555-header"><div><strong class="receipt-v555-brand">IMMOHUB SÉNÉGAL</strong><h1>Quittance de paiement</h1><p>${agency}</p></div><div class="receipt-v555-number"><span>N° quittance</span><strong>${receiptNo}</strong></div></header>
+      <div class="receipt-v555-grid">
+        <div class="receipt-v555-card"><span>Locataire / client</span><strong>${tenant?.name||"Non renseigné"}</strong></div>
+        <div class="receipt-v555-card"><span>Bien</span><strong>${pr?.name||"Non renseigné"}</strong></div>
+        <div class="receipt-v555-card"><span>Adresse</span><strong>${pr?.area||"Non renseignée"}</strong></div>
+        <div class="receipt-v555-card"><span>Période</span><strong>${monthLabel(pmt.month)}</strong></div>
+        <div class="receipt-v555-card wide"><span>Type de transaction</span><strong>${typeLabel}</strong></div>
+        <div class="receipt-v555-card"><span>Moyen de paiement</span><strong>${pmt.paymentMethod||"Non renseigné"}</strong></div>
+      </div>
+      <div class="receipt-v555-money"><div><span>Montant reçu</span><strong>${money(paidNow)}</strong></div><div><span>Montant attendu</span><strong>${money(pmt.expected)}</strong></div><div><span>Reste à payer</span><strong>${money(pmt.remaining)}</strong></div></div>
+      <footer class="receipt-v555-footer"><div><span>Date d’émission</span><strong>${new Date().toLocaleDateString("fr-FR")}</strong></div><div class="receipt-v555-signature"><span>Signature agence</span><strong>${agency}</strong></div></footer>
+    </section>`}
+
+function downloadReceiptPdfV552(){const content=$("#receiptContent");if(!content||!content.innerHTML.trim()){alert("Aucune quittance à télécharger.");return}const htmlDoc=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Quittance ImmoHub</title><style>${v555ReceiptCss()}</style></head><body>${content.innerHTML}</body></html>`;const blob=new Blob([htmlDoc],{type:"text/html;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="quittance-immohub.html";a.click();URL.revokeObjectURL(a.href)}
+function v555ReceiptCss(){return `.receipt-v555{max-width:794px;margin:0 auto;padding:36px;border:1px solid #dfe7ef;font-family:Arial,sans-serif}.receipt-v555-header{display:flex;justify-content:space-between;border-bottom:3px solid #0b3a67;padding-bottom:18px;margin-bottom:24px}.receipt-v555-brand{color:#0b3a67;font-size:14px}.receipt-v555-header h1{margin:8px 0 4px;text-transform:uppercase;font-size:26px}.receipt-v555-header p{margin:0;color:#596775;font-weight:700}.receipt-v555-number{border:1px solid #dbeaf8;border-radius:12px;padding:12px;background:#f7fbff;text-align:right}.receipt-v555-number span,.receipt-v555-card span,.receipt-v555-money span,.receipt-v555-footer span{display:block;color:#6b7785;font-size:11px;font-weight:bold;margin-bottom:5px}.receipt-v555-number strong{color:#0b3a67}.receipt-v555-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0}.receipt-v555-card,.receipt-v555-money div,.receipt-v555-footer>div{border:1px solid #e4ebf3;border-radius:12px;padding:12px;background:#fbfdff}.receipt-v555-card.wide{grid-column:1/-1}.receipt-v555-money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:22px 0}.receipt-v555-money div:first-child{background:#eef7ff;border-color:#cfe4f8}.receipt-v555-money div:first-child strong{color:#0b3a67;font-size:18px}.receipt-v555-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:60px}.receipt-v555-signature strong{display:block;margin-top:18px;border-top:2px solid #0b3a67;padding-top:10px;text-align:center;color:#0b3a67}@media print{@page{size:A4;margin:12mm}body{padding:0}.receipt-v555{border:0;padding:0}}`}
+setTimeout(()=>{const dl=$("#downloadReceiptBtn");if(dl&&!dl.dataset.v555){dl.dataset.v555="1";dl.onclick=downloadReceiptPdfV552}},120);
+
+
+/* ===== V5.5.6 — Profil courtier + moyens de paiement sans prompt ===== */
+
+function v556_currentProfile(){
+  const id = state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || null;
 }
-function receiptHtmlV551(pmt){
+
+function v556_userByOwner(ownerId){
+  const id = ownerId || state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+
+function v556_profileOwnerIdFromPayment(pmt){
   const pr = prop(pmt.propertyId);
-  const tenant = client(pmt.clientId);
-  const ownerId = ownerIdFromPaymentV553(pmt);
-  const agency = agencyNameV553(ownerId);
-  const receiptNo = typeof generateReceiptNoV552 === "function" ? generateReceiptNoV552(pmt) : ((pmt.id || "").slice(-8).toUpperCase() || Date.now());
-  const paidNow = currentPaymentDeltaV553(pmt);
-  return `
-    <section class="receipt-a4-pro">
-      <header class="receipt-clean-header">
-        <div>
-          <div class="receipt-brand-line">IMMOHUB SÉNÉGAL</div>
-          <h1>Quittance de paiement</h1>
-          <p>${agency}</p>
-        </div>
-        <div class="receipt-clean-number">
-          <span>N° quittance</span>
-          <strong>${receiptNo}</strong>
-        </div>
-      </header>
-      <section class="receipt-clean-block">
-        <h2>Informations du règlement</h2>
-        <div class="receipt-clean-grid">
-          <p><span>Locataire / client</span><strong>${tenant?.name || "Non renseigné"}</strong></p>
-          <p><span>Bien</span><strong>${pr?.name || "Non renseigné"}</strong></p>
-          <p><span>Adresse</span><strong>${pr?.area || "Non renseignée"}</strong></p>
-          <p><span>Période</span><strong>${monthLabel(pmt.month)}</strong></p>
-          <p><span>Type</span><strong>${pmt.type || "Paiement"}</strong></p>
-          <p><span>Moyen de paiement</span><strong>${pmt.paymentMethod || "Non renseigné"}</strong></p>
-        </div>
-      </section>
-      <section class="receipt-clean-money">
-        <div><span>Montant reçu</span><strong>${money(paidNow)}</strong></div>
-        <div><span>Montant attendu</span><strong>${money(pmt.expected)}</strong></div>
-        <div><span>Reste à payer</span><strong>${money(pmt.remaining)}</strong></div>
-      </section>
-      <footer class="receipt-clean-footer">
-        <div><span>Date d’émission</span><strong>${new Date().toLocaleDateString("fr-FR")}</strong></div>
-        <div class="signature-clean"><span>Signature agence</span><strong>${agency}</strong></div>
-      </footer>
-    </section>
-  `;
+  return pmt.ownerId || pr?.ownerId || pr?.agentId || state.currentUser || state.workspace || "main";
 }
-if(typeof mergePartialRentBeforeSubmitV545 === "function" && !window.__v553MergePatch){
-  window.__v553MergePatch = true;
-  const oldMergeV553 = mergePartialRentBeforeSubmitV545;
-  mergePartialRentBeforeSubmitV545 = function(e){
-    const amount = Number($("#paymentAmount")?.value || 0);
-    const propertyId = $("#paymentProperty")?.value;
-    const ym = $("#paymentMonth")?.value;
-    const existing = (state.payments || []).find(p => p.propertyId===propertyId && p.month===ym && p.type==="Loyer mensuel");
-    if(existing && Number(existing.remaining || 0) > 0){
-      existing.lastPaymentAmount = amount;
-      existing.deltaAmount = amount;
-    }
-    return oldMergeV553(e);
-  };
-}
-function showSoldedPaymentPopupV553(ym){
-  const modal = $("#soldedPaymentModal");
-  const text = $("#soldedPaymentText");
-  if(!modal || !text){ alert(`Le loyer de ${monthLabel(ym)} est déjà réglé.`); return; }
-  const next = typeof nextMonthV545 === "function" ? nextMonthV545(ym) : ym;
-  text.innerHTML = `Le loyer de <strong>${monthLabel(ym)}</strong> est déjà réglé.<br><br>Prochaine période à encaisser : <strong>${monthLabel(next)}</strong>.`;
-  modal.classList.add("open");
-}
-if(typeof blockSoldedRentBeforeSubmitV545 === "function" && !window.__v553SoldedPatch){
-  window.__v553SoldedPatch = true;
-  blockSoldedRentBeforeSubmitV545 = function(e){
-    const propertyId = $("#paymentProperty")?.value;
-    const ym = $("#paymentMonth")?.value;
-    const type = $("#paymentType")?.value || "Loyer mensuel";
-    if(type !== "Loyer mensuel" || !propertyId || !ym) return false;
-    const expected = typeof expectedRentV545 === "function" ? expectedRentV545(propertyId, ym) : Number(prop(propertyId)?.price || 0);
-    const alreadyPaid = typeof paidRentTotalV545 === "function" ? paidRentTotalV545(propertyId, ym) : (state.payments || []).filter(p=>p.propertyId===propertyId && p.month===ym && p.type==="Loyer mensuel").reduce((s,p)=>s+Number(p.amount||0),0);
-    if(alreadyPaid >= expected){
-      e.preventDefault();
-      showSoldedPaymentPopupV553(ym);
-      return true;
-    }
-    return false;
-  };
-}
-setTimeout(()=>{
-  const close = $("#soldedPaymentCloseBtn");
-  if(close && !close.dataset.v553){
-    close.dataset.v553 = "1";
-    close.onclick = ()=>$("#soldedPaymentModal").classList.remove("open");
-  }
-},120);
 
+function v556_hasRequiredPaymentInfo(ownerId){
+  const u = v556_userByOwner(ownerId);
+  return !!(u.wave && u.orangeMoney);
+}
 
-/* ===== V5.5.4 — WhatsApp sans emojis cassés ===== */
+function v556_showProfileWarning(message){
+  alert(message || "Complète d’abord ton profil : Wave et Orange Money sont obligatoires pour envoyer une relance.");
+  if(typeof nav === "function") nav("profile");
+  setTimeout(()=>$("#profileWave")?.focus(),100);
+}
 
-function cleanPaymentMethodsTextV554(ownerId){
-  const u = typeof ownerUserV553 === "function" ? ownerUserV553(ownerId) : ((state.users||[]).find(x=>x.id===ownerId) || {});
+function paymentMethodsText(ownerId){
+  const u = v556_userByOwner(ownerId);
   const lines = [];
   if(u.wave) lines.push(`- Wave : ${u.wave}`);
   if(u.orangeMoney) lines.push(`- Orange Money : ${u.orangeMoney}`);
@@ -2615,21 +2544,274 @@ function cleanPaymentMethodsTextV554(ownerId){
   return lines.join("\n");
 }
 
-function paymentMethodsText(ownerId){
-  return cleanPaymentMethodsTextV554(ownerId);
+function v556_agencyName(ownerId){
+  const u = v556_userByOwner(ownerId);
+  return u.name || u.signature || "ImmoHub Sénégal";
 }
 
+/* Remplace l'ancien prompt : maintenant on bloque et on renvoie au profil */
+function v555_forcePaymentMethods(ownerId){
+  if(v556_hasRequiredPaymentInfo(ownerId)) return true;
+  v556_showProfileWarning("Complète d’abord ton profil de paiement : Wave et Orange Money sont obligatoires pour envoyer une relance.");
+  return false;
+}
+
+function forcePaymentMethodsV553(ownerId){
+  return v555_forcePaymentMethods(ownerId);
+}
+
+function relanceLink(id){
+  const pmt = state.payments.find(x=>x.id===id);
+  const pr = prop(pmt.propertyId);
+  const c = client(pmt.clientId);
+  const ownerId = v556_profileOwnerIdFromPayment(pmt);
+
+  if(!v556_hasRequiredPaymentInfo(ownerId)){
+    v556_showProfileWarning("Complète d’abord ton profil de paiement : Wave et Orange Money sont obligatoires pour envoyer une relance.");
+    return "#";
+  }
+
+  const msg = `Bonjour ${c?.name || ""},
+
+Sauf erreur de notre part, le règlement suivant n'a pas encore été reçu :
+
+- Bien : ${pr?.name || "le bien"}
+- Adresse : ${pr?.area || "Non renseignée"}
+- Période : ${monthLabel(pmt.month)}
+- Type : ${typeof v555_transactionTypeLabel === "function" ? v555_transactionTypeLabel(pmt) : (pmt.type || "Paiement")}
+- Montant restant : ${money(pmt.remaining)}
+
+Vous pouvez effectuer le paiement via :
+
+${paymentMethodsText(ownerId)}
+
+Merci de nous transmettre la preuve de paiement après règlement.
+
+${v556_agencyName(ownerId)}`;
+
+  return wa(c?.phone, msg);
+}
+
+/* Profil courtier */
+function loadProfileV556(){
+  const u = v556_currentProfile();
+  if(!u) return;
+
+  if($("#profileName")) $("#profileName").value = u.name || "";
+  if($("#profilePhone")) $("#profilePhone").value = u.phone || "";
+  if($("#profileWave")) $("#profileWave").value = u.wave || "";
+  if($("#profileOrange")) $("#profileOrange").value = u.orangeMoney || "";
+  if($("#profileFreeMoney")) $("#profileFreeMoney").value = u.freeMoney || "";
+  if($("#profileSignature")) $("#profileSignature").value = u.signature || u.name || "";
+}
+
+function saveProfileV556(e){
+  e.preventDefault();
+  const u = v556_currentProfile();
+  if(!u){
+    alert("Profil introuvable.");
+    return;
+  }
+
+  u.name = $("#profileName").value.trim();
+  u.phone = $("#profilePhone").value.trim();
+  u.wave = $("#profileWave").value.trim();
+  u.orangeMoney = $("#profileOrange").value.trim();
+  u.freeMoney = $("#profileFreeMoney").value.trim();
+  u.signature = $("#profileSignature").value.trim() || u.name;
+
+  save();
+  render();
+
+  const msg = $("#profileMessage");
+  if(msg){
+    msg.textContent = "Profil enregistré.";
+    msg.classList.remove("hidden");
+    setTimeout(()=>msg.classList.add("hidden"),1800);
+  }
+}
+
+const oldNavV556 = typeof nav === "function" ? nav : null;
+if(oldNavV556 && !window.__v556NavPatch){
+  window.__v556NavPatch = true;
+  nav = function(v){
+    oldNavV556(v);
+    if(v === "profile") loadProfileV556();
+  };
+}
+
+const oldRenderV556 = typeof render === "function" ? render : null;
+if(oldRenderV556 && !window.__v556RenderPatch){
+  window.__v556RenderPatch = true;
+  render = function(){
+    oldRenderV556();
+    loadProfileV556();
+  };
+}
+
+setTimeout(()=>{
+  const form = $("#profileForm");
+  if(form && !form.dataset.v556){
+    form.dataset.v556 = "1";
+    form.onsubmit = saveProfileV556;
+  }
+  loadProfileV556();
+},120);
+
+
+/* ===== V5.6 — VERSION CONSOLIDÉE PROFIL + QUITTANCE PRO ===== */
+
+/* Admin : ne peut pas encaisser */
+function v56_isAdmin(){
+  try{return typeof isAdmin==="function" && isAdmin()}catch(e){return false}
+}
+if(typeof payForProperty === "function" && !window.__v56AdminPayBlocked){
+  window.__v56AdminPayBlocked = true;
+  const oldPayForPropertyV56 = payForProperty;
+  payForProperty = function(id){
+    if(v56_isAdmin()){
+      alert("L’admin a une vue globale mais ne peut pas encaisser. Connecte-toi avec le compte du courtier concerné.");
+      return;
+    }
+    return oldPayForPropertyV56(id);
+  };
+}
+setTimeout(()=>{
+  const form = $("#paymentForm");
+  if(form && !form.dataset.v56admin){
+    const old = form.onsubmit;
+    form.dataset.v56admin = "1";
+    form.onsubmit = (e)=>{
+      if(v56_isAdmin()){
+        e.preventDefault();
+        alert("L’admin ne peut pas enregistrer d’encaissement. Connecte-toi avec le compte du courtier concerné.");
+        return;
+      }
+      if(old) old(e);
+    };
+  }
+},120);
+
+/* Utilitaires profil / agence */
+function v56_ownerUser(ownerId){
+  const id = ownerId || state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || {};
+}
+function v56_ownerIdFromPayment(pmt){
+  const pr = prop(pmt.propertyId);
+  return pmt.ownerId || pr?.ownerId || pr?.agentId || state.currentUser || state.workspace || "main";
+}
+function v56_agencyName(ownerId){
+  const u = v56_ownerUser(ownerId);
+  return u.name || u.signature || "ImmoHub Sénégal";
+}
+
+/* Profil courtier consolidé */
+function v56_currentProfile(){
+  const id = state.currentUser || state.workspace || "main";
+  return (state.users||[]).find(u=>u.id===id) || (state.agents||[]).find(a=>a.id===id) || null;
+}
+function loadProfileV556(){
+  const u = v56_currentProfile();
+  if(!u) return;
+  if($("#profileName")) $("#profileName").value = u.name || "";
+  if($("#profilePhone")) $("#profilePhone").value = u.phone || "";
+  if($("#profileWave")) $("#profileWave").value = u.wave || "";
+  if($("#profileOrange")) $("#profileOrange").value = u.orangeMoney || "";
+  if($("#profileFreeMoney")) $("#profileFreeMoney").value = u.freeMoney || "";
+  if($("#profileSignature")) $("#profileSignature").value = u.signature || u.name || "";
+}
+function saveProfileV556(e){
+  e.preventDefault();
+  const u = v56_currentProfile();
+  if(!u){ alert("Profil introuvable."); return; }
+  u.name = $("#profileName").value.trim();
+  u.phone = $("#profilePhone").value.trim();
+  u.wave = $("#profileWave").value.trim();
+  u.orangeMoney = $("#profileOrange").value.trim();
+  u.freeMoney = $("#profileFreeMoney").value.trim();
+  u.signature = $("#profileSignature").value.trim() || u.name;
+  save();
+  render();
+  const msg = $("#profileMessage");
+  if(msg){
+    msg.textContent = "Profil enregistré.";
+    msg.classList.remove("hidden");
+    setTimeout(()=>msg.classList.add("hidden"),1800);
+  }
+}
+setTimeout(()=>{
+  const form = $("#profileForm");
+  if(form && !form.dataset.v56){
+    form.dataset.v56 = "1";
+    form.onsubmit = saveProfileV556;
+  }
+  loadProfileV556();
+},150);
+
+/* Wave / Orange obligatoires via Profil, pas de prompt */
+function paymentMethodsText(ownerId){
+  const u = v56_ownerUser(ownerId);
+  const lines = [];
+  if(u.wave) lines.push(`- Wave : ${u.wave}`);
+  if(u.orangeMoney) lines.push(`- Orange Money : ${u.orangeMoney}`);
+  if(u.freeMoney) lines.push(`- Free Money : ${u.freeMoney}`);
+  return lines.join("\n");
+}
+function v56_hasPaymentMethods(ownerId){
+  const u = v56_ownerUser(ownerId);
+  return !!(u.wave && u.orangeMoney);
+}
+function v56_requirePaymentProfile(ownerId){
+  if(v56_hasPaymentMethods(ownerId)) return true;
+  alert("Complète d’abord ton profil : Wave et Orange Money sont obligatoires pour les relances.");
+  if(typeof nav === "function") nav("profile");
+  return false;
+}
+function v555_forcePaymentMethods(ownerId){return v56_requirePaymentProfile(ownerId)}
+function forcePaymentMethodsV553(ownerId){return v56_requirePaymentProfile(ownerId)}
+
+/* Reliquat : montant réellement payé */
+function v56_paidNow(pmt){
+  if(Number(pmt.lastPaymentAmount || 0) > 0) return Number(pmt.lastPaymentAmount);
+  if(Number(pmt.deltaAmount || 0) > 0) return Number(pmt.deltaAmount);
+  return Number(pmt.amount || 0);
+}
+function v56_isReliquat(pmt){
+  return Number(pmt.lastPaymentAmount || 0) > 0 || Number(pmt.deltaAmount || 0) > 0;
+}
+function v56_typeLabel(pmt){
+  const t = pmt.type || "Paiement";
+  if(v56_isReliquat(pmt) && t === "Loyer mensuel") return `Paiement du reliquat du loyer de ${monthLabel(pmt.month)}`;
+  if(t === "Loyer mensuel") return `Paiement du loyer de ${monthLabel(pmt.month)}`;
+  return t;
+}
+if(typeof mergePartialRentBeforeSubmitV545 === "function" && !window.__v56MergeReliquat){
+  window.__v56MergeReliquat = true;
+  const oldMerge = mergePartialRentBeforeSubmitV545;
+  mergePartialRentBeforeSubmitV545 = function(e){
+    const amount = Number($("#paymentAmount")?.value || 0);
+    const propertyId = $("#paymentProperty")?.value;
+    const ym = $("#paymentMonth")?.value;
+    const existing = (state.payments||[]).find(p=>p.propertyId===propertyId && p.month===ym && p.type==="Loyer mensuel");
+    if(existing && Number(existing.remaining||0)>0){
+      existing.lastPaymentAmount = amount;
+      existing.deltaAmount = amount;
+    }
+    return oldMerge(e);
+  };
+}
+
+/* Messages WhatsApp sans emojis cassés */
 function paymentShareLinks(pmt){
   const pr = prop(pmt.propertyId);
   const tenant = client(pmt.clientId);
   const owner = client(pr?.ownerClientId || pr?.ownerId);
-  const ownerId = typeof ownerIdFromPaymentV553 === "function"
-    ? ownerIdFromPaymentV553(pmt)
-    : (pmt.ownerId || pr?.ownerId || state.currentUser || "main");
-
-  const paidNow = typeof currentPaymentDeltaV553 === "function" ? currentPaymentDeltaV553(pmt) : Number(pmt.amount || 0);
+  const ownerId = v56_ownerIdFromPayment(pmt);
+  const agency = v56_agencyName(ownerId);
+  const paidNow = v56_paidNow(pmt);
   const net = paidNow - Number(pmt.agencyCommission || 0) - Number(pmt.managementCommission || 0);
-  const agency = typeof agencyNameV553 === "function" ? agencyNameV553(ownerId) : "ImmoHub Sénégal";
+  const typeLabel = v56_typeLabel(pmt);
 
   const tenantMsg = `Bonjour ${tenant?.name || ""},
 
@@ -2638,7 +2820,7 @@ Nous confirmons la bonne réception de votre paiement.
 - Bien : ${pr?.name || "le bien"}
 - Adresse : ${pr?.area || "Non renseignée"}
 - Période : ${monthLabel(pmt.month)}
-- Type : ${pmt.type || "Paiement"}
+- Type : ${typeLabel}
 - Montant payé : ${money(paidNow)}
 - Moyen de paiement : ${pmt.paymentMethod || "Non renseigné"}
 - Reste à payer : ${money(pmt.remaining)}
@@ -2654,7 +2836,7 @@ Nous vous informons que le paiement suivant a été encaissé et reversé :
 - Bien : ${pr?.name || "votre bien"}
 - Adresse : ${pr?.area || "Non renseignée"}
 - Période : ${monthLabel(pmt.month)}
-- Type : ${pmt.type || "Paiement"}
+- Type : ${typeLabel}
 
 - Montant encaissé : ${money(paidNow)}
 - Commission de gestion : ${money(pmt.managementCommission || 0)}
@@ -2665,24 +2847,14 @@ Merci pour votre confiance.
 
 ${agency}`;
 
-  return {
-    tenant: wa(tenant?.phone, tenantMsg),
-    owner: wa(owner?.phone, ownerMsg)
-  };
+  return {tenant:wa(tenant?.phone, tenantMsg), owner:wa(owner?.phone, ownerMsg)};
 }
-
 function relanceLink(id){
   const pmt = state.payments.find(x=>x.id===id);
   const pr = prop(pmt.propertyId);
   const c = client(pmt.clientId);
-  const ownerId = typeof ownerIdFromPaymentV553 === "function"
-    ? ownerIdFromPaymentV553(pmt)
-    : (pmt.ownerId || pr?.ownerId || state.currentUser || "main");
-
-  if(typeof forcePaymentMethodsV553 === "function" && !forcePaymentMethodsV553(ownerId)) return "#";
-
-  const methods = cleanPaymentMethodsTextV554(ownerId);
-  const agency = typeof agencyNameV553 === "function" ? agencyNameV553(ownerId) : "ImmoHub Sénégal";
+  const ownerId = v56_ownerIdFromPayment(pmt);
+  if(!v56_requirePaymentProfile(ownerId)) return "#";
 
   const msg = `Bonjour ${c?.name || ""},
 
@@ -2691,50 +2863,142 @@ Sauf erreur de notre part, le règlement suivant n'a pas encore été reçu :
 - Bien : ${pr?.name || "le bien"}
 - Adresse : ${pr?.area || "Non renseignée"}
 - Période : ${monthLabel(pmt.month)}
-- Type : ${pmt.type || "Paiement"}
+- Type : ${v56_typeLabel(pmt)}
 - Montant restant : ${money(pmt.remaining)}
 
 Vous pouvez effectuer le paiement via :
 
-${methods}
+${paymentMethodsText(ownerId)}
 
 Merci de nous transmettre la preuve de paiement après règlement.
 
-${agency}`;
+${v56_agencyName(ownerId)}`;
 
   return wa(c?.phone, msg);
 }
 
-function buildTenantPaymentMethodsMessageV544(name, ownerId){
-  const methods = cleanPaymentMethodsTextV554(ownerId);
-  const agency = typeof agencyNameV553 === "function" ? agencyNameV553(ownerId) : "ImmoHub Sénégal";
-  return `Bonjour ${name || ""},
-
-Pour rappel, vous pouvez régler vos échéances avec nos moyens de paiement :
-
-${methods}
-
-Merci de nous envoyer la preuve de paiement après règlement.
-
-Cordialement,
-
-${agency}`;
+/* Numérotation quittance ESP/MOB par agence, compteur continu */
+function v56_receiptPrefix(method){
+  return String(method||"").toLowerCase().includes("esp") ? "ESP" : "MOB";
+}
+function v56_receiptNo(pmt){
+  if(pmt.receiptNo || pmt.quittanceNo || pmt.receiptNumber) return pmt.receiptNo || pmt.quittanceNo || pmt.receiptNumber;
+  const ownerId = v56_ownerIdFromPayment(pmt);
+  const prefix = v56_receiptPrefix(pmt.paymentMethod);
+  const ym = String(pmt.month || new Date().toISOString().slice(0,7)).replace("-","");
+  const key = `immohub_receipt_seq_v56_${ownerId}_${prefix}`;
+  const next = Number(localStorage.getItem(key)||"0") + 1;
+  localStorage.setItem(key, String(next));
+  const no = `${prefix}-${ym}-${String(next).padStart(4,"0")}`;
+  pmt.receiptNo = no;
+  pmt.quittanceNo = no;
+  save();
+  return no;
 }
 
-function buildOwnerPaymentMethodsMessageV544(name, ownerId){
-  const methods = cleanPaymentMethodsTextV554(ownerId);
-  const agency = typeof agencyNameV553 === "function" ? agencyNameV553(ownerId) : "ImmoHub Sénégal";
-  return `Bonjour ${name || ""},
+/* Quittance pro deux colonnes + imprimable propre */
+function receiptHtmlV551(pmt){
+  const pr = prop(pmt.propertyId);
+  const tenant = client(pmt.clientId);
+  const ownerId = v56_ownerIdFromPayment(pmt);
+  const agency = v56_agencyName(ownerId);
+  const receiptNo = v56_receiptNo(pmt);
+  const paidNow = v56_paidNow(pmt);
+  const typeLabel = v56_typeLabel(pmt);
 
-Pour tout versement ou remboursement éventuel, vous pouvez utiliser les moyens de paiement suivants :
+  return `
+    <section class="receipt-v56">
+      <header class="receipt-v56-header">
+        <div>
+          <div class="receipt-v56-brand">IMMOHUB SÉNÉGAL</div>
+          <h1>Quittance de paiement</h1>
+          <p>${agency}</p>
+        </div>
+        <div class="receipt-v56-number">
+          <span>N° quittance</span>
+          <strong>${receiptNo}</strong>
+        </div>
+      </header>
 
-${methods}
+      <div class="receipt-v56-grid">
+        <div><span>Locataire / client</span><strong>${tenant?.name || "Non renseigné"}</strong></div>
+        <div><span>Bien</span><strong>${pr?.name || "Non renseigné"}</strong></div>
+        <div><span>Adresse</span><strong>${pr?.area || "Non renseignée"}</strong></div>
+        <div><span>Période</span><strong>${monthLabel(pmt.month)}</strong></div>
+        <div class="wide"><span>Type de transaction</span><strong>${typeLabel}</strong></div>
+        <div><span>Moyen de paiement</span><strong>${pmt.paymentMethod || "Non renseigné"}</strong></div>
+      </div>
 
-Merci.
+      <div class="receipt-v56-money">
+        <div><span>Montant reçu</span><strong>${money(paidNow)}</strong></div>
+        <div><span>Montant attendu</span><strong>${money(pmt.expected)}</strong></div>
+        <div><span>Reste à payer</span><strong>${money(pmt.remaining)}</strong></div>
+      </div>
 
-${agency}`;
+      <footer class="receipt-v56-footer">
+        <div><span>Date d’émission</span><strong>${new Date().toLocaleDateString("fr-FR")}</strong></div>
+        <div class="receipt-v56-signature"><span>Signature agence</span><strong>${agency}</strong></div>
+      </footer>
+    </section>`;
 }
+function openReceiptV551(paymentId){
+  const pmt = (state.payments||[]).find(p=>p.id===paymentId) || (state.payments||[])[0];
+  if(!pmt){alert("Aucun paiement trouvé.");return}
+  v56_receiptNo(pmt);
+  $("#receiptContent").innerHTML = receiptHtmlV551(pmt);
+  $("#receiptModal").classList.add("open");
+}
+function v56_receiptPrintCss(){
+  return `.receipt-v56{max-width:794px;margin:0 auto;padding:34px;border:1px solid #dfe7ef;font-family:Arial,sans-serif;color:#111}.receipt-v56-header{display:flex;justify-content:space-between;gap:18px;border-bottom:3px solid #0b3a67;padding-bottom:16px;margin-bottom:22px}.receipt-v56-brand{color:#0b3a67;font-weight:900;font-size:14px;letter-spacing:.05em}.receipt-v56-header h1{margin:8px 0 4px;text-transform:uppercase;font-size:26px}.receipt-v56-header p{margin:0;color:#596775;font-weight:700}.receipt-v56-number{border:1px solid #dbeaf8;border-radius:12px;padding:12px;background:#f7fbff;text-align:right;min-width:190px}.receipt-v56-number span,.receipt-v56-grid span,.receipt-v56-money span,.receipt-v56-footer span{display:block;color:#6b7785;font-size:11px;font-weight:bold;margin-bottom:5px}.receipt-v56-number strong{color:#0b3a67}.receipt-v56-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0}.receipt-v56-grid>div,.receipt-v56-money>div,.receipt-v56-footer>div{border:1px solid #e4ebf3;border-radius:12px;padding:12px;background:#fbfdff}.receipt-v56-grid .wide{grid-column:1/-1}.receipt-v56-money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:22px 0}.receipt-v56-money>div:first-child{background:#eef7ff;border-color:#cfe4f8}.receipt-v56-money>div:first-child strong{font-size:18px;color:#0b3a67}.receipt-v56-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:54px}.receipt-v56-signature strong{display:block;margin-top:18px;border-top:2px solid #0b3a67;padding-top:10px;text-align:center;color:#0b3a67}@media print{@page{size:A4;margin:12mm}body{padding:0}.receipt-v56{border:0;padding:0}}`;
+}
+function downloadReceiptPdfV552(){
+  const content = $("#receiptContent");
+  if(!content || !content.innerHTML.trim()){alert("Aucune quittance à télécharger.");return}
+  const htmlDoc = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Quittance ImmoHub</title><style>${v56_receiptPrintCss()}</style></head><body>${content.innerHTML}</body></html>`;
+  const blob = new Blob([htmlDoc],{type:"text/html;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "quittance-immohub.html";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+setTimeout(()=>{
+  const dl = $("#downloadReceiptBtn");
+  if(dl && !dl.dataset.v56){dl.dataset.v56="1";dl.onclick=downloadReceiptPdfV552}
+  const printBtn = $("#printReceiptBtn");
+  if(printBtn && !printBtn.dataset.v56){printBtn.dataset.v56="1";printBtn.onclick=()=>window.print()}
+},150);
 
-function buildPaymentMethodsMessageV543(recipientName, ownerId){
-  return buildTenantPaymentMethodsMessageV544(recipientName, ownerId);
+/* Visites sans icônes bugguées */
+function renderVisits(){
+  const today = new Date().toISOString().slice(0,10);
+  const list = scoped(state.visits || []).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const box = $("#visitsList");
+  if(!box) return;
+  box.innerHTML = list.length ? list.map(v=>{
+    const p = prop(v.propertyId);
+    const locked = v.qualification && v.qualification !== "À qualifier";
+    const msg = `Bonjour ${v.name},
+
+Petit rappel concernant votre visite.
+
+- Bien : ${p?.name || "le bien"}
+- Adresse : ${p?.area || "Non renseignée"}
+- Date : ${v.date}
+- Heure : ${v.time}
+
+Merci de confirmer votre présence.
+
+${v56_agencyName(v.ownerId || p?.ownerId || p?.agentId)}`;
+    return `<article class="card" style="${v.date<today?'opacity:.55':''}">
+      <div class="card-top"><div><h3>Visite - ${v.name}</h3><p>${p?.name||"Bien"} • ${v.date} à ${v.time}</p></div>${badge(v.qualification)}</div>
+      <p>Téléphone : ${v.phone}</p>
+      <p>Note : ${v.note || "Aucune note"}</p>
+      <div class="actions">
+        <a class="mini-btn green" target="_blank" href="${wa(v.phone,msg)}">Relance</a>
+        ${locked?`<span class="mini-btn disabled">Terminée</span>`:`<button class="mini-btn blue" onclick="qualifyVisit('${v.id}','Chaud')">Chaud</button><button class="mini-btn" onclick="qualifyVisit('${v.id}','Froid')">Froid</button><button class="mini-btn red" onclick="qualifyVisit('${v.id}','Pas intéressé')">Pas intéressé</button>`}
+        <button class="mini-btn red" onclick="del('visits','${v.id}')">Supprimer</button>
+      </div>
+    </article>`;
+  }).join("") : '<div class="card empty-state"><p>Aucune visite.</p><small>Ajoute une visite avec le bouton +.</small></div>';
 }

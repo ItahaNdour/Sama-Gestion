@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=1780716927" />
+  <link rel="stylesheet" href="style.css?v=1780750344" />
 </head>
 <body>
   <section id="loginScreen" class="login-screen">
@@ -154,6 +154,39 @@
         </div>
         <div id="edlList" class="cards-list"></div>
       </section>
+
+      <section id="profile" class="view">
+        <div class="page-head">
+          <div><h1>Profil</h1><p>Coordonnées et moyens de paiement</p></div>
+        </div>
+        <section class="profile-card">
+          <form id="profileForm" class="form">
+            <label>Nom agence / courtier
+              <input id="profileName" class="input" required>
+            </label>
+            <label>WhatsApp
+              <input id="profilePhone" class="input" placeholder="Ex : 22177...">
+            </label>
+            <div class="two">
+              <label>Wave
+                <input id="profileWave" class="input" placeholder="Numéro Wave">
+              </label>
+              <label>Orange Money
+                <input id="profileOrange" class="input" placeholder="Numéro Orange Money">
+              </label>
+            </div>
+            <label>Free Money
+              <input id="profileFreeMoney" class="input" placeholder="Optionnel">
+            </label>
+            <label>Signature WhatsApp
+              <textarea id="profileSignature" class="input" rows="3"></textarea>
+            </label>
+            <div id="profileMessage" class="info-box hidden"></div>
+            <button class="btn primary" type="submit">Enregistrer mon profil</button>
+          </form>
+        </section>
+      </section>
+
     </main>
 
     <nav class="bottom-nav">
@@ -163,6 +196,7 @@
       <button class="nav" data-view="visits">📅<span>Visites</span></button>
       <button class="nav" data-view="payments">💳<span>Cash</span></button>
       <button class="nav" data-view="edl">🧾<span>EDL</span></button>
+      <button class="nav" data-view="profile">👤<span>Profil</span></button>
     </nav>
   </div>
 
@@ -397,20 +431,13 @@
       <button class="close" data-close>×</button>
       <div id="receiptContent" class="receipt-document"></div>
       <div class="receipt-actions-print">
-        <button id="printReceiptBtn" class="btn primary" type="button">Imprimer / PDF</button>
+        <button id="printReceiptBtn" class="btn primary" type="button">Imprimer</button>
+        <button id="downloadReceiptBtn" class="btn primary" type="button">Télécharger</button>
+        <button id="downloadReceiptBtn" class="btn primary" type="button">Télécharger</button>
         <button id="closeReceiptBtn" class="btn ghost" type="button">Fermer</button>
       </div>
     </div>
   </div>
-  <div id="soldedPaymentModal" class="modal">
-    <div class="modal-card solded-modal-card">
-      <button class="close" data-close>×</button>
-      <div class="solded-icon">!</div>
-      <h2>Paiement déjà réglé</h2>
-      <p id="soldedPaymentText"></p>
-      <button id="soldedPaymentCloseBtn" class="btn primary" type="button">Compris</button>
-    </div>
-  </div>
-  <script src="script.js?v=1780716927"></script>
+  <script src="script.js?v=1780750344"></script>
 </body>
 </html>
