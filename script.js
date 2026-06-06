@@ -3002,3 +3002,92 @@ ${v56_agencyName(v.ownerId || p?.ownerId || p?.agentId)}`;
     </article>`;
   }).join("") : '<div class="card empty-state"><p>Aucune visite.</p><small>Ajoute une visite avec le bouton +.</small></div>';
 }
+
+
+/* ===== V5.6.1 — Fix impression quittance + bouton téléchargement unique ===== */
+
+function v561_receiptCss(){
+  return `
+    @page{size:A4;margin:12mm}
+    *{box-sizing:border-box}
+    body{background:#fff;margin:0;padding:0;font-family:Arial,sans-serif;color:#111}
+    .receipt-v56{width:100%;max-width:794px;margin:0 auto;padding:30px;border:0;color:#111}
+    .receipt-v56-header{display:flex;justify-content:space-between;gap:18px;border-bottom:3px solid #0b3a67;padding-bottom:16px;margin-bottom:22px}
+    .receipt-v56-brand{color:#0b3a67;font-weight:900;font-size:14px;letter-spacing:.05em}
+    .receipt-v56-header h1{margin:8px 0 4px;text-transform:uppercase;font-size:26px;color:#17212b}
+    .receipt-v56-header p{margin:0;color:#596775;font-weight:700}
+    .receipt-v56-number{border:1px solid #dbeaf8;border-radius:12px;padding:12px;background:#f7fbff;text-align:right;min-width:190px;height:max-content}
+    .receipt-v56-number span,.receipt-v56-grid span,.receipt-v56-money span,.receipt-v56-footer span{display:block;color:#6b7785;font-size:11px;font-weight:bold;margin-bottom:5px}
+    .receipt-v56-number strong{color:#0b3a67}
+    .receipt-v56-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0}
+    .receipt-v56-grid>div,.receipt-v56-money>div,.receipt-v56-footer>div{border:1px solid #e4ebf3;border-radius:12px;padding:12px;background:#fbfdff}
+    .receipt-v56-grid .wide{grid-column:1/-1}
+    .receipt-v56-money{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:22px 0}
+    .receipt-v56-money>div:first-child{background:#eef7ff;border-color:#cfe4f8}
+    .receipt-v56-money>div:first-child strong{font-size:18px;color:#0b3a67}
+    .receipt-v56-footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:54px}
+    .receipt-v56-signature strong{display:block;margin-top:18px;border-top:2px solid #0b3a67;padding-top:10px;text-align:center;color:#0b3a67}
+    @media(max-width:520px){
+      .receipt-v56{padding:18px}
+      .receipt-v56-header,.receipt-v56-grid,.receipt-v56-money,.receipt-v56-footer{display:grid;grid-template-columns:1fr}
+      .receipt-v56-number{text-align:left;min-width:0}
+    }
+  `;
+}
+
+function v561_receiptDocumentHtml(){
+  const content = $("#receiptContent");
+  if(!content || !content.innerHTML.trim()) return "";
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quittance ImmoHub</title>
+<style>${v561_receiptCss()}</style>
+</head>
+<body>${content.innerHTML}</body>
+</html>`;
+}
+
+function printReceiptV561(){
+  const doc = v561_receiptDocumentHtml();
+  if(!doc){ alert("Aucune quittance à imprimer."); return; }
+  const w = window.open("", "_blank");
+  if(!w){ alert("Autorise les popups pour imprimer la quittance."); return; }
+  w.document.open();
+  w.document.write(doc);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 400);
+}
+
+function downloadReceiptPdfV552(){
+  const doc = v561_receiptDocumentHtml();
+  if(!doc){ alert("Aucune quittance à télécharger."); return; }
+  const blob = new Blob([doc], {type:"text/html;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "quittance-immohub.html";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+setTimeout(()=>{
+  const printBtn = $("#printReceiptBtn");
+  if(printBtn){
+    printBtn.dataset.v561 = "1";
+    printBtn.onclick = printReceiptV561;
+  }
+
+  const dlBtn = $("#downloadReceiptBtn");
+  if(dlBtn){
+    dlBtn.dataset.v561 = "1";
+    dlBtn.onclick = downloadReceiptPdfV552;
+  }
+
+  const closeBtn = $("#closeReceiptBtn");
+  if(closeBtn && !closeBtn.dataset.v561){
+    closeBtn.dataset.v561 = "1";
+    closeBtn.onclick = ()=>$("#receiptModal")?.classList.remove("open");
+  }
+},150);

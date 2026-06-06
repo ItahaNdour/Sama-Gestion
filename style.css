@@ -453,3 +453,14 @@ body.courtier-mode #clientOwnerBrokerWrap{
   }
   .receipt-v56-number{text-align:left;min-width:0}
 }
+
+/* ===== V5.6.1 — Boutons quittance fixés ===== */
+.receipt-actions-print{
+  display:grid!important;
+  grid-template-columns:1fr 1fr 1fr!important;
+  gap:8px!important;
+  margin-top:12px!important;
+}
+@media(max-width:520px){
+  .receipt-actions-print{grid-template-columns:1fr!important}
+}
